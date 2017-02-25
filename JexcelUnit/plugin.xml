@@ -6,25 +6,25 @@
          point="org.eclipse.ui.commands">
       <category
             name="Sample Category"
-            id="Tester1.commands.category">
+            id="JexcelUnit.commands.category">
       </category>
       <command
             name="Sample Command"
-            categoryId="Tester1.commands.category"
-            id="Tester1.commands.sampleCommand">
+            categoryId="JexcelUnit.commands.category"
+            id="JexcelUnit.commands.sampleCommand">
       </command>
    </extension>
    <extension
          point="org.eclipse.ui.handlers">
       <handler
-            commandId="Tester1.commands.sampleCommand"
-            class="tester1.handlers.SampleHandler">
+            commandId="JexcelUnit.commands.sampleCommand"
+            class="jexcelunit.handlers.SampleHandler">
       </handler>
    </extension>
    <extension
          point="org.eclipse.ui.bindings">
       <key
-            commandId="Tester1.commands.sampleCommand"
+            commandId="JexcelUnit.commands.sampleCommand"
             contextId="org.eclipse.ui.contexts.window"
             sequence="M1+6"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration">
@@ -37,23 +37,23 @@
          <menu
                label="Sample Menu"
                mnemonic="M"
-               id="Tester1.menus.sampleMenu">
+               id="JexcelUnit.menus.sampleMenu">
             <command
-                  commandId="Tester1.commands.sampleCommand"
+                  commandId="JexcelUnit.commands.sampleCommand"
                   mnemonic="S"
-                  id="Tester1.menus.sampleCommand">
+                  id="JexcelUnit.menus.sampleCommand">
             </command>
          </menu>
       </menuContribution>
       <menuContribution
             locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
          <toolbar
-               id="Tester1.toolbars.sampleToolbar">
+               id="JexcelUnit.toolbars.sampleToolbar">
             <command
-                  commandId="Tester1.commands.sampleCommand"
+                  commandId="JexcelUnit.commands.sampleCommand"
                   icon="icons/sample.gif"
                   tooltip="Say hello world"
-                  id="Tester1.toolbars.sampleCommand">
+                  id="JexcelUnit.toolbars.sampleCommand">
             </command>
          </toolbar>
       </menuContribution>

@@ -67,7 +67,6 @@ public class ExcelCreator {
 						"Do you want to create new .xlxs or overwrite?",
 						"Warnning : If you overwrite, you can lose your data");
 				if(will_create)f.delete();
-				will_create =false;
 				break;
 			}
 		}
@@ -75,14 +74,14 @@ public class ExcelCreator {
 		//Create
 		if(will_create){
 			XSSFWorkbook workbook = new XSSFWorkbook();
-			XSSFSheet sheet = workbook.createSheet("TestSuite 1");	
+			XSSFSheet xssfSheet = workbook.createSheet("TestSuite 1");	
 			XSSFRow row =null;
 			XSSFCell cell =null;
 
 			//make hidden sheet
 			hiddensheet(workbook,classinfos);
 
-			row=sheet.createRow(0);//번줄은 info
+			row=xssfSheet.createRow(0);//번줄은 info
 
 			//칼럼의 갯수는 생성자 혹은 메소드 파라미터에 의해 가변적으로 정할것.
 			//칼럼에 Data Validation을 지정.
@@ -93,9 +92,10 @@ public class ExcelCreator {
 			for(int i =0; i<totalCellCount; i++){
 				String val=cellvalue[cellvalindex];
 
-				if(val.equals("Constructor Param")){
-					//Set Param Validation Type
 
+				if(val.equals("Constructor Param")){
+					xssfSheet.setColumnWidth(cellvalindex, 4500);
+					//Set Param Validation Type
 					/*
 					 * 이슈 정리 : 
 					 * 1. 클래스마다 다른 타입 유효성
@@ -112,7 +112,16 @@ public class ExcelCreator {
 					i+=consCount-1;
 					cellvalindex++;
 				}
+				else if(val.equals("TestMethod")){
+					xssfSheet.setColumnWidth(cellvalindex, 3000);
+					setValidation("INDIRECT($B2)", xssfSheet, cellvalindex);
+					cell=row.createCell(i);
+					cell.setCellValue(val);
+					cellvalindex++;
+				}
+				
 				else if(val.equals("Method Param")){
+					xssfSheet.setColumnWidth(cellvalindex, 4000);
 					for(int k=0; k<metsCount; k++){
 						cell=row.createCell(i+k);
 						cell.setCellValue(val+(k+1));
@@ -121,13 +130,16 @@ public class ExcelCreator {
 					cellvalindex++;
 				}
 				else{
+					xssfSheet.setColumnWidth(cellvalindex, 3000);
 					cell=row.createCell(i);
 					cell.setCellValue(val);
 					cellvalindex++;
 				}
 
 			}
-
+			
+			setValidation("Class", xssfSheet, 1);
+//			setValidation("",xssfSheet , );
 			//save xlsx
 			FileOutputStream fileoutputstream=new FileOutputStream(rootpath+"/"+ projectName+".xlsx");
 			//파일을 쓴다
@@ -149,18 +161,6 @@ public class ExcelCreator {
 		int col_index=0;
 		for(String key : keys){
 			info =classinfos.get(key);
-
-			//			Set<Constructor> cons = info.getConstructors();
-			//			Iterator<Constructor> cit = cons.iterator();
-			//			if(cons.size() > 0){
-			//				for(int i  =1 ; i <= cons.size() && cit.hasNext(); i++){
-			//					Constructor con=cit.next();
-			//					Class[] paramtypes = con.getParameterTypes();
-			//					
-			//				}
-			//			}
-
-			//hidden sheet
 			/*
 			 * 1. 클래스 -생성자 파라미터타입 유효성검증 	파라미터 개수가 같은데, 타입이 다른경우 ? 제약을 걸기에 모호함. 생성자는 이름이 같으니까..	
 			 * 2. 클래스 - 메소드리스트 				ok
@@ -181,25 +181,27 @@ public class ExcelCreator {
 					if(row == null) row= hidden.createRow(i);
 					row.createCell(col_index).setCellValue(met.getName());
 				}
-				//Set Class-Method Data validation
+				//Set Class-Method Data ReferenceList
 				XSSFName namedcell =workbook.createName();
-				namedcell.setNameName(info.getClz().getSimpleName()+ "Method"); //Nameing이 중요.
-				char cell=(char) ('A'+col_index);
-				String formula= "hidden!$"+cell+"$1:$"+cell+"$" + mets.size();
+				namedcell.setNameName(info.getClz().getSimpleName()); //Nameing이 중요.
+				char currentCol=(char) ('A'+col_index);
+				String formula= "hidden!$"+currentCol+"$2:$"+currentCol+"$" + (mets.size()+1);
+				System.out.println(formula);
 				namedcell.setRefersToFormula(formula);
-
+				
 			}
 			col_index++;
 		}
 		
-		//Set Class Data validation
+		//Set Class Data ReferenceList.
 		XSSFName namedcell =workbook.createName();
 		namedcell.setNameName("Class"); //Nameing이 중요.
 		char cell=(char) ('A'+col_index-1);
-		String formula= "hidden!$A$1:$"+cell+"$0";
+		String formula= "hidden!$A$1:$"+cell+"$1";
 		namedcell.setRefersToFormula(formula);
 
-		
+
+		//Set hidden Sheet if true=  hidden.
 		workbook.setSheetHidden(1, false);
 
 	}
@@ -256,52 +258,6 @@ public class ExcelCreator {
 		return max;
 	}
 	
-	
-	//	private void setRetrunValidation(Method m,XSSFSheet xssfSheet ,int col){
-	//	Class returntype= m.getReturnType();
-	//
-	//	DataValidation dataValidation = null;
-	//	DataValidationConstraint constraint = null;
-	//	DataValidationHelper validationHelper = null;
-	//
-	//	validationHelper = new XSSFDataValidationHelper(xssfSheet);
-	//	CellRangeAddressList addresslist = new CellRangeAddressList(1,500,col,col);
-	//
-	//	if(returntype.equals(Integer.class) || returntype.equals(int.class)|| returntype.equals(Float.class) || returntype.equals(float.class) || returntype.equals(Double.class) || returntype.equals(double.class) || returntype.equals(Number.class) ||returntype.equals(BigInteger.class)){
-	//		constraint = validationHelper.createNumericConstraint(DataValidationConstraint.ValidationType.INTEGER,DataValidationConstraint.OperatorType.EQUAL, null , null);
-	//	}else if(returntype.equals(java.sql.Date.class) || returntype.equals(java.util.Date.class)){
-	//		constraint = validationHelper.createDateConstraint(DataValidationConstraint.OperatorType.EQUAL, null, null, "YYYY-MM-DD");
-	//	}else { //Use Mock Object or null
-	//		return;
-	//	}
-	//	dataValidation.setShowErrorBox(true);
-	//	dataValidation.createErrorBox("ERROR", "You must input Right Type.");
-	//	xssfSheet.addValidationData(dataValidation);
-	//
-	//}
-
-	//	private void setParameterDataValidation(Class paramtype, XSSFSheet xssfSheet ,int col){
-	//		DataValidation dataValidation = null;
-	//		DataValidationConstraint constraint = null;
-	//		DataValidationHelper validationHelper = null;
-	//
-	//		validationHelper = new XSSFDataValidationHelper(xssfSheet);
-	//		CellRangeAddressList addresslist = new CellRangeAddressList(1,500,col,col);
-	//
-	//		if(paramtype.equals(Integer.class) || paramtype.equals(int.class)|| paramtype.equals(Float.class) || paramtype.equals(float.class) || paramtype.equals(Double.class) || paramtype.equals(double.class) || paramtype.equals(Number.class) ||paramtype.equals(BigInteger.class)){
-	//			constraint = validationHelper.createNumericConstraint(DataValidationConstraint.ValidationType.INTEGER,DataValidationConstraint.OperatorType.EQUAL, null , null);
-	//		}else if(paramtype.equals(java.sql.Date.class) || paramtype.equals(java.util.Date.class)){
-	//			constraint = validationHelper.createDateConstraint(DataValidationConstraint.OperatorType.EQUAL, null, null, "YYYY-MM-DD");
-	//		}else { //Use Mock Object
-	//			return;
-	//		}
-	//		dataValidation = validationHelper.createValidation(constraint, addresslist);
-	//		dataValidation.setShowErrorBox(true);
-	//		dataValidation.createErrorBox("ERROR", "You must input Right Type.");
-	//		xssfSheet.addValidationData(dataValidation);
-	//
-	//	}
-
 
 
 }
