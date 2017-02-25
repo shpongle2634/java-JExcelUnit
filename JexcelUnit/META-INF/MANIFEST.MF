@@ -1,0 +1,19 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: JexcelUnit
+Bundle-SymbolicName: JexcelUnit;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: jexcelunit.Activator
+Bundle-Vendor: Taehoon Seo
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-ActivationPolicy: lazy
+Import-Package: org.eclipse.core.resources
+Bundle-ClassPath: lib/commons-collections4-4.1.jar,
+ lib/log4j-1.2.17.jar,
+ lib/poi-3.15.jar,
+ lib/poi-ooxml-3.15.jar,
+ lib/poi-ooxml-schemas-3.15.jar,
+ lib/xmlbeans-2.6.0.jar,
+ .
