@@ -1,16 +1,38 @@
 package jexcelunit.excel;
 
+import java.util.ArrayList;
+
 public class TestcaseVO {
 
 	private String testname;
 	private String testclass;
-	private String[] constructor_params;
+	
+	private ArrayList<String> constructor_params =null;
+	private ArrayList<String> method_params = null;
+	
 	private String testmethod;
-	private String[] method_params;
 	private String expect;
 	private String result;
 
-
+	public TestcaseVO(){
+		constructor_params= new ArrayList<>();
+		method_params = new ArrayList<>();
+	}
+	
+	public void addConstructorParam(String data){
+		constructor_params.add(data);
+	}
+	public ArrayList<String> getConstructorParams(){
+		return constructor_params;
+	}
+	
+	public void addMethodParam(String data){
+		method_params.add(data);
+	}
+	public ArrayList<String> getMethodParams(){
+		return method_params;
+	}
+	
 	public String getTestname() {
 		return testname;
 	}

@@ -37,11 +37,11 @@ import jexcelunit.utils.ClassInfo;
  * Vendor  : Taehoon Seo
  * Description : create excel file including classes, methods and constructor informations.
  * */
-public class ExcelCreator {
+public class ExcelCreator implements CommonData{
 	private final int CONSTRUCTOR = 0;
 	private final int METHOD = 1;
-	private final String[] cellvalue= {"TestName" ,"TestClass","Constructor Param", "TestMethod", "Method Param", "Expected", "Result", "Success"};
-
+	public final String[] TESTDATASET = {"TestName" ,"TestClass","Constructor Param", "TestMethod", "Method Param", "Expected", "Result", "Success"};
+	
 	//create xlsx for Testcases.
 	public void createXlsx(String projectName ,String rootpath , HashMap<String, ClassInfo> classinfos) throws IOException{
 		/*
@@ -88,13 +88,12 @@ public class ExcelCreator {
 			int consCount=getMaxParamCount(CONSTRUCTOR,classinfos);
 			int metsCount=getMaxParamCount(METHOD,classinfos);
 			int cellvalindex=0;
-			int totalCellCount= cellvalue.length + consCount + metsCount-2;
+			int totalCellCount= TESTDATASET.length + consCount + metsCount-2;
 			for(int i =0; i<totalCellCount; i++){
-				String val=cellvalue[cellvalindex];
+				String val=TESTDATASET[cellvalindex];
 
 
-				if(val.equals("Constructor Param")){
-					xssfSheet.setColumnWidth(cellvalindex, 4500);
+				if(val.equals("Constructor Param")){					
 					//Set Param Validation Type
 					/*
 					 * 이슈 정리 : 
@@ -107,6 +106,7 @@ public class ExcelCreator {
 					 * */
 					for(int k=0; k<consCount; k++){
 						cell=row.createCell(i+k);
+						xssfSheet.setColumnWidth(cellvalindex, 4500);
 						cell.setCellValue(val+(k+1));
 					}
 					i+=consCount-1;
@@ -119,11 +119,12 @@ public class ExcelCreator {
 					cell.setCellValue(val);
 					cellvalindex++;
 				}
-				
+
 				else if(val.equals("Method Param")){
-					xssfSheet.setColumnWidth(cellvalindex, 4000);
+
 					for(int k=0; k<metsCount; k++){
 						cell=row.createCell(i+k);
+						xssfSheet.setColumnWidth(cellvalindex, 4000);
 						cell.setCellValue(val+(k+1));
 					}
 					i+=metsCount-1;
@@ -137,15 +138,17 @@ public class ExcelCreator {
 				}
 
 			}
-			
+
 			setValidation("Class", xssfSheet, 1);
-//			setValidation("",xssfSheet , );
 			//save xlsx
 			FileOutputStream fileoutputstream=new FileOutputStream(rootpath+"/"+ projectName+".xlsx");
 			//파일을 쓴다
 			workbook.write(fileoutputstream);
+			if(workbook!=null) workbook.close();
 			//필수로 닫아주어야함
-			fileoutputstream.close();
+			if( fileoutputstream!=null)
+				fileoutputstream.close();
+
 			System.out.println("Created");
 		}
 
@@ -186,13 +189,13 @@ public class ExcelCreator {
 				namedcell.setNameName(info.getClz().getSimpleName()); //Nameing이 중요.
 				char currentCol=(char) ('A'+col_index);
 				String formula= "hidden!$"+currentCol+"$2:$"+currentCol+"$" + (mets.size()+1);
-				System.out.println(formula);
+				System.out.println("Create : " + formula);
 				namedcell.setRefersToFormula(formula);
-				
+
 			}
 			col_index++;
 		}
-		
+
 		//Set Class Data ReferenceList.
 		XSSFName namedcell =workbook.createName();
 		namedcell.setNameName("Class"); //Nameing이 중요.
@@ -208,32 +211,35 @@ public class ExcelCreator {
 
 	//Init DataValidation for Update Cell
 	private void initValidation(){
-		
-		
+
+
 	}
-	
+
 	//클래스 이름 제약
 	private void setValidation(String namedcell, XSSFSheet xssfSheet ,int col){
-	
+
 
 		DataValidation dataValidation = null;
 		DataValidationConstraint constraint = null;
 		DataValidationHelper validationHelper = null;
 		validationHelper = new XSSFDataValidationHelper(xssfSheet);
-
-		CellRangeAddressList addresslist = new CellRangeAddressList(1,500,col,col);
 		constraint= validationHelper.createFormulaListConstraint(namedcell);
-		dataValidation= validationHelper.createValidation(constraint, addresslist);
-		
-				
-		dataValidation.setSuppressDropDownArrow(true);
-		dataValidation.setShowErrorBox(true);
-		dataValidation.createErrorBox("Wrong Input", "You must input Right Type.");
-		xssfSheet.addValidationData(dataValidation);
+		CellRangeAddressList addresslist =null;
+		if(constraint !=null){
+			addresslist = new CellRangeAddressList(1,500,col,col);
+			System.out.println(constraint.getFormula1());
+			dataValidation= validationHelper.createValidation(constraint, addresslist);
 
+
+			dataValidation.setSuppressDropDownArrow(true);
+			dataValidation.setShowErrorBox(true);
+			dataValidation.createErrorBox("Wrong Input", "You must input Right Type.");
+			xssfSheet.addValidationData(dataValidation);
+
+		}		
 	}
-	
-	
+
+
 	private int getMaxParamCount(int option,HashMap<String, ClassInfo> classinfos){
 		int max= 0;
 		Set<String> keys= classinfos.keySet();
@@ -257,7 +263,7 @@ public class ExcelCreator {
 		}
 		return max;
 	}
-	
+
 
 
 }

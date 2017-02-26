@@ -44,33 +44,36 @@ public class SampleHandler extends AbstractHandler {
 				new BaseWorkbenchContentProvider(), new WorkbenchLabelProvider(), "Select the Project:");
 		dlg.setTitle("Project Selection");
 		dlg.open();
+
 		Object[] results = (Object[]) dlg.getResult();
 		IProject targetproject =null;
 		ArrayList<Class> classlist=null;
-		for(Object result : results){
-			
-			//gathering project classes
-			targetproject =root.getProject(result.toString().substring(2));
-			System.out.println(targetproject.getName());
-			classlist=getClasses(targetproject);
-			
-			//analyze class info
-			ClassAnalyzer analyzer= new ClassAnalyzer(classlist);
-			HashMap<String,ClassInfo> classinfos= analyzer.getTestInfos();
-			
-			ExcelCreator exceling= new ExcelCreator();
-			try {
-				exceling.createXlsx(targetproject.getName(), targetproject.getLocation().toString(), classinfos);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+		if(results!=null)
+			for(Object result : results){
+
+				//gathering project classes
+				targetproject =root.getProject(result.toString().substring(2));
+				System.out.println(targetproject.getName());
+				classlist=getClasses(targetproject);
+
+				//analyze class info
+				ClassAnalyzer analyzer= new ClassAnalyzer(classlist);
+				HashMap<String,ClassInfo> classinfos= analyzer.getTestInfos();
+
+				//Create Excel File.
+				ExcelCreator exceling= new ExcelCreator();
+				try {
+					exceling.createXlsx(targetproject.getName(), targetproject.getLocation().toString(), classinfos);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
 			}
-			
-		}
-		
+
 		return null;
 	}
-	
+
 	private ArrayList<Class> getClasses(IProject prj){
 		ClassExtractor ce= new ClassExtractor();
 		/*
@@ -83,25 +86,25 @@ public class SampleHandler extends AbstractHandler {
 		ArrayList<Class> targetClasses= new ArrayList<Class>();
 		try {
 			ce.getClasses(new File(prj.getLocation().toString()+"/src"));
-			
+
 			//load Class files  *Notice : excepts jar files.
 			ArrayList<URL> urls = new ArrayList<URL>();
 			URLStreamHandler streamhandler =null;
 			File classpath = new File(prj.getLocation().toString()+"/bin");
 			urls.add(new URL(null,"file:"+classpath.getCanonicalPath()+File.separator,streamhandler));
 			URLClassLoader loader = new URLClassLoader(urls.toArray(new URL[urls.size()]));
-			
-			
+
+
 			//Valid Target Classes and send to Class Parser.
 			for(String s: ce.getClasslist()){
 				targetClasses.add(loader.loadClass(s));
 			}
-			
+
 			//For test
 			for(Class clz: targetClasses){
 				System.out.println(clz.getName());
 			}
-			
+
 		}catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
