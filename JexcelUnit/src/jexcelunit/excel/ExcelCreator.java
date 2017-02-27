@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Date;
@@ -47,7 +48,7 @@ public class ExcelCreator implements CommonData{
 	private final int CONSTRUCTOR = 0;
 	private final int METHOD = 1;
 	public final String[] TESTDATASET = {"TestName" ,"TestClass","Constructor Param", "TestMethod", "Method Param", "Expected", "Result", "Success"};
-	
+
 	//create xlsx for Testcases.
 	public void createXlsx(String projectName ,String rootpath , HashMap<String, ClassInfo> classinfos) throws IOException{
 		/*
@@ -166,7 +167,8 @@ public class ExcelCreator implements CommonData{
 		Set<String> keys = classinfos.keySet();
 		ClassInfo info =null;
 		XSSFRow firstrow=hidden.createRow(0);
-
+		Drawing drawing = hidden.createDrawingPatriarch();//to Create Cell Comment
+		CreationHelper factory =workbook.getCreationHelper();
 		int col_index=0;
 		for(String key : keys){
 			info =classinfos.get(key);
@@ -178,32 +180,65 @@ public class ExcelCreator implements CommonData{
 			 * => 결국 제약가능한건 클래스 이름, 클래스에 따른 메소드리스트 정도
 			 * */
 
+			//set Class name with package.
 			XSSFCell infocell=firstrow.createCell(col_index);
 			infocell.setCellValue(key);
-			Drawing drawing = hidden.createDrawingPatriarch();
-			
-			CreationHelper factory =workbook.getCreationHelper();
+
+
+
 			ClientAnchor anchor= factory.createClientAnchor();
 			anchor.setCol1(col_index);
 			anchor.setCol2(col_index+3);
 			anchor.setRow1(0);
 			anchor.setRow2(2);
-			
+
 			Comment comment= drawing.createCellComment(anchor);
 			RichTextString str = factory.createRichTextString(info.getClz().getName());
 			comment.setString(str);
 			infocell.setCellComment(comment);
-			
-			
+
+
 			Set<Method> mets = info.getMethods();
 			Iterator<Method> mit =mets.iterator();
 			if(mets.size() >0){
-
+				XSSFCell currentCell= null;
 				for(int i =1; i <= mets.size() && mit.hasNext(); i ++){
 					Method met= mit.next();
 					XSSFRow row= hidden.getRow(i);
 					if(row == null) row= hidden.createRow(i);
-					row.createCell(col_index).setCellValue(met.getName());
+					Parameter[] params= met.getParameters();
+
+					//set Method Fullname
+					String methodStr =met.getReturnType().getSimpleName()+" "+met.getName() + "(";
+					Parameter param= null;
+					for(int param_index=0; param_index<params.length; param_index++){
+						param= params[param_index];
+						String paramStr = param.getType().getSimpleName()+ " " + param.getName();
+						methodStr+=paramStr;
+						if(param_index!=params.length-1)
+							methodStr+=',';
+					}
+					methodStr+=')';
+					
+					System.out.println(methodStr);
+					
+
+					currentCell= row.createCell(col_index);
+					currentCell.setCellValue(methodStr);
+					
+					
+					//Set Simple method Name.
+					ClientAnchor methodanchor= factory.createClientAnchor();
+					methodanchor.setCol1(col_index);
+					methodanchor.setCol2(col_index+3);
+					methodanchor.setRow1(i);
+					methodanchor.setRow2(i+1);
+
+					Comment methodcomment= drawing.createCellComment(methodanchor);
+					RichTextString method_commentStr = factory.createRichTextString(met.getName());
+					methodcomment.setString(method_commentStr);
+					currentCell.setCellComment(methodcomment);
+					
 				}
 				//Set Class-Method Data ReferenceList
 				XSSFName namedcell =workbook.createName();
