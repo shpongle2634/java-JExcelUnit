@@ -49,16 +49,13 @@ public class ExcelReader {
 
 				for(int j =0; j < TESTDATASET.length; j++){
 					if(infocell.getStringCellValue().contains(TESTDATASET[j])){						
-						System.out.println(infocell.getStringCellValue() + " / " +TESTDATASET[j] + " : " +infocell.getStringCellValue().contains(TESTDATASET[j]));
 						//remember index and after reading, Have to use this info	
 						voOption[i]=j;
 						break;
 					}	
 				}
 			}
-			for( int i=0; i<voOption.length; i++){
-				System.out.println( i + " : " + voOption[i]);
-			}
+			
 			//loop to convert data to VO Object. Except first Row.
 			for(int i= 1; i<xssfsheet.getPhysicalNumberOfRows(); i++){
 				XSSFRow currentRow= xssfsheet.getRow(i);
@@ -69,9 +66,8 @@ public class ExcelReader {
 					for(int j= 0 ; j<colSize; j ++){
 						XSSFCell currentCell = currentRow.getCell(j);	
 						if(currentCell !=null){
-							//							System.out.println((char)('A'+j)+Integer.toString(i) + " : " +currentCell.getStringCellValue());		
-
-							setVOvalue(vo,j,formatter.formatCellValue(currentCell));
+							//Set vo Values.
+							setVOvalue(vo,voOption[j],formatter.formatCellValue(currentCell));
 						}
 					}
 				}

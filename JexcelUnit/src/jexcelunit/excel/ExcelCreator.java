@@ -13,12 +13,18 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.apache.poi.hssf.usermodel.DVConstraint;
+import org.apache.poi.ss.usermodel.ClientAnchor;
+import org.apache.poi.ss.usermodel.Comment;
+import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.DataValidation;
 import org.apache.poi.ss.usermodel.DataValidationConstraint;
 import org.apache.poi.ss.usermodel.DataValidationHelper;
+import org.apache.poi.ss.usermodel.Drawing;
+import org.apache.poi.ss.usermodel.RichTextString;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFComment;
 import org.apache.poi.xssf.usermodel.XSSFDataValidation;
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
 import org.apache.poi.xssf.usermodel.XSSFName;
@@ -172,9 +178,24 @@ public class ExcelCreator implements CommonData{
 			 * => 결국 제약가능한건 클래스 이름, 클래스에 따른 메소드리스트 정도
 			 * */
 
-			firstrow.createCell(col_index).setCellValue(key);
+			XSSFCell infocell=firstrow.createCell(col_index);
+			infocell.setCellValue(key);
+			Drawing drawing = hidden.createDrawingPatriarch();
+			
+			CreationHelper factory =workbook.getCreationHelper();
+			ClientAnchor anchor= factory.createClientAnchor();
+			anchor.setCol1(col_index);
+			anchor.setCol2(col_index+3);
+			anchor.setRow1(0);
+			anchor.setRow2(2);
+			
+			Comment comment= drawing.createCellComment(anchor);
+			RichTextString str = factory.createRichTextString(info.getClz().getName());
+			comment.setString(str);
+			infocell.setCellComment(comment);
+			
+			
 			Set<Method> mets = info.getMethods();
-
 			Iterator<Method> mit =mets.iterator();
 			if(mets.size() >0){
 
