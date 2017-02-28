@@ -121,7 +121,7 @@ public class ExcelCreator implements CommonData{
 				}
 				else if(val.equals("TestMethod")){
 					xssfSheet.setColumnWidth(cellvalindex, 3000);
-					setValidation("INDIRECT($B2)", xssfSheet, cellvalindex);
+					setValidation("INDIRECT(LEFT($B2,FIND(\"(\",$B2)-1))", xssfSheet, cellvalindex);
 					cell=row.createCell(i);
 					cell.setCellValue(val);
 					cellvalindex++;
@@ -161,34 +161,48 @@ public class ExcelCreator implements CommonData{
 
 	}
 
+	/*
+	 * 1. 클래스 -생성자 파라미터타입 유효성검증 	파라미터 개수가 같은데, 타입이 다른경우 ? 제약을 걸기에 모호함. 생성자는 이름이 같으니까..	
+	 * 2. 클래스 - 메소드리스트 				ok
+	 * 3. 메소드 - 파라미터 타입				1과 같은 이슈.
+	 * 4. 클래스 - 리턴타입					파라미터가 같으나 리턴이 다른건 없음. 타입제약을 걸기엔 조금 무리가 있겠는데?
+	 * => 결국 제약가능한건 클래스 이름, 클래스에 따른 메소드리스트 정도
+	 * => 코멘트를 이용하면 괜찮! 그리고 리스트제약을 풀네임으로 하면 가능하다.
+	 * => 클래스 선택또한  생성자 포함해서 입력하도록 하자.
+	 * 
+	 * @@ 파라미터 이름까지는 리플렉션으로 얻을 수가 없다고한다 카더라. 외부 라이브러리를 써야하나..
+	 * */
+
 	// Create Hidden sheet for DataValidation List.
 	private void hiddensheet(XSSFWorkbook workbook, HashMap<String,ClassInfo> classinfos){
-		XSSFSheet hidden = workbook.createSheet("hidden");
+		//생성자리스트 및 생성자 파라미터 유효성 -완료
+		XSSFSheet cons_param_sheet = workbook.createSheet("ConstructorParamhidden");
+		//메소드-파라미터 유효성
+		XSSFSheet method_param_sheet = workbook.createSheet("MethodParamhidden");
+		//클래스리스트 및 메소드 이름 유효성-완료
+		XSSFSheet class_method_sheet = workbook.createSheet("ClassMethodhidden");
 		Set<String> keys = classinfos.keySet();
 		ClassInfo info =null;
-		XSSFRow firstrow=hidden.createRow(0);
-		Drawing drawing = hidden.createDrawingPatriarch();//to Create Cell Comment
+		XSSFRow clz_met_firstrow=class_method_sheet.createRow(0);
+		XSSFRow met_par_firstrow =method_param_sheet.createRow(0);
+		XSSFRow cons_par_firstrow = cons_param_sheet.createRow(0);
+		Drawing drawing = class_method_sheet.createDrawingPatriarch();//to Create Cell Comment
 		CreationHelper factory =workbook.getCreationHelper();
-		int col_index=0;
+		int clz_met_col_index=0;
+		int total=0;
+		//Class Loop Start
 		for(String key : keys){
 			info =classinfos.get(key);
-			/*
-			 * 1. 클래스 -생성자 파라미터타입 유효성검증 	파라미터 개수가 같은데, 타입이 다른경우 ? 제약을 걸기에 모호함. 생성자는 이름이 같으니까..	
-			 * 2. 클래스 - 메소드리스트 				ok
-			 * 3. 메소드 - 파라미터 타입				1과 같은 이슈.
-			 * 4. 클래스 - 리턴타입					파라미터가 같으나 리턴이 다른건 없음. 타입제약을 걸기엔 조금 무리가 있겠는데?
-			 * => 결국 제약가능한건 클래스 이름, 클래스에 따른 메소드리스트 정도
-			 * */
+			//클래스
+			Class clz= info.getClz();
 
-			//set Class name with package.
-			XSSFCell infocell=firstrow.createCell(col_index);
+			//클래스 -메소드 설정
+			XSSFCell infocell=clz_met_firstrow.createCell(clz_met_col_index);
 			infocell.setCellValue(key);
 
-
-
 			ClientAnchor anchor= factory.createClientAnchor();
-			anchor.setCol1(col_index);
-			anchor.setCol2(col_index+3);
+			anchor.setCol1(clz_met_col_index);
+			anchor.setCol2(clz_met_col_index+3);
 			anchor.setRow1(0);
 			anchor.setRow2(2);
 
@@ -198,14 +212,18 @@ public class ExcelCreator implements CommonData{
 			infocell.setCellComment(comment);
 
 
+			//Method loop 
 			Set<Method> mets = info.getMethods();
 			Iterator<Method> mit =mets.iterator();
 			if(mets.size() >0){
 				XSSFCell currentCell= null;
 				for(int i =1; i <= mets.size() && mit.hasNext(); i ++){
 					Method met= mit.next();
-					XSSFRow row= hidden.getRow(i);
-					if(row == null) row= hidden.createRow(i);
+
+					//클래스 -메소드 부분
+					XSSFRow row= class_method_sheet.getRow(i);
+
+					if(row == null) row= class_method_sheet.createRow(i);
 					Parameter[] params= met.getParameters();
 
 					//set Method Fullname
@@ -217,20 +235,20 @@ public class ExcelCreator implements CommonData{
 						methodStr+=paramStr;
 						if(param_index!=params.length-1)
 							methodStr+=',';
+
+						//METHOD-PARAM SET
+
 					}
 					methodStr+=')';
-					
 					System.out.println(methodStr);
-					
 
-					currentCell= row.createCell(col_index);
+					currentCell= row.createCell(clz_met_col_index);
 					currentCell.setCellValue(methodStr);
-					
-					
+
 					//Set Simple method Name.
 					ClientAnchor methodanchor= factory.createClientAnchor();
-					methodanchor.setCol1(col_index);
-					methodanchor.setCol2(col_index+3);
+					methodanchor.setCol1(clz_met_col_index);
+					methodanchor.setCol2(clz_met_col_index+3);
 					methodanchor.setRow1(i);
 					methodanchor.setRow2(i+1);
 
@@ -238,27 +256,84 @@ public class ExcelCreator implements CommonData{
 					RichTextString method_commentStr = factory.createRichTextString(met.getName());
 					methodcomment.setString(method_commentStr);
 					currentCell.setCellComment(methodcomment);
+
 					
-				}
+					//메소드-파라미터 부분.
+					
+					
+				}//Method loop End
+
+
+
 				//Set Class-Method Data ReferenceList
 				XSSFName namedcell =workbook.createName();
-				namedcell.setNameName(info.getClz().getSimpleName()); //Nameing이 중요.
-				char currentCol=(char) ('A'+col_index);
-				String formula= "hidden!$"+currentCol+"$2:$"+currentCol+"$" + (mets.size()+1);
-				System.out.println("Create : " + formula);
-				namedcell.setRefersToFormula(formula);
-
+				namedcell.setNameName(clz.getSimpleName()); //Nameing이 중요.
+				char currentCol=(char) ('A'+clz_met_col_index);
+				String formula= "ClassMethodhidden!$"+currentCol+"$2:$"+currentCol+"$" + (mets.size()+1);
+//				System.out.println("Create : " + formula);
+				namedcell.setRefersToFormula(formula);				
 			}
-			col_index++;
-		}
+
+			//생성자 리스트 및 생성자 파라미터
+			XSSFRow con_par_row=null;
+			Constructor[] conset= clz.getDeclaredConstructors();
+			Constructor con =null;
+			for(int con_index=0; con_index< conset.length; con_index++){ 
+				con= conset[con_index];
+
+				//다른이름이지만, 같은 유효성을 가리키는 이름 생성. INDIRECT를 위해서 생성함..
+				String consName=info.getClz().getSimpleName()+"(";
+				String consParamNamed="con"+info.getClz().getSimpleName();
+				Parameter[] params= con.getParameters();
+				
+				for(int param_index =0; param_index< params.length; param_index++ ){
+					//생성자 풀스트링 설정
+					Parameter param = params[param_index];
+					consName+=param.getType().getSimpleName()+" "+param.getName();
+					if(param_index != params.length-1) consName+=',';
+
+					//생성자+파라미터 타입으로  네이밍스트링 만듬
+					consParamNamed+=param.getType().getSimpleName();
+					
+					
+					//파라미터 타입 셀생성
+					con_par_row=cons_param_sheet.getRow(param_index+1);
+					if(con_par_row ==null) con_par_row=cons_param_sheet.createRow(param_index+1);
+					XSSFCell paramcell=con_par_row.createCell(total);
+					paramcell.setCellValue(param.getType().getSimpleName());
+//					System.out.println(param.getType());
+				}
+				consName+=')';
+				System.out.println(consName);
+
+				//생성자 셀 생성. .
+				XSSFCell consCell = cons_par_firstrow.createCell(total);
+				consCell.setCellValue(consName);
+				
+				if(params.length>0){
+				//생성자 네임생성
+				XSSFName namedcell= workbook.createName();
+				namedcell.setNameName(consParamNamed);
+				
+				char cell=(char) ('A'+total);
+				String formula="ConstructorParamhidden!$"+cell+"$2:$"+cell+"$"+(params.length+1);
+				namedcell.setRefersToFormula(formula);
+				}
+				total++;
+			}//Constructor Loop End
+
+			clz_met_col_index++;
+		}//Class loop End.
+
+
 
 		//Set Class Data ReferenceList.
 		XSSFName namedcell =workbook.createName();
 		namedcell.setNameName("Class"); //Nameing이 중요.
-		char cell=(char) ('A'+col_index-1);
-		String formula= "hidden!$A$1:$"+cell+"$1";
+		char cell=(char) ('A'+total-1);
+		String formula= "ConstructorParamhidden!$A$1:$"+cell+"$1";
 		namedcell.setRefersToFormula(formula);
-
+		System.out.println("total : " + total);
 
 		//Set hidden Sheet if true=  hidden.
 		workbook.setSheetHidden(1, false);
@@ -283,7 +358,7 @@ public class ExcelCreator implements CommonData{
 		CellRangeAddressList addresslist =null;
 		if(constraint !=null){
 			addresslist = new CellRangeAddressList(1,500,col,col);
-			System.out.println(constraint.getFormula1());
+//			System.out.println(constraint.getFormula1());
 			dataValidation= validationHelper.createValidation(constraint, addresslist);
 
 
