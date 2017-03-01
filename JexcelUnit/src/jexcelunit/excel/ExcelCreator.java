@@ -42,7 +42,7 @@ import jexcelunit.utils.ClassInfo;
  * Vendor  : Taehoon Seo
  * Description : create excel file including classes, methods and constructor informations.
  * */
-public class ExcelCreator implements CommonData{
+public class ExcelCreator{
 	private final int CONSTRUCTOR = 0;
 	private final int METHOD = 1;
 	public final String[] TESTDATASET = {"TestName" ,"TestClass","Constructor Param", "TestMethod", "Method Param", "Expected", "Result", "Success"};

@@ -6,6 +6,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,6 +14,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+
+import jexcelunit.excel.ExcelReader;
 
 import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.*;
@@ -61,6 +65,16 @@ public class TestInvoker {
 		this.method_params=param1;
 	}
 
+	public static Collection<Object[][]> parmeterizingExcel(){
+		ExcelReader reader = new ExcelReader();
+		//메타데이터를 참조할 수 밖에없다.
+		//핸들러 레벨에서 타겟 프로젝트 정보를 생성할것.
+		
+		//reader.readExcel(projectname, rootpath); 
+		//읽어들인 리스트를 String, Class, Object[] Object, String Object로 바까야함.
+		return null;
+	} 
+	
 	//사용자가 예상하는 익셉션이 있는경우 이 함수를 통해 더해준다
 	public static void addException(Class e){
 		exceptionlist.add(e);

@@ -21,7 +21,6 @@ import jexcelunit.excel.TestcaseVO;
 public class TestingHandler extends AbstractHandler {
 
 	
-	
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		// TODO Auto-generated method stub
@@ -46,9 +45,14 @@ public class TestingHandler extends AbstractHandler {
 			//JUnitCore jc= new JUnitCore(); 			
 			
 			/*
-			 * 1. 슈트를 실행하기전 Excel Read하여 실행
-			 * 2. 따라서 ExcelTesting 클래스를 생성해주는 클래스를 하나 생성해준다.
-			 * 3.  이슈 ** 그럼 로그 관리는 어떻게 ?
+			 * 1. 셋업코드가 있는지(모크사용할건가) 여부를 확인.
+			 * 1-1. 있다면 Suite 클래스를 생성해준다. TestInvoker 모듈을 상속한 클래스를 생성해준다/.
+			 * 1-1-1. 이미 Suite클래스가 있는지도 확인할것. 
+			 * 
+			 * 1-2. 아니면 바로 Excel을 읽어서 실행.
+			 * 2.  이슈 ** 로그 관리는 어떻게 할건가 ? 
+			 * 
+			 * 	TARGET PROJECT에 META-INF를 생성한다.
 			 * */
 			//find xlsx file and Read Excel data.
 			ExcelReader reader= new ExcelReader();
