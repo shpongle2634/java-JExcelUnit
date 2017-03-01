@@ -64,7 +64,7 @@ public class TestingHandler extends AbstractHandler {
 						System.out.print("Expect : " +vo.getExpect()+"\t");
 					if(vo.getResult() != null)
 						System.out.print("Result : " +vo.getTestname()+"\t");
-
+					System.out.println();
 				}
 				//log management.
 

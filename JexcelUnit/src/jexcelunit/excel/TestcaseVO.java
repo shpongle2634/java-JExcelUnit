@@ -14,6 +14,8 @@ public class TestcaseVO {
 	private String expect;
 	private String result;
 
+	private boolean success;
+	
 	public TestcaseVO(){
 		constructor_params= new ArrayList<>();
 		method_params = new ArrayList<>();
@@ -62,6 +64,14 @@ public class TestcaseVO {
 	}
 	public void setResult(String result) {
 		this.result = result;
+	}
+
+	public boolean isSuccess() {
+		return success;
+	}
+
+	public void setSuccess(boolean success) {
+		this.success = success;
 	}
 
 }

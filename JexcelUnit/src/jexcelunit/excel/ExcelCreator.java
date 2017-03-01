@@ -8,12 +8,13 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.apache.poi.hssf.usermodel.DVConstraint;
 import org.apache.poi.ss.usermodel.ClientAnchor;
 import org.apache.poi.ss.usermodel.Comment;
 import org.apache.poi.ss.usermodel.CreationHelper;
@@ -22,11 +23,8 @@ import org.apache.poi.ss.usermodel.DataValidationConstraint;
 import org.apache.poi.ss.usermodel.DataValidationHelper;
 import org.apache.poi.ss.usermodel.Drawing;
 import org.apache.poi.ss.usermodel.RichTextString;
-import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFCell;
-import org.apache.poi.xssf.usermodel.XSSFComment;
-import org.apache.poi.xssf.usermodel.XSSFDataValidation;
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
 import org.apache.poi.xssf.usermodel.XSSFName;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -113,15 +111,16 @@ public class ExcelCreator implements CommonData{
 					 * */
 					for(int k=0; k<consCount; k++){
 						cell=row.createCell(i+k);
-						xssfSheet.setColumnWidth(cellvalindex, 4500);
+						xssfSheet.setColumnWidth(i+k, 4500);
 						cell.setCellValue(val+(k+1));
+						
 					}
 					i+=consCount-1;
 					cellvalindex++;
 				}
 				else if(val.equals("TestMethod")){
-					xssfSheet.setColumnWidth(cellvalindex, 3000);
-					setValidation("INDIRECT(LEFT($B2,FIND(\"(\",$B2)-1))", xssfSheet, cellvalindex);
+					xssfSheet.setColumnWidth(i, 3000);
+					setValidation("INDIRECT(LEFT($B2,FIND(\"(\",$B2)-1))", xssfSheet, i);
 					cell=row.createCell(i);
 					cell.setCellValue(val);
 					cellvalindex++;
@@ -131,14 +130,14 @@ public class ExcelCreator implements CommonData{
 
 					for(int k=0; k<metsCount; k++){
 						cell=row.createCell(i+k);
-						xssfSheet.setColumnWidth(cellvalindex, 4000);
+						xssfSheet.setColumnWidth(i+k, 4000);
 						cell.setCellValue(val+(k+1));
 					}
 					i+=metsCount-1;
 					cellvalindex++;
 				}
 				else{
-					xssfSheet.setColumnWidth(cellvalindex, 3000);
+					xssfSheet.setColumnWidth(i, 3000);
 					cell=row.createCell(i);
 					cell.setCellValue(val);
 					cellvalindex++;
@@ -189,7 +188,7 @@ public class ExcelCreator implements CommonData{
 		Drawing drawing = class_method_sheet.createDrawingPatriarch();//to Create Cell Comment
 		CreationHelper factory =workbook.getCreationHelper();
 		int clz_met_col_index=0;
-		int total=0;
+		int cons_total=0, mets_total=0;
 		//Class Loop Start
 		for(String key : keys){
 			info =classinfos.get(key);
@@ -212,39 +211,68 @@ public class ExcelCreator implements CommonData{
 			infocell.setCellComment(comment);
 
 
+			/*
+			 * To do : 
+			 * 1. 메소드+파라미터타입 네임생성 ok
+			 * 2. 타입리스트 생성 ok
+			 * 3. 데이터 유효성 설정.  보류
+			 * 4. Reader에서 Testing 모듈로 전환 시작.
+			 * 5. 로그 관리 :
+			 * 6. 
+			 * */
 			//Method loop 
 			Set<Method> mets = info.getMethods();
 			Iterator<Method> mit =mets.iterator();
 			if(mets.size() >0){
-				XSSFCell currentCell= null;
+				XSSFCell clz_met_cell= null;
+				XSSFCell met_par_cell=null;
 				for(int i =1; i <= mets.size() && mit.hasNext(); i ++){
 					Method met= mit.next();
 
 					//클래스 -메소드 부분
-					XSSFRow row= class_method_sheet.getRow(i);
+					XSSFRow clz_met_row= class_method_sheet.getRow(i);
 
-					if(row == null) row= class_method_sheet.createRow(i);
+					if(clz_met_row == null) clz_met_row= class_method_sheet.createRow(i);
 					Parameter[] params= met.getParameters();
 
-					//set Method Fullname
+					//Search method Params
 					String methodStr =met.getReturnType().getSimpleName()+" "+met.getName() + "(";
+					String methodNamedStr="MET"+met.getName();
 					Parameter param= null;
 					for(int param_index=0; param_index<params.length; param_index++){
+
 						param= params[param_index];
-						String paramStr = param.getType().getSimpleName()+ " " + param.getName();
+						String paramType= param.getType().getSimpleName();
+						String paramStr = paramType+ " " + param.getName();
 						methodStr+=paramStr;
 						if(param_index!=params.length-1)
 							methodStr+=',';
 
 						//METHOD-PARAM SET
+						if(param.getType().isArray())
+							methodNamedStr+=paramType.substring(0, paramType.indexOf('['))+"Array";
+						else
+							methodNamedStr+= paramType;
+
+						XSSFRow met_par_row= method_param_sheet.getRow(param_index+1); //2번째 줄에서부터 생성할것.
+						if(met_par_row == null) met_par_row= method_param_sheet.createRow(param_index+1);
+						XSSFCell paramTypeCell = met_par_row.createCell(mets_total); //파라미터 타입 리스트 생성.
+						paramTypeCell.setCellValue(paramType);
 
 					}
 					methodStr+=')';
 					System.out.println(methodStr);
 
-					currentCell= row.createCell(clz_met_col_index);
-					currentCell.setCellValue(methodStr);
+					//ClassMethod sheet
+					clz_met_cell= clz_met_row.createCell(clz_met_col_index);
+					clz_met_cell.setCellValue(methodStr);
 
+					//MethodParam Sheet
+					met_par_cell = met_par_firstrow.createCell(mets_total);
+					met_par_cell.setCellValue(methodStr);
+
+					
+					
 					//Set Simple method Name.
 					ClientAnchor methodanchor= factory.createClientAnchor();
 					methodanchor.setCol1(clz_met_col_index);
@@ -255,12 +283,18 @@ public class ExcelCreator implements CommonData{
 					Comment methodcomment= drawing.createCellComment(methodanchor);
 					RichTextString method_commentStr = factory.createRichTextString(met.getName());
 					methodcomment.setString(method_commentStr);
-					currentCell.setCellComment(methodcomment);
+					clz_met_cell.setCellComment(methodcomment);
 
+					if(params.length>0){
+						//Method Parameter List Name.
+						XSSFName namedCell= workbook.createName();
+						namedCell.setNameName(methodNamedStr);
+						char cell = (char) ('A'+ mets_total);
+						String formula= "MethodParamhidden!$"+cell+"$2:$"+cell+"$" + (params.length+1);
+						namedCell.setRefersToFormula(formula);
+					}
 					
-					//메소드-파라미터 부분.
-					
-					
+					mets_total++;
 				}//Method loop End
 
 
@@ -270,7 +304,7 @@ public class ExcelCreator implements CommonData{
 				namedcell.setNameName(clz.getSimpleName()); //Nameing이 중요.
 				char currentCol=(char) ('A'+clz_met_col_index);
 				String formula= "ClassMethodhidden!$"+currentCol+"$2:$"+currentCol+"$" + (mets.size()+1);
-//				System.out.println("Create : " + formula);
+				//				System.out.println("Create : " + formula);
 				namedcell.setRefersToFormula(formula);				
 			}
 
@@ -283,9 +317,9 @@ public class ExcelCreator implements CommonData{
 
 				//다른이름이지만, 같은 유효성을 가리키는 이름 생성. INDIRECT를 위해서 생성함..
 				String consName=info.getClz().getSimpleName()+"(";
-				String consParamNamed="con"+info.getClz().getSimpleName();
+				String consParamNamed="CON"+info.getClz().getSimpleName();
 				Parameter[] params= con.getParameters();
-				
+
 				for(int param_index =0; param_index< params.length; param_index++ ){
 					//생성자 풀스트링 설정
 					Parameter param = params[param_index];
@@ -294,32 +328,32 @@ public class ExcelCreator implements CommonData{
 
 					//생성자+파라미터 타입으로  네이밍스트링 만듬
 					consParamNamed+=param.getType().getSimpleName();
-					
-					
+
+
 					//파라미터 타입 셀생성
 					con_par_row=cons_param_sheet.getRow(param_index+1);
 					if(con_par_row ==null) con_par_row=cons_param_sheet.createRow(param_index+1);
-					XSSFCell paramcell=con_par_row.createCell(total);
+					XSSFCell paramcell=con_par_row.createCell(cons_total);
 					paramcell.setCellValue(param.getType().getSimpleName());
-//					System.out.println(param.getType());
+					//					System.out.println(param.getType());
 				}
 				consName+=')';
 				System.out.println(consName);
 
 				//생성자 셀 생성. .
-				XSSFCell consCell = cons_par_firstrow.createCell(total);
+				XSSFCell consCell = cons_par_firstrow.createCell(cons_total);
 				consCell.setCellValue(consName);
-				
+
 				if(params.length>0){
-				//생성자 네임생성
-				XSSFName namedcell= workbook.createName();
-				namedcell.setNameName(consParamNamed);
-				
-				char cell=(char) ('A'+total);
-				String formula="ConstructorParamhidden!$"+cell+"$2:$"+cell+"$"+(params.length+1);
-				namedcell.setRefersToFormula(formula);
+					//생성자 네임생성
+					XSSFName namedcell= workbook.createName();
+					namedcell.setNameName(consParamNamed);
+
+					char cell=(char) ('A'+cons_total);
+					String formula="ConstructorParamhidden!$"+cell+"$2:$"+cell+"$"+(params.length+1);
+					namedcell.setRefersToFormula(formula);
 				}
-				total++;
+				cons_total++;
 			}//Constructor Loop End
 
 			clz_met_col_index++;
@@ -330,10 +364,10 @@ public class ExcelCreator implements CommonData{
 		//Set Class Data ReferenceList.
 		XSSFName namedcell =workbook.createName();
 		namedcell.setNameName("Class"); //Nameing이 중요.
-		char cell=(char) ('A'+total-1);
+		char cell=(char) ('A'+cons_total-1);
 		String formula= "ConstructorParamhidden!$A$1:$"+cell+"$1";
 		namedcell.setRefersToFormula(formula);
-		System.out.println("total : " + total);
+		System.out.println("total : " + cons_total);
 
 		//Set hidden Sheet if true=  hidden.
 		workbook.setSheetHidden(1, false);
@@ -358,7 +392,7 @@ public class ExcelCreator implements CommonData{
 		CellRangeAddressList addresslist =null;
 		if(constraint !=null){
 			addresslist = new CellRangeAddressList(1,500,col,col);
-//			System.out.println(constraint.getFormula1());
+			//			System.out.println(constraint.getFormula1());
 			dataValidation= validationHelper.createValidation(constraint, addresslist);
 
 
