@@ -20,6 +20,8 @@ import jexcelunit.excel.TestcaseVO;
 
 public class TestingHandler extends AbstractHandler {
 
+	
+	
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		// TODO Auto-generated method stub
@@ -33,11 +35,21 @@ public class TestingHandler extends AbstractHandler {
 		Object[] results = (Object[]) dlg.getResult();
 		IProject targetproject =null;
 		//		ArrayList<Class> classlist=null;
+		
+		if(results.length>0)
 		for(Object result : results){
 
 			targetproject =root.getProject(result.toString().substring(2));
 			System.out.println(targetproject.getName());
-
+			
+			//creator must Create Suite Class extended TestInvoker
+			//JUnitCore jc= new JUnitCore(); 			
+			
+			/*
+			 * 1. 슈트를 실행하기전 Excel Read하여 실행
+			 * 2. 따라서 ExcelTesting 클래스를 생성해주는 클래스를 하나 생성해준다.
+			 * 3.  이슈 ** 그럼 로그 관리는 어떻게 ?
+			 * */
 			//find xlsx file and Read Excel data.
 			ExcelReader reader= new ExcelReader();
 			try {
