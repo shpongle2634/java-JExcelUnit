@@ -1,6 +1,8 @@
 package jexcelunit.testinvoker;
 
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -17,6 +19,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 import jexcelunit.excel.ExcelReader;
+import jexcelunit.excel.TestcaseVO;
 
 import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.*;
@@ -47,7 +50,7 @@ public class TestInvoker {
 	private static ArrayList<Class> exceptionlist=new ArrayList<Class>();//사용자 정의 예외 클래스들을 담아두는 곳.
 	private static Method[] methods; //테스트할 객체의 메소드를 받는부분
 	private static int testnumber=0; //테스트 run 넘버
-
+	
 	//테스트 케이스들을 확인할 method_params
 	private Object[] constructor_params=null;
 	private String testname=null, methodname=null;
@@ -55,8 +58,8 @@ public class TestInvoker {
 	private Object expectedResult=null;
 	private Class targetclz=null;
 
-	//테스트이름, 테스트할 클래스, 예상결과, 테스트할 메소드이름, 파라미터들. 테스트케이스를 JUnit이 읽어와 실행시키는 부분이다.
-	public TestInvoker(String testname,Class targetclz,Object[] constructor_params,Object expectedResult,String methodname,Object[] param1){
+	//테스트이름, 테스트할 클래스, 테스트파라미터,  테스트할 메소드이름, 파라미터들,예상결과를 JUnit이 읽어와 실행시키는 부분이다.
+	public TestInvoker(String testname,Class targetclz,Object[] constructor_params,String methodname,Object[] param1,Object expectedResult){
 		this.testname= (String)testname;
 		this.targetclz=targetclz;
 		this.constructor_params=constructor_params;
@@ -69,11 +72,45 @@ public class TestInvoker {
 		ExcelReader reader = new ExcelReader();
 		//메타데이터를 참조할 수 밖에없다.
 		//핸들러 레벨에서 타겟 프로젝트 정보를 생성할것.
+		File file = new File(".");
+		ArrayList<TestcaseVO> testcases=null;
+		Object[][] parameterized= null;
+		
+		try {
+			testcases = reader.readExcel(file.getParent(), file.getPath());
+			parameterized = new Object[testcases.size()][6];
+			TestcaseVO currentCase =null;
+			for(int row_index = 0; row_index < testcases.size(); row_index++){
+				currentCase = testcases.get(row_index);
+//				parameterized[row_index][0]=currentCase.getTestname();
+//				parameterized[row_index][1]=currentCase.getTestclass();
+//				parameterized[row_index][2]=currentCase.getConstructorParams().toArray();
+//				parameterized[row_index][3]=currentCase.getTestmethod();
+//				parameterized[row_index][4]=currentCase.getMethodParams().toArray();
+//				parameterized[row_index][5]=currentCase.getResult();
+				
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 		//reader.readExcel(projectname, rootpath); 
 		//읽어들인 리스트를 String, Class, Object[] Object, String Object로 바까야함.
 		return null;
 	} 
+	
+	
+	public static void setUp() {
+		// TODO Auto-generated method stub
+		
+	}
+	
+	@Parameters
+	public static Collection<Object[][]> parameterized(){
+		setUp();
+		return parmeterizingExcel();
+	}
 	
 	//사용자가 예상하는 익셉션이 있는경우 이 함수를 통해 더해준다
 	public static void addException(Class e){
