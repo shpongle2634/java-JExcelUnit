@@ -1,18 +1,29 @@
 package jexcelunit.excel;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 
 public class TestcaseVO {
 
 	private String testname;
-	private String testclass;
+	private Class testclass;
+	private Constructor con;
 	
-	private ArrayList<String> constructor_params =null;
-	private ArrayList<String> method_params = null;
+
+	private Class[] cons_param;
+	private Method met;
+	private Class[] met_param;
+	private Object result;	
+	private Object expect;
 	
-	private String testmethod;
-	private String expect;
-	private String result;
+	private ArrayList<Object> constructor_params =null;
+	private ArrayList<Object> method_params = null;
+	
+	
+	
+//	private String testmethod;
+	
 
 	private boolean success;
 	
@@ -21,17 +32,17 @@ public class TestcaseVO {
 		method_params = new ArrayList<>();
 	}
 	
-	public void addConstructorParam(String data){
+	public void addConstructorParam(Object data){
 		constructor_params.add(data);
 	}
-	public ArrayList<String> getConstructorParams(){
+	public ArrayList<Object> getConstructorParams(){
 		return constructor_params;
 	}
 	
-	public void addMethodParam(String data){
+	public void addMethodParam(Object data){
 		method_params.add(data);
 	}
-	public ArrayList<String> getMethodParams(){
+	public ArrayList<Object> getMethodParams(){
 		return method_params;
 	}
 	
@@ -41,28 +52,23 @@ public class TestcaseVO {
 	public void setTestname(String testname) {
 		this.testname = testname;
 	}
-	public String getTestclass() {
+	public Class getTestclass() {
 		return testclass;
 	}
-	public void setTestclass(String testclass) {
+	public void setTestclass(Class testclass) {
 		this.testclass = testclass;
 	}
-	public String getTestmethod() {
-		return testmethod;
-	}
-	public void setTestmethod(String testmethod) {
-		this.testmethod = testmethod;
-	}
-	public String getExpect() {
+
+	public Object getExpect() {
 		return expect;
 	}
-	public void setExpect(String expect) {
+	public void setExpect(Object expect) {
 		this.expect = expect;
 	}
-	public String getResult() {
+	public Object getResult() {
 		return result;
 	}
-	public void setResult(String result) {
+	public void setResult(Object result) {
 		this.result = result;
 	}
 
@@ -74,4 +80,37 @@ public class TestcaseVO {
 		this.success = success;
 	}
 
+	
+	public Constructor getCon() {
+		return con;
+	}
+
+	public void setCon(Constructor con) {
+		this.con = con;
+	}
+
+	public Class[] getCons_param() {
+		return cons_param;
+	}
+
+	public void setCons_param(Class[] cons_param) {
+		this.cons_param = cons_param;
+	}
+
+	public Method getMet() {
+		return met;
+	}
+
+	public void setMet(Method met) {
+		this.met = met;
+	}
+
+	public Class[] getMet_param() {
+		return met_param;
+	}
+
+	public void setMet_param(Class[] met_param) {
+		this.met_param = met_param;
+	}
+	
 }

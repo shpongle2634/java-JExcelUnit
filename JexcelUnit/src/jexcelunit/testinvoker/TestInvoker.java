@@ -76,26 +76,40 @@ public class TestInvoker {
 		ArrayList<TestcaseVO> testcases=null;
 		Object[][] parameterized= null;
 		
-		try {
-			testcases = reader.readExcel(file.getParent(), file.getPath());
-			parameterized = new Object[testcases.size()][6];
-			TestcaseVO currentCase =null;
-			for(int row_index = 0; row_index < testcases.size(); row_index++){
-				currentCase = testcases.get(row_index);
-//				parameterized[row_index][0]=currentCase.getTestname();
-//				parameterized[row_index][1]=currentCase.getTestclass();
-//				parameterized[row_index][2]=currentCase.getConstructorParams().toArray();
-//				parameterized[row_index][3]=currentCase.getTestmethod();
-//				parameterized[row_index][4]=currentCase.getMethodParams().toArray();
-//				parameterized[row_index][5]=currentCase.getResult();
+		if(file.exists()){
+			try {
+				File realPath= new File(file.getCanonicalPath());
 				
+				testcases = reader.readExcel(realPath.getName(), file.getCanonicalPath());
+				TestcaseVO currentCase =null;
+
+				if(!testcases.isEmpty())
+				{
+					for(TestcaseVO c : testcases){
+						System.out.println(c.getTestname());
+					}
+					
+				}
+				parameterized = new Object[testcases.size()][6];
+				for(int row_index = 0; row_index < testcases.size(); row_index++){
+					currentCase = testcases.get(row_index);
+//					parameterized[row_index][0]=currentCase.getTestname();
+//					parameterized[row_index][1]=currentCase.getTestclass();
+//					parameterized[row_index][2]=currentCase.getConstructorParams().toArray();
+//					parameterized[row_index][3]=currentCase.getTestmethod();
+//					parameterized[row_index][4]=currentCase.getMethodParams().toArray();
+//					parameterized[row_index][5]=currentCase.getResult();	
+					
+					//To do list : 1. Testinvoker 메소드 수정 (con, method을 바로 실행하도록..
+					//2. Custom Parameter Converting 모크객체. Date Format 이슈 처리.
+					//3. 로그
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
-		
-		//reader.readExcel(projectname, rootpath); 
+
 		//읽어들인 리스트를 String, Class, Object[] Object, String Object로 바까야함.
 		return null;
 	} 

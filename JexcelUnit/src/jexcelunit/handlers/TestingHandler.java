@@ -59,7 +59,7 @@ public class TestingHandler extends AbstractHandler {
 								"public class TestSuite extends TestInvoker{",
 								"\tpublic TestSuite(String testname, Class targetclz, Object[] constructor_params, Object expectedResult,",
 								"\tString methodname, Object[] param1) {\n",
-								"\t\tsuper(testname, targetclz, constructor_params, expectedResult, methodname, param1);",
+								"\t\tsuper(testname, targetclz, constructor_params, methodname, param1,expectedResult);",
 								"\t}",
 								"\tprivate void setup() {",
 								"\t\t/* Make Your Mock Objects  using mockObject.put(\"mock name\", mock object);",
@@ -93,40 +93,6 @@ public class TestingHandler extends AbstractHandler {
 				 * 
 				 * 	TARGET PROJECT에 META-INF를 생성한다.
 				 * */
-				//find xlsx file and Read Excel data.
-				//				ExcelReader reader= new ExcelReader();
-				//				try {
-				//
-				//					ArrayList<TestcaseVO> caselist= null;
-				//					caselist = reader.readExcel(targetproject.getName(), targetproject.getLocation().toString());
-				//
-				//					//give caselist to testing module. 
-				//					for(TestcaseVO vo : caselist){
-				//						System.out.print("Testname : " +vo.getTestname() +"\t");
-				//						System.out.print("TestClass : " +vo.getTestclass()+"\t");
-				//						ArrayList<String> consparams= vo.getConstructorParams();
-				//						if(consparams.size() >0){
-				//							for(String param : consparams) System.out.print("ConsParam : " + param +"\t");
-				//						}
-				//						System.out.print("TestMethod : " +vo.getTestmethod()+"\t");
-				//
-				//						ArrayList<String> metsparams= vo.getMethodParams();
-				//						if(metsparams.size() >0){
-				//							for(String param : metsparams) 
-				//								System.out.print("MethodParam : " + param +"\t");
-				//						}
-				//						if(vo.getExpect()!= null)
-				//							System.out.print("Expect : " +vo.getExpect()+"\t");
-				//						if(vo.getResult() != null)
-				//							System.out.print("Result : " +vo.getTestname()+"\t");
-				//						System.out.println();
-				//					}
-				//					//log management.
-				//
-				//				} catch (IOException e) {
-				//					// TODO Auto-generated catch block
-				//					e.printStackTrace();
-				//				}
 
 			}
 

@@ -197,20 +197,24 @@ public class ExcelCreator{
 
 			//클래스 -메소드 설정
 			XSSFCell infocell=clz_met_firstrow.createCell(clz_met_col_index);
-			infocell.setCellValue(key);
+			infocell.setCellValue(info.getClz().getName());
+//			
+//			XSSFName classfullname = workbook.createName();
+//			classfullname.setNameName("FULLNAME"+key);
+//			classfullname.setRefersToFormula(info.getClz().getName());
 
-			ClientAnchor anchor= factory.createClientAnchor();
-			anchor.setCol1(clz_met_col_index);
-			anchor.setCol2(clz_met_col_index+3);
-			anchor.setRow1(0);
-			anchor.setRow2(2);
-
-			Comment comment= drawing.createCellComment(anchor);
-			RichTextString str = factory.createRichTextString(info.getClz().getName());
-			comment.setString(str);
-			infocell.setCellComment(comment);
-
-
+//			ClientAnchor anchor= factory.createClientAnchor();
+//			anchor.setCol1(clz_met_col_index);
+//			anchor.setCol2(clz_met_col_index+3);
+//			anchor.setRow1(0);
+//			anchor.setRow2(2);
+//
+//			Comment comment= drawing.createCellComment(anchor);
+//			RichTextString str = factory.createRichTextString(info.getClz().getName());
+//			comment.setString(str);
+//			infocell.setCellComment(comment);
+			
+			
 			/*
 			 * To do : 
 			 * 1. 메소드+파라미터타입 네임생성 ok
