@@ -45,6 +45,7 @@ public class ExcelReader {
 		newInstancable.add(Integer.class);
 		newInstancable.add(Short.class);
 		newInstancable.add(Float.class);
+		newInstancable.add(Byte.class);
 //		newInstancable.add(short.class);
 //		newInstancable.add(double.class);
 //		newInstancable.add(int.class);
@@ -142,8 +143,8 @@ public class ExcelReader {
 			String classFullname= classFullNames.get(clzname);//패키지이름을 포함한 클래스명.
 
 			//파라미터 분리.
-			String paramFullText =fullcons.substring(fullcons.indexOf('('),fullcons.indexOf(')'));
-			String[] paramsText= paramFullText.split(",");
+			String paramFullText =fullcons.substring(fullcons.indexOf('(')+1,fullcons.indexOf(')'));
+			String[] paramsText=paramFullText.equals("")?new String[]{}:paramFullText.split(",");
 
 			try {
 				Class testClass= Class.forName(classFullname);
@@ -164,7 +165,7 @@ public class ExcelReader {
 						}	
 					}else find=false;
 					if(find){ //생성자 찾음.
-						vo.setCon(con);
+						vo.setConstructor(con);
 						if(params!=null || params.length!=0)
 							vo.setCons_param(params);
 						break;
@@ -270,14 +271,16 @@ public class ExcelReader {
 			else if(targetType.equals(char[].class))
 				return paramString.toCharArray();
 			else if(targetType.equals(int.class))	return Integer.parseInt(paramString);
-			else if(targetType.equals(double.class))	return Integer.parseInt(paramString);
-			else if(targetType.equals(float.class))	return Integer.parseInt(paramString);
-			else if(targetType.equals(short.class))	return Integer.parseInt(paramString);
+			else if(targetType.equals(double.class))	return Double.parseDouble(paramString);
+			else if(targetType.equals(float.class))	return Float.parseFloat(paramString);
+			else if(targetType.equals(short.class))	return Short.parseShort(paramString);
 			else if(targetType.equals(Date.class))	
 			{
-				return new Date();
-				
+				return new Date(); //need To parse
 			}	
+			else if(targetType.equals(boolean.class)) return Boolean.parseBoolean(paramString);
+			else if(targetType.equals(byte.class)) return Byte.parseByte(paramString);
+			
 			else //mock;
 			{
 				Constructor con =null;

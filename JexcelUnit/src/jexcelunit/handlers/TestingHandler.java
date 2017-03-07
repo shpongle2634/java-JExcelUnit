@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.FileWriter;
 
 import java.io.PrintWriter;
-
+import java.lang.reflect.Method;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -54,12 +54,12 @@ public class TestingHandler extends AbstractHandler {
 					try {
 						pw =  new PrintWriter(new FileWriter(suiteclass));
 
-						String importinvoker= "import jexcelunit.testinvoker.TestInvoker;\n";
+						String importinvoker= "import jexcelunit.testinvoker.TestInvoker;\nimport java.lang.reflect.Method;\nimport java.lang.reflect.Constructor;\n\n";
 						String[] classcode={
 								"public class TestSuite extends TestInvoker{",
-								"\tpublic TestSuite(String testname, Class targetclz, Object[] constructor_params, Object expectedResult,",
-								"\tString methodname, Object[] param1) {\n",
-								"\t\tsuper(testname, targetclz, constructor_params, methodname, param1,expectedResult);",
+								"\tpublic TestSuite(String testname, Class targetclz,Constructor constructor, Object[] constructor_params, Method targetmethod,",
+								"\tObject[] param1, Object expectedResult) {\n",
+								"\t\tsuper(testname, targetclz,constructor,constructor_params, targetmethod, param1, expectedResult);",
 								"\t}",
 								"\tprivate void setup() {",
 								"\t\t/* Make Your Mock Objects  using mockObject.put(\"mock name\", mock object);",

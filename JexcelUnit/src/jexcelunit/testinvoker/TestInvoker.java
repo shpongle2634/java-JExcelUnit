@@ -6,8 +6,10 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,38 +50,44 @@ import static org.hamcrest.CoreMatchers.*;
 public class TestInvoker {
 	private static Map<Class, Object> classmap= new HashMap<Class, Object>(); //해쉬맵으로 테스트에 필요한 객체들을 하나씩만 유지한다.
 	private static ArrayList<Class> exceptionlist=new ArrayList<Class>();//사용자 정의 예외 클래스들을 담아두는 곳.
-	private static Method[] methods; //테스트할 객체의 메소드를 받는부분
-	private static int testnumber=0; //테스트 run 넘버
+	//	private static Method[] methods; //테스트할 객체의 메소드를 받는부분
+	private static HashMap<String,Object> mock=new HashMap<String,Object>();//모크객체 모음
 	
+	private static int testnumber=0; //테스트 run 넘버
+
 	//테스트 케이스들을 확인할 method_params
+	private String testname=null;
+	private Class targetclz=null;
+	private Constructor constructor = null;
 	private Object[] constructor_params=null;
-	private String testname=null, methodname=null;
+	private Method targetmethod=null;
 	private Object[] method_params=null;
 	private Object expectedResult=null;
-	private Class targetclz=null;
+
 
 	//테스트이름, 테스트할 클래스, 테스트파라미터,  테스트할 메소드이름, 파라미터들,예상결과를 JUnit이 읽어와 실행시키는 부분이다.
-	public TestInvoker(String testname,Class targetclz,Object[] constructor_params,String methodname,Object[] param1,Object expectedResult){
+	public TestInvoker(String testname,Class targetclz,Constructor constructor,Object[] constructor_params,Method targetmethod,Object[] param1,Object expectedResult){
 		this.testname= (String)testname;
 		this.targetclz=targetclz;
+		this.constructor=constructor;
 		this.constructor_params=constructor_params;
 		this.expectedResult=expectedResult;
-		this.methodname=(String) methodname;
+		this.targetmethod=targetmethod;
 		this.method_params=param1;
 	}
 
-	public static Collection<Object[][]> parmeterizingExcel(){
+	public static Collection parmeterizingExcel(){
 		ExcelReader reader = new ExcelReader();
 		//메타데이터를 참조할 수 밖에없다.
 		//핸들러 레벨에서 타겟 프로젝트 정보를 생성할것.
 		File file = new File(".");
 		ArrayList<TestcaseVO> testcases=null;
 		Object[][] parameterized= null;
-		
+
 		if(file.exists()){
 			try {
 				File realPath= new File(file.getCanonicalPath());
-				
+
 				testcases = reader.readExcel(realPath.getName(), file.getCanonicalPath());
 				TestcaseVO currentCase =null;
 
@@ -88,18 +96,19 @@ public class TestInvoker {
 					for(TestcaseVO c : testcases){
 						System.out.println(c.getTestname());
 					}
-					
+
 				}
-				parameterized = new Object[testcases.size()][6];
+				parameterized = new Object[testcases.size()][7];
 				for(int row_index = 0; row_index < testcases.size(); row_index++){
 					currentCase = testcases.get(row_index);
-//					parameterized[row_index][0]=currentCase.getTestname();
-//					parameterized[row_index][1]=currentCase.getTestclass();
-//					parameterized[row_index][2]=currentCase.getConstructorParams().toArray();
-//					parameterized[row_index][3]=currentCase.getTestmethod();
-//					parameterized[row_index][4]=currentCase.getMethodParams().toArray();
-//					parameterized[row_index][5]=currentCase.getResult();	
-					
+					parameterized[row_index][0]=currentCase.getTestname();
+					parameterized[row_index][1]=currentCase.getTestclass();
+					parameterized[row_index][2]=currentCase.getConstructor();
+					parameterized[row_index][3]=currentCase.getConstructorParams().toArray();
+					parameterized[row_index][4]=currentCase.getMet();
+					parameterized[row_index][5]=currentCase.getMethodParams().toArray();
+					parameterized[row_index][6]=currentCase.getResult();	
+
 					//To do list : 1. Testinvoker 메소드 수정 (con, method을 바로 실행하도록..
 					//2. Custom Parameter Converting 모크객체. Date Format 이슈 처리.
 					//3. 로그
@@ -111,21 +120,21 @@ public class TestInvoker {
 		}
 
 		//읽어들인 리스트를 String, Class, Object[] Object, String Object로 바까야함.
-		return null;
+		return Arrays.asList(parameterized);
 	} 
-	
-	
+
+	//사용안함.
 	public static void setUp() {
 		// TODO Auto-generated method stub
-		
+
 	}
-	
-	@Parameters
+
+	@Parameters( name = "{index}: {0}")
 	public static Collection<Object[][]> parameterized(){
 		setUp();
 		return parmeterizingExcel();
 	}
-	
+
 	//사용자가 예상하는 익셉션이 있는경우 이 함수를 통해 더해준다
 	public static void addException(Class e){
 		exceptionlist.add(e);
@@ -147,103 +156,57 @@ public class TestInvoker {
 				}
 			}
 	}
-	private Class unBoxing(Class wrapper){
-		switch(wrapper.getTypeName().charAt(10)){
-		case 'S': return wrapper.getTypeName().contains("Short")?short.class:String.class;							
-		case 'B': return wrapper.getTypeName().contains("Byte")?Byte.class:Boolean.class;
-		case 'C':return char.class;
-		case 'I':return int.class;
-		case 'L':return long.class;
-		case 'D':return double.class;
-		case 'F':return float.class;
-		case 'V':return void.class;
-		default : return null;
-		}
-	}
-	
-	private Constructor findConstructor(ArrayList<Class> paramclzlist){
-		Constructor con=null;
-		Class[] paramclz=null, temp=null;
-		try{
-			if(paramclzlist.size() > 1){//need unboxing
-				paramclz=new Class[paramclzlist.size()]; int index=0;
-				for(Class c: paramclzlist){
-					if(isNeedUnBoxing(c)){
-						paramclz[index++]=unBoxing(c);
-					}else paramclz[index++]=c;			
-				}
-				//for(Class c : paramclz) System.out.println(c);
-				con =targetclz.getConstructor(paramclz);
-			}
-			else{ 
-				paramclz=new Class[]{(Class)paramclzlist.get(0)};
-				con =targetclz.getConstructor(paramclz);
-			}
 
-
-		}catch (Exception e){
-			handleException(e);
-		}
-		return con;
-	}
+	//	private Class unBoxing(Class wrapper){
+	//		switch(wrapper.getTypeName().charAt(10)){
+	//		case 'S': return wrapper.getTypeName().contains("Short")?short.class:String.class;							
+	//		case 'B': return wrapper.getTypeName().contains("Byte")?Byte.class:Boolean.class;
+	//		case 'C':return char.class;
+	//		case 'I':return int.class;
+	//		case 'L':return long.class;
+	//		case 'D':return double.class;
+	//		case 'F':return float.class;
+	//		case 'V':return void.class;
+	//		default : return null;
+	//		}
+	//	}
 
 	@SuppressWarnings("unused")
 	@Before
 	public void setObj(){
-		if(!classmap.containsKey(targetclz)&& methodname !=null){ //실행할 객체가 없는경우
+		if(!classmap.containsKey(targetclz)&& targetmethod !=null){ //실행할 객체가 없는경우
 			//System.out.println(classmap.containsKey(targetclz)+"새로생성");
-			try{
-				ArrayList<Class> paramclzlist=new ArrayList<Class>();
-				Constructor con=null;
-				if( constructor_params!=null){
-					for(int i=0; i< constructor_params.length;i++){
-						//System.out.println(i + " : " + constructor_params[i]);
-						paramclzlist.add(constructor_params[i].getClass());
-					}
-					con=findConstructor(paramclzlist);	
-				}
-				if(con !=null){
-					con.setAccessible(true);
-					classmap.put(targetclz, con.newInstance(constructor_params));
-				}
-				else{
-					con=targetclz.getDeclaredConstructor();
-					con.setAccessible(true);
-					classmap.put(targetclz, con.newInstance());
-				}
-			}catch(Exception e){handleException(e);}
+			constructor.setAccessible(true);
+			try {
+				if(constructor_params.length==0)
+					classmap.put(targetclz, constructor.newInstance());
+				//타입이 안맞으면 mock 객체 가져올것.
+				else
+					classmap.put(targetclz, constructor.newInstance(constructor_params));
+			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+					| InvocationTargetException e) {
+				// TODO Auto-generated catch block
+				handleException(e);
+			}
 		}
 	}
 
 	private void constructor_test(){
 		System.out.println( "\n"+(testnumber++) + " : "+testname +"\n 테스트 클래스 : " +targetclz.getSimpleName());//테스트 번호와 어떤객체로부터  테스트가 이루어지는지출력
 		try{
-			ArrayList<Class> paramclzlist=new ArrayList<Class>();
-			Constructor con=null;
-			if( constructor_params!=null){
-				//System.out.println("constructor_params !=null");
-				for(int i=0; i< constructor_params.length;i++){
-					paramclzlist.add(constructor_params[i].getClass());
-				}
-				//System.out.println("add params");
-				con=findConstructor(paramclzlist);
-				//System.out.println("get constructor");
-				if(con !=null){
-					//System.out.println("con !=null");
-					con.setAccessible(true);
-					assertNotNull(con.newInstance(constructor_params));
-				}
-				else{
-					fail();
-				}
-			}
-			else{
-				con=targetclz.getDeclaredConstructor();
-				con.setAccessible(true);
-				assertNotNull(con.newInstance());
-			}
+			//
+			constructor.setAccessible(true);
+			
+			if(constructor_params.length==0)
+				assertNotNull(constructor.newInstance());
+			//타입이 안맞으면 mock 객체 가져올것.
+			else
+				assertNotNull(constructor.newInstance(constructor_params));
+
 		}catch(Exception e){handleException(e);}
 	}
+
+
 	private boolean isNeedUnBoxing(Class clz){
 		if(clz.isPrimitive() || (clz.getSuperclass()==Number.class)||
 				(clz==String.class) ||(clz==Character.class)
@@ -279,43 +242,35 @@ public class TestInvoker {
 		}
 	}	
 
-	private Method get_TargetMethod() throws Exception{
-		Method target=null;
-		Class[] types=null;
-//		if(method_params !=null){
-//			types = new Class[method_params.length];
-//			int index=0;
-//			for(Object p: method_params){
-//				System.out.println(p.getClass());
-//				types[index++] = unBoxing(p.getClass());
-//			}
-//		}
-//		target= (types !=null)?targetclz.getMethod(methodname, types):targetclz.getDeclaredMethod(methodname);
-		Method[] methods = targetclz.getMethods();
-		for(Method m : methods)
-			if(m.getName().equals(methodname))
-				target=m;
-		return target;
-	}
+	//	private Method get_TargetMethod() throws Exception{
+	//		Method target=null;
+	//		Class[] types=null;
+	//		Method[] methods = targetclz.getMethods();
+	//		for(Method m : methods)
+	//			if(m.getName().equals(methodname))
+	//				target=m;
+	//		return target;
+	//	}
 
 	@Test
 	public void testMethod() {
 		//setObj();
-		if(methodname==null){ //생성자 테스트인 경우.
+		if(targetmethod==null){ //생성자 테스트인 경우.
 			constructor_test();
 			return;
 		}
 
-		Method targetmethod=null;
-		Object testresult=null;	
+		Object testresult=null;
 		System.out.println( "\n"+(testnumber++) + " : "+testname +"\n 테스트 클래스 : " +targetclz.getSimpleName());//테스트 번호와 어떤객체로부터  테스트가 이루어지는지출력
 		try {
-			
-			targetmethod=get_TargetMethod();
+
 			if(targetmethod!=null)
 				targetmethod.setAccessible(true);//private 메소드를 테스트하기 위해
-			
+
 			System.out.println("테스트 메소드 : "+targetmethod.getName()); //메소드 이름출력
+
+			//Method param 셋팅.
+
 			testresult=targetmethod.invoke(classmap.get(targetclz), method_params); 				
 
 			if(expectedResult !=null){

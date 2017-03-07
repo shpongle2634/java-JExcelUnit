@@ -8,12 +8,12 @@ public class TestcaseVO {
 
 	private String testname;
 	private Class testclass;
-	private Constructor con;
+	private Constructor constructor;
 	
 
-	private Class[] cons_param;
+	private Class[] cons_paramTypes;
 	private Method met;
-	private Class[] met_param;
+	private Class[] met_paramTypes;
 	private Object result;	
 	private Object expect;
 	
@@ -81,20 +81,20 @@ public class TestcaseVO {
 	}
 
 	
-	public Constructor getCon() {
-		return con;
+	public Constructor getConstructor() {
+		return constructor;
 	}
 
-	public void setCon(Constructor con) {
-		this.con = con;
+	public void setConstructor(Constructor con) {
+		this.constructor = con;
 	}
 
 	public Class[] getCons_param() {
-		return cons_param;
+		return cons_paramTypes;
 	}
 
 	public void setCons_param(Class[] cons_param) {
-		this.cons_param = cons_param;
+		this.cons_paramTypes = cons_param;
 	}
 
 	public Method getMet() {
@@ -106,11 +106,11 @@ public class TestcaseVO {
 	}
 
 	public Class[] getMet_param() {
-		return met_param;
+		return met_paramTypes;
 	}
 
 	public void setMet_param(Class[] met_param) {
-		this.met_param = met_param;
+		this.met_paramTypes = met_param;
 	}
 	
 }
