@@ -183,9 +183,9 @@ public class ExcelReader {
 			String con_paramString= formatter.formatCellValue(currentCell);//String value
 
 			Class[] con_paramTypes= vo.getCons_param();
-			if(con_paramTypes.length!=0|| con_paramTypes!=null){
+			if(con_paramTypes.length>0&& con_paramTypes!=null){
 				int index= vo.getConstructorParams().size();
-				Class con_targetType=con_paramTypes[index-1];
+				Class con_targetType =con_paramTypes[index];
 				Object conparam=convertObject(con_targetType,con_paramString);
 				vo.addConstructorParam(conparam);
 			}
@@ -226,10 +226,10 @@ public class ExcelReader {
 			break;
 		case METHODPARAM: //Extract parameter and convert Object
 			String met_paramString= formatter.formatCellValue(currentCell);//String value
-			Class[] met_paramTypes= vo.getCons_param();
-			if(met_paramTypes.length!=0&&met_paramTypes!=null){
-				int met_param_index= vo.getConstructorParams().size();
-				Class met_targetType=met_paramTypes[met_param_index-1]; //Current Param Type
+			Class[] met_paramTypes= vo.getMet_param();
+			if(met_paramTypes.length>0&&met_paramTypes !=null){
+				int met_param_index= vo.getMethodParams().size();
+				Class met_targetType=met_paramTypes[met_param_index]; //Current Param Type
 
 				Object metparam=convertObject(met_targetType,met_paramString);
 				vo.addMethodParam(metparam);		
@@ -270,27 +270,19 @@ public class ExcelReader {
 				return paramString.toCharArray()[0];
 			else if(targetType.equals(char[].class))
 				return paramString.toCharArray();
-			else if(targetType.equals(int.class))	return Integer.parseInt(paramString);
-			else if(targetType.equals(double.class))	return Double.parseDouble(paramString);
-			else if(targetType.equals(float.class))	return Float.parseFloat(paramString);
-			else if(targetType.equals(short.class))	return Short.parseShort(paramString);
+			else if(targetType.equals(int.class))	return (int)Integer.parseInt(paramString);
+			else if(targetType.equals(double.class))	return (double)Double.parseDouble(paramString);
+			else if(targetType.equals(float.class))	return (float)Float.parseFloat(paramString);
+			else if(targetType.equals(short.class))	return (short)Short.parseShort(paramString);
 			else if(targetType.equals(Date.class))	
 			{
 				return new Date(); //need To parse
 			}	
-			else if(targetType.equals(boolean.class)) return Boolean.parseBoolean(paramString);
-			else if(targetType.equals(byte.class)) return Byte.parseByte(paramString);
+			else if(targetType.equals(boolean.class)) return (boolean)Boolean.parseBoolean(paramString);
+			else if(targetType.equals(byte.class)) return (byte)Byte.parseByte(paramString);
 			
 			else //mock;
-			{
-				Constructor con =null;
-				con= targetType.getConstructor(String.class);
-				if(con !=null){
-					paramObject=con.newInstance(paramString);
-					return paramObject;
-				}else
-					return paramString;
-			}	
+				return paramString;	
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
 				| InvocationTargetException | NoSuchMethodException | SecurityException e) {
 			// TODO Auto-generated catch block

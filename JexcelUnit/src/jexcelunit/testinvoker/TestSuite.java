@@ -2,6 +2,9 @@ package jexcelunit.testinvoker;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.Collection;
+
+import org.junit.runners.Parameterized.Parameters;
 
 public class TestSuite extends TestInvoker{
 	public TestSuite(String testname, Class targetclz,Constructor constructor, Object[] constructor_params, Method targetmethod,
@@ -10,11 +13,18 @@ public class TestSuite extends TestInvoker{
 		// TODO Auto-generated constructor stub
 	}
 
-	private void setup() {
+	private static void setUp() {
 		// TODO Auto-generated method stub
-	/* Make Your Mock Objects  using mockObject.put("mock name", mock object);
-	 * Make Your Custom Exceptions using  addException(your Exception e);
-	 * */	
+		/* Make Your Mock Objects  using mockObject.put("mock name", mock object);
+		 * Make Your Custom Exceptions using  addException(your Exception e);
+		 * */	
 	}
+
+	@Parameters( name = "{index}: {0}")
+	public static Collection<Object[][]> parameterized(){
+		setUp();
+		return parmeterizingExcel();
+	}
+	
 
 }

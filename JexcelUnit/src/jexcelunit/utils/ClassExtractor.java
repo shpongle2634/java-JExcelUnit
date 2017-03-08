@@ -27,11 +27,16 @@ public class ClassExtractor {
 				String classpath = "";
 				File parent=f.getParentFile();
 				classpath=f.getName().substring(0,f.getName().indexOf("."));
-				while(!parent.getName().equals("src")){
-					classpath= parent.getName()+"."+classpath;
-					parent=parent.getParentFile();
+				System.out.println(classpath);	
+				if(!classpath.equals("TestInvoker")&&!classpath.equals("TestSuite")){
+					while(!parent.getName().equals("src")){
+						classpath= parent.getName()+"."+classpath;
+						parent=parent.getParentFile();
+					}
+					
+					classlist.add(classpath);
 				}
-				classlist.add(classpath);
+				
 			}else if(f.isDirectory()){
 				getClasses(f);
 			}			

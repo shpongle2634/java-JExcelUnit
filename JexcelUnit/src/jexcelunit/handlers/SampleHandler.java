@@ -97,7 +97,7 @@ public class SampleHandler extends AbstractHandler {
 
 			//Valid Target Classes and send to Class Parser.
 			for(String s: ce.getClasslist()){
-				targetClasses.add(loader.loadClass(s));
+					targetClasses.add(loader.loadClass(s));
 			}
 
 			//For test

@@ -51,7 +51,7 @@ public class TestInvoker {
 	private static Map<Class, Object> classmap= new HashMap<Class, Object>(); //해쉬맵으로 테스트에 필요한 객체들을 하나씩만 유지한다.
 	private static ArrayList<Class> exceptionlist=new ArrayList<Class>();//사용자 정의 예외 클래스들을 담아두는 곳.
 	//	private static Method[] methods; //테스트할 객체의 메소드를 받는부분
-	private static HashMap<String,Object> mock=new HashMap<String,Object>();//모크객체 모음
+	protected static HashMap<String,Object> mock=new HashMap<String,Object>();//모크객체 모음
 	
 	private static int testnumber=0; //테스트 run 넘버
 
@@ -93,47 +93,30 @@ public class TestInvoker {
 
 				if(!testcases.isEmpty())
 				{
-					for(TestcaseVO c : testcases){
-						System.out.println(c.getTestname());
+					parameterized = new Object[testcases.size()][7];
+					for(int row_index = 0; row_index < testcases.size(); row_index++){
+						currentCase = testcases.get(row_index);
+						parameterized[row_index][0]=currentCase.getTestname();
+						parameterized[row_index][1]=currentCase.getTestclass();
+						parameterized[row_index][2]=currentCase.getConstructor();
+						parameterized[row_index][3]=currentCase.getConstructorParams().toArray();
+						parameterized[row_index][4]=currentCase.getMet();
+						parameterized[row_index][5]=currentCase.getMethodParams().toArray();
+						parameterized[row_index][6]=currentCase.getExpect();	
+						//To do list : 
+						//2. Custom Parameter Converting 모크객체. Date Format 이슈 처리.
+						//3. 로그
 					}
-
 				}
-				parameterized = new Object[testcases.size()][7];
-				for(int row_index = 0; row_index < testcases.size(); row_index++){
-					currentCase = testcases.get(row_index);
-					parameterized[row_index][0]=currentCase.getTestname();
-					parameterized[row_index][1]=currentCase.getTestclass();
-					parameterized[row_index][2]=currentCase.getConstructor();
-					parameterized[row_index][3]=currentCase.getConstructorParams().toArray();
-					parameterized[row_index][4]=currentCase.getMet();
-					parameterized[row_index][5]=currentCase.getMethodParams().toArray();
-					parameterized[row_index][6]=currentCase.getResult();	
-
-					//To do list : 1. Testinvoker 메소드 수정 (con, method을 바로 실행하도록..
-					//2. Custom Parameter Converting 모크객체. Date Format 이슈 처리.
-					//3. 로그
-				}
+				
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
-
 		//읽어들인 리스트를 String, Class, Object[] Object, String Object로 바까야함.
 		return Arrays.asList(parameterized);
 	} 
-
-	//사용안함.
-	public static void setUp() {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Parameters( name = "{index}: {0}")
-	public static Collection<Object[][]> parameterized(){
-		setUp();
-		return parmeterizingExcel();
-	}
 
 	//사용자가 예상하는 익셉션이 있는경우 이 함수를 통해 더해준다
 	public static void addException(Class e){
@@ -157,19 +140,19 @@ public class TestInvoker {
 			}
 	}
 
-	//	private Class unBoxing(Class wrapper){
-	//		switch(wrapper.getTypeName().charAt(10)){
-	//		case 'S': return wrapper.getTypeName().contains("Short")?short.class:String.class;							
-	//		case 'B': return wrapper.getTypeName().contains("Byte")?Byte.class:Boolean.class;
-	//		case 'C':return char.class;
-	//		case 'I':return int.class;
-	//		case 'L':return long.class;
-	//		case 'D':return double.class;
-	//		case 'F':return float.class;
-	//		case 'V':return void.class;
-	//		default : return null;
-	//		}
-	//	}
+		private Class unBoxing(Class wrapper){
+			switch(wrapper.getTypeName().charAt(10)){
+			case 'S': return wrapper.getTypeName().contains("Short")?short.class:String.class;							
+			case 'B': return wrapper.getTypeName().contains("Byte")?Byte.class:Boolean.class;
+			case 'C':return char.class;
+			case 'I':return int.class;
+			case 'L':return long.class;
+			case 'D':return double.class;
+			case 'F':return float.class;
+			case 'V':return void.class;
+			default : return null;
+			}
+		}
 
 	@SuppressWarnings("unused")
 	@Before
@@ -181,16 +164,40 @@ public class TestInvoker {
 				if(constructor_params.length==0)
 					classmap.put(targetclz, constructor.newInstance());
 				//타입이 안맞으면 mock 객체 가져올것.
-				else
-					classmap.put(targetclz, constructor.newInstance(constructor_params));
+				else{
+					Class[] paramTypes=constructor.getParameterTypes();
+					Object[] params= getMock(paramTypes,constructor_params);
+					classmap.put(targetclz, constructor.newInstance(params));
+				}
+					
 			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
 					| InvocationTargetException e) {
 				// TODO Auto-generated catch block
 				handleException(e);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
 	}
 
+	private Object[] getMock(Class[] types, Object[] params) throws Exception{
+		for(int i= 0; i<types.length; i++){
+			Class paramClass=params[i].getClass();
+			if(isNeedUnBoxing(paramClass))
+				paramClass= unBoxing(paramClass);
+			
+			if(!types[i].equals(paramClass)){
+				Object mockObject=mock.get((String)params[i]);
+				if(mockObject.getClass().equals(types[i])){
+					params[i]=mockObject;
+				}else
+					throw new Exception();
+			}
+		}
+		return params;
+	} 
+	
 	private void constructor_test(){
 		System.out.println( "\n"+(testnumber++) + " : "+testname +"\n 테스트 클래스 : " +targetclz.getSimpleName());//테스트 번호와 어떤객체로부터  테스트가 이루어지는지출력
 		try{
@@ -199,10 +206,14 @@ public class TestInvoker {
 			
 			if(constructor_params.length==0)
 				assertNotNull(constructor.newInstance());
-			//타입이 안맞으면 mock 객체 가져올것.
-			else
-				assertNotNull(constructor.newInstance(constructor_params));
-
+			
+			else{
+				//타입이 안맞으면 mock 객체 가져올것.
+				Class[] paramTypes=constructor.getParameterTypes();
+				Object[] params= getMock(paramTypes,constructor_params);
+				assertNotNull(constructor.newInstance(params));
+			}
+				
 		}catch(Exception e){handleException(e);}
 	}
 
@@ -269,9 +280,10 @@ public class TestInvoker {
 
 			System.out.println("테스트 메소드 : "+targetmethod.getName()); //메소드 이름출력
 
-			//Method param 셋팅.
-
-			testresult=targetmethod.invoke(classmap.get(targetclz), method_params); 				
+			//Method param 모크객체 셋팅.
+			Class[] paramsTypes= targetmethod.getParameterTypes();
+			Object[] params= getMock(paramsTypes, method_params);
+			testresult=targetmethod.invoke(classmap.get(targetclz), params); 				
 
 			if(expectedResult !=null){
 				if(isNeedUnBoxing(expectedResult.getClass())){ //원시값 테스트
