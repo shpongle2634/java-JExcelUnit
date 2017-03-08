@@ -250,13 +250,6 @@ public class ExcelReader {
 		}
 	}
 
-	//	private void convertStringToObject(String type){
-	//		if(type.equals("int"))
-	//			
-	//			||type.equals("Integer")|| type.equals("double")|| type.equals("Double")|| type.equals("Float")||type.equals("float")||type.equals("Number"))
-	//			
-	//		
-	//	}
 
 	private Object convertObject(Class targetType,String paramString){
 		try {

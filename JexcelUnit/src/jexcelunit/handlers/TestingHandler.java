@@ -90,21 +90,6 @@ public class TestingHandler extends AbstractHandler {
 	
 					
 				}
-				
-
-				//creator must Create Suite Class extended TestInvoker
-				//JUnitCore jc= new JUnitCore(); 			
-
-				/*
-				 * 1. 셋업코드가 있는지(모크사용할건가) 여부를 확인.
-				 * 1-1. 있다면 Suite 클래스를 생성해준다. TestInvoker 모듈을 상속한 클래스를 생성해준다/.
-				 * 1-1-1. 이미 Suite클래스가 있는지도 확인할것. 
-				 * 
-				 * 1-2. 아니면 바로 Excel을 읽어서 실행.
-				 * 2.  이슈 ** 로그 관리는 어떻게 할건가 ? 
-				 * 
-				 * 	TARGET PROJECT에 META-INF를 생성한다.
-				 * */
 
 			}
 

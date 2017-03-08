@@ -5,13 +5,13 @@
    <extension
          point="org.eclipse.ui.commands">
       <category
-            name="Sample Category"
+            name="JexcelUnit Category"
             id="JexcelUnit.commands.category">
       </category>
       <command
-            name="Sample Command"
+            name="Exceling Command"
             categoryId="JexcelUnit.commands.category"
-            id="JexcelUnit.commands.sampleCommand">
+            id="JexcelUnit.commands.excelingCommand">
       </command>
       <command
             name="Testing Command"
@@ -24,8 +24,8 @@
    <extension
          point="org.eclipse.ui.handlers">
       <handler
-            commandId="JexcelUnit.commands.sampleCommand"
-            class="jexcelunit.handlers.SampleHandler">
+            commandId="JexcelUnit.commands.excelingCommand"
+            class="jexcelunit.handlers.ExcelingHandler">
       </handler>
       
       <handler
@@ -43,7 +43,7 @@
    <extension
          point="org.eclipse.ui.bindings">
       <key
-            commandId="JexcelUnit.commands.sampleCommand"
+            commandId="JexcelUnit.commands.excelingCommand"
             contextId="org.eclipse.ui.contexts.window"
             sequence="M1+6"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration">
@@ -62,12 +62,12 @@
       <menuContribution
             locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
          <toolbar
-               id="JexcelUnit.toolbars.sampleToolbar">
+               id="JexcelUnit.toolbars.excelingToolbar">
             <command
-                  commandId="JexcelUnit.commands.sampleCommand"
-                  icon="icons/sample.gif"
-                  tooltip="Say hello world"
-                  id="JexcelUnit.toolbars.sampleCommand">
+                  commandId="JexcelUnit.commands.excelingCommand"
+                  icon="icons/create_excel.png"
+                  tooltip="Create Testing Excel"
+                  id="JexcelUnit.toolbars.excelingCommand">
             </command>
          </toolbar>
       </menuContribution>
@@ -78,8 +78,8 @@
                id="JexcelUnit.toolbars.testingToolbar">
             <command
                   commandId="JexcelUnit.commands.testingCommand"
-                  icon="icons/checkmark.png"
-                  tooltip="JexcelUnit Test"
+                  icon="icons/jexcelunit.png"
+                  tooltip="Create Testable TestSuite Class."
                   id="JexcelUnit.toolbars.testingCommand">
             </command>
          </toolbar>

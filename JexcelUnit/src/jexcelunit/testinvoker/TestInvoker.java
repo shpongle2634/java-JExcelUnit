@@ -103,9 +103,6 @@ public class TestInvoker {
 						parameterized[row_index][4]=currentCase.getMet();
 						parameterized[row_index][5]=currentCase.getMethodParams().toArray();
 						parameterized[row_index][6]=currentCase.getExpect();	
-						//To do list : 
-						//2. Custom Parameter Converting 葛农按眉. Date Format 捞酱 贸府.
-						//3. 肺弊
 					}
 				}
 				
@@ -253,15 +250,6 @@ public class TestInvoker {
 		}
 	}	
 
-	//	private Method get_TargetMethod() throws Exception{
-	//		Method target=null;
-	//		Class[] types=null;
-	//		Method[] methods = targetclz.getMethods();
-	//		for(Method m : methods)
-	//			if(m.getName().equals(methodname))
-	//				target=m;
-	//		return target;
-	//	}
 
 	@Test
 	public void testMethod() {
