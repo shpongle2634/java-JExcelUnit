@@ -6,6 +6,15 @@ import java.util.ArrayList;
 
 public class TestcaseVO {
 
+	private int suiteNumber;
+	public int getSuiteNumber() {
+		return suiteNumber;
+	}
+
+	public void setSuiteNumber(int suiteNumber) {
+		this.suiteNumber = suiteNumber;
+	}
+
 	private String testname;
 	private Class testclass;
 	private Constructor constructor;

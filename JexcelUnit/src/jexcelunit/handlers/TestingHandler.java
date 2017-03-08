@@ -64,9 +64,9 @@ public class TestingHandler extends AbstractHandler {
 								+ "\n\n";
 						String[] classcode={
 								"public class TestSuite extends TestInvoker{",
-								"\tpublic TestSuite(String testname, Class targetclz,Constructor constructor, Object[] constructor_params, Method targetmethod,",
+								"\tpublic TestSuite(int suite,String testname, Class targetclz,Constructor constructor, Object[] constructor_params, Method targetmethod,",
 								"\tObject[] param1, Object expectedResult) {\n",
-								"\t\tsuper(testname, targetclz,constructor,constructor_params, targetmethod, param1, expectedResult);",
+								"\t\tsuper(suite,testname, targetclz,constructor,constructor_params, targetmethod, param1, expectedResult);",
 								"\t}",
 								"\tprivate static void setUp() {",
 								"\t\t/* Make Your Mock Objects  using mockObject.put(\"mock name\", mock object);",

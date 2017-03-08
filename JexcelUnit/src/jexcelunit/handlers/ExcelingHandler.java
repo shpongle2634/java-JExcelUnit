@@ -76,13 +76,6 @@ public class ExcelingHandler extends AbstractHandler {
 
 	private ArrayList<Class> getClasses(IProject prj){
 		ClassExtractor ce= new ClassExtractor();
-		/*
-		 * 	이슈 : 엑셀 생성시 데이터 유지에 관한 문제. 기존 데이터가 있는경우? 새파일로할것인가. 덮어씌울것인가. 클래스 정보가 바뀐경우에는?
-		 * 		 
-		 * 3.생성 후에는 Invoker 클래스를 상속받아서  setup 코드를 작성
-		 * 4.엑셀 데이터 작성.
-		 * 5. 셋업코드와  테스트할 엑셀 선택 후 코드 실행 => 결과출력./
-		 * */
 		ArrayList<Class> targetClasses= new ArrayList<Class>();
 		try {
 			ce.getClasses(new File(prj.getLocation().toString()+"/src"));

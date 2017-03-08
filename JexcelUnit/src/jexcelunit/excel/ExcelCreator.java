@@ -101,13 +101,20 @@ public class ExcelCreator{
 				if(val.equals("Constructor Param")){					
 					//Set Param Validation Type
 					/*
-					 * 이슈 정리 : 
-					 * 1. 클래스마다 다른 타입 유효성
-					 * 2. 클래스마다 다른 메소드 유효성
-					 * = >해결 : 히든 시트에 드롭다운 리스트로 사용될 것을 작성할것.
-					 * 추후에 그 뭐냐 엑셀 새로생성이 아닐경우, 히든시트 수정. 데이터유효성 재정의 하는 방향으로 가보자..
-					 * 3. 테스트 로그를 어떻게 관리할 것인가..
-					 * 4. 결국 별도의 테스트 로그를 보거나 할만한 플러그인이 필요하다는건데...
+					 * 03 - 08 이슈 정리 : 
+					 * 1. 로그 관리 : 로그 파일 생성 로그에 표시할 정보를 정해야..
+					 * 1-1. success 설정. @after 메소드로 처리?.
+					  
+					 * 2. 독립/시나리오 테스팅 => sheet를 suite 단위로
+					 * 2-1 시트를 생성하고 싶을때 => 복사해야하나.
+					 * 2-2 sheet를 실행할 경우.한 sheet당 TestSuite클래스를 suite단위로 추가할 수 있는지.
+					 
+					 * 3. 덮어쓰기 시 data validation 재설정. 셀 변경.
+					 * 3-1 메소드 파라미터가 늘어 셀을 추가해야할 경우
+					 * 3-2 메소드 파라미터가 줄어 셀을 삭제해야할 경우.
+
+					 * 4. 프로젝트 src 폴더가 다른경우가 존재. ex) 웹.
+					 * => 프로퍼티 설정으로 src폴더를 지정해야할듯
 					 * */
 					for(int k=0; k<consCount; k++){
 						cell=row.createCell(i+k);
@@ -198,32 +205,7 @@ public class ExcelCreator{
 			//클래스 -메소드 설정
 			XSSFCell infocell=clz_met_firstrow.createCell(clz_met_col_index);
 			infocell.setCellValue(info.getClz().getName());
-//			
-//			XSSFName classfullname = workbook.createName();
-//			classfullname.setNameName("FULLNAME"+key);
-//			classfullname.setRefersToFormula(info.getClz().getName());
-
-//			ClientAnchor anchor= factory.createClientAnchor();
-//			anchor.setCol1(clz_met_col_index);
-//			anchor.setCol2(clz_met_col_index+3);
-//			anchor.setRow1(0);
-//			anchor.setRow2(2);
-//
-//			Comment comment= drawing.createCellComment(anchor);
-//			RichTextString str = factory.createRichTextString(info.getClz().getName());
-//			comment.setString(str);
-//			infocell.setCellComment(comment);
-			
-			
-			/*
-			 * To do : 
-			 * 1. 메소드+파라미터타입 네임생성 ok
-			 * 2. 타입리스트 생성 ok
-			 * 3. 데이터 유효성 설정.  보류
-			 * 4. Reader에서 Testing 모듈로 전환 시작.
-			 * 5. 로그 관리 :
-			 * 6. 
-			 * */
+		
 			//Method loop 
 			Set<Method> mets = info.getMethods();
 			Iterator<Method> mit =mets.iterator();
@@ -374,8 +356,9 @@ public class ExcelCreator{
 		System.out.println("total : " + cons_total);
 
 		//Set hidden Sheet if true=  hidden.
-		workbook.setSheetHidden(1, false);
-
+		workbook.setSheetHidden(1, true);
+		workbook.setSheetHidden(2, true);
+		workbook.setSheetHidden(3, true);
 	}
 
 	//Init DataValidation for Update Cell

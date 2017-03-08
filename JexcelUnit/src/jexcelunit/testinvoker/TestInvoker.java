@@ -52,10 +52,11 @@ public class TestInvoker {
 	private static ArrayList<Class> exceptionlist=new ArrayList<Class>();//사용자 정의 예외 클래스들을 담아두는 곳.
 	//	private static Method[] methods; //테스트할 객체의 메소드를 받는부분
 	protected static HashMap<String,Object> mock=new HashMap<String,Object>();//모크객체 모음
-	
+	private static int suitenumber=0;
 	private static int testnumber=0; //테스트 run 넘버
 
 	//테스트 케이스들을 확인할 method_params
+	private int suite;
 	private String testname=null;
 	private Class targetclz=null;
 	private Constructor constructor = null;
@@ -66,7 +67,8 @@ public class TestInvoker {
 
 
 	//테스트이름, 테스트할 클래스, 테스트파라미터,  테스트할 메소드이름, 파라미터들,예상결과를 JUnit이 읽어와 실행시키는 부분이다.
-	public TestInvoker(String testname,Class targetclz,Constructor constructor,Object[] constructor_params,Method targetmethod,Object[] param1,Object expectedResult){
+	public TestInvoker(int suite,String testname,Class targetclz,Constructor constructor,Object[] constructor_params,Method targetmethod,Object[] param1,Object expectedResult){
+		this.suite=suite;
 		this.testname= (String)testname;
 		this.targetclz=targetclz;
 		this.constructor=constructor;
@@ -81,7 +83,7 @@ public class TestInvoker {
 		//메타데이터를 참조할 수 밖에없다.
 		//핸들러 레벨에서 타겟 프로젝트 정보를 생성할것.
 		File file = new File(".");
-		ArrayList<TestcaseVO> testcases=null;
+		ArrayList<ArrayList<TestcaseVO>> testcases=null;
 		Object[][] parameterized= null;
 
 		if(file.exists()){
@@ -89,23 +91,34 @@ public class TestInvoker {
 				File realPath= new File(file.getCanonicalPath());
 
 				testcases = reader.readExcel(realPath.getName(), file.getCanonicalPath());
-				TestcaseVO currentCase =null;
 
-				if(!testcases.isEmpty())
+				if(testcases.size()>0)
 				{
-					parameterized = new Object[testcases.size()][7];
-					for(int row_index = 0; row_index < testcases.size(); row_index++){
-						currentCase = testcases.get(row_index);
-						parameterized[row_index][0]=currentCase.getTestname();
-						parameterized[row_index][1]=currentCase.getTestclass();
-						parameterized[row_index][2]=currentCase.getConstructor();
-						parameterized[row_index][3]=currentCase.getConstructorParams().toArray();
-						parameterized[row_index][4]=currentCase.getMet();
-						parameterized[row_index][5]=currentCase.getMethodParams().toArray();
-						parameterized[row_index][6]=currentCase.getExpect();	
+					int total_row_index=0;
+					for(ArrayList<TestcaseVO> testcase : testcases){
+						total_row_index+=testcase.size();
 					}
+					parameterized = new Object[total_row_index][8];
+
+					int row_index=0;
+					for(ArrayList<TestcaseVO> testcase : testcases){
+						if(row_index < total_row_index){
+							for(TestcaseVO currentCase: testcase){
+								parameterized[row_index][0]=currentCase.getSuiteNumber();
+								parameterized[row_index][1]=currentCase.getTestname();
+								parameterized[row_index][2]=currentCase.getTestclass();
+								parameterized[row_index][3]=currentCase.getConstructor();
+								parameterized[row_index][4]=currentCase.getConstructorParams().toArray();
+								parameterized[row_index][5]=currentCase.getMet();
+								parameterized[row_index][6]=currentCase.getMethodParams().toArray();
+								parameterized[row_index][7]=currentCase.getExpect();	
+								row_index++;
+							}
+						}
+					}
+
 				}
-				
+
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -137,36 +150,39 @@ public class TestInvoker {
 			}
 	}
 
-		private Class unBoxing(Class wrapper){
-			switch(wrapper.getTypeName().charAt(10)){
-			case 'S': return wrapper.getTypeName().contains("Short")?short.class:String.class;							
-			case 'B': return wrapper.getTypeName().contains("Byte")?Byte.class:Boolean.class;
-			case 'C':return char.class;
-			case 'I':return int.class;
-			case 'L':return long.class;
-			case 'D':return double.class;
-			case 'F':return float.class;
-			case 'V':return void.class;
-			default : return null;
-			}
+	private Class unBoxing(Class wrapper){
+		switch(wrapper.getTypeName().charAt(10)){
+		case 'S': return wrapper.getTypeName().contains("Short")?short.class:String.class;							
+		case 'B': return wrapper.getTypeName().contains("Byte")?Byte.class:Boolean.class;
+		case 'C':return char.class;
+		case 'I':return int.class;
+		case 'L':return long.class;
+		case 'D':return double.class;
+		case 'F':return float.class;
+		case 'V':return void.class;
+		default : return null;
 		}
+	}
 
 	@SuppressWarnings("unused")
 	@Before
 	public void setObj(){
+		if(suitenumber !=suite){ //새로운 시나리오 테스트.
+			classmap.clear();
+		}
 		if(!classmap.containsKey(targetclz)&& targetmethod !=null){ //실행할 객체가 없는경우
 			//System.out.println(classmap.containsKey(targetclz)+"새로생성");
 			constructor.setAccessible(true);
 			try {
 				if(constructor_params.length==0)
 					classmap.put(targetclz, constructor.newInstance());
-				//타입이 안맞으면 mock 객체 가져올것.
+
 				else{
 					Class[] paramTypes=constructor.getParameterTypes();
 					Object[] params= getMock(paramTypes,constructor_params);
 					classmap.put(targetclz, constructor.newInstance(params));
 				}
-					
+
 			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
 					| InvocationTargetException e) {
 				// TODO Auto-generated catch block
@@ -183,7 +199,7 @@ public class TestInvoker {
 			Class paramClass=params[i].getClass();
 			if(isNeedUnBoxing(paramClass))
 				paramClass= unBoxing(paramClass);
-			
+
 			if(!types[i].equals(paramClass)){
 				Object mockObject=mock.get((String)params[i]);
 				if(mockObject.getClass().equals(types[i])){
@@ -194,23 +210,23 @@ public class TestInvoker {
 		}
 		return params;
 	} 
-	
+
 	private void constructor_test(){
 		System.out.println( "\n"+(testnumber++) + " : "+testname +"\n 테스트 클래스 : " +targetclz.getSimpleName());//테스트 번호와 어떤객체로부터  테스트가 이루어지는지출력
 		try{
 			//
 			constructor.setAccessible(true);
-			
+
 			if(constructor_params.length==0)
 				assertNotNull(constructor.newInstance());
-			
+
 			else{
 				//타입이 안맞으면 mock 객체 가져올것.
 				Class[] paramTypes=constructor.getParameterTypes();
 				Object[] params= getMock(paramTypes,constructor_params);
 				assertNotNull(constructor.newInstance(params));
 			}
-				
+
 		}catch(Exception e){handleException(e);}
 	}
 

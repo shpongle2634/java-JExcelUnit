@@ -20,6 +20,7 @@ import javax.swing.text.DateFormatter;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRichTextString;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -46,18 +47,14 @@ public class ExcelReader {
 		newInstancable.add(Short.class);
 		newInstancable.add(Float.class);
 		newInstancable.add(Byte.class);
-//		newInstancable.add(short.class);
-//		newInstancable.add(double.class);
-//		newInstancable.add(int.class);
-//		newInstancable.add(short.class);
-//		newInstancable.add(float.class);
+
 	}
 	/*
 	 * Excel Reading Issue
 	 * */
 	@SuppressWarnings("resource")
-	public ArrayList<TestcaseVO> readExcel(String projectname, String rootpath) throws IOException{
-		ArrayList<TestcaseVO> caselist= new ArrayList<TestcaseVO>();
+	public ArrayList<ArrayList<TestcaseVO>> readExcel(String projectname, String rootpath) throws IOException{
+		ArrayList<ArrayList<TestcaseVO>> caselists= new ArrayList<ArrayList<TestcaseVO>>();
 
 		//open Excel File.
 		File file = new File(rootpath +'/'+projectname+".xlsx");
@@ -68,63 +65,78 @@ public class ExcelReader {
 
 		if(workbook!=null){
 			//Read sheet
-			XSSFSheet xssfsheet = null;
-			xssfsheet = workbook.getSheetAt(0); //read testcase sheet;
+			for(int sheet_index=0;sheet_index<workbook.getNumberOfSheets();sheet_index++){
 
-			//Read first line and set vo info.
-			XSSFRow firstrow = xssfsheet.getRow(0);
-			XSSFCell infocell = null;
-			int colSize= firstrow.getPhysicalNumberOfCells();
-			int[] voOption = new int[colSize];
-			for(int i=0; i < colSize; i++){
-				infocell= firstrow.getCell(i);
-
-				for(int j =0; j < TESTDATASET.length; j++){
-					if(infocell.getStringCellValue().contains(TESTDATASET[j])){						
-						//remember index
-						voOption[i]=j;
-						break;
-					}	
-				}
-			}
-
-			//Read ClassName.
-			XSSFSheet clzhidden= workbook.getSheet("ClassMethodhidden");
-			if(clzhidden!=null){
-				XSSFRow clzNames= clzhidden.getRow(0);
-				Iterator<Cell> it= clzNames.cellIterator();
-				Cell cell=null;
-				while(it.hasNext()){
-					cell=it.next();
-					String fullString = formatter.formatCellValue(cell);
-					String key= fullString.substring(fullString.lastIndexOf(".")+1, fullString.length());
-					classFullNames.put(key, fullString);
-				}
-			}
+				if(!workbook.isSheetHidden(sheet_index)){
+					ArrayList<TestcaseVO> caselist=new ArrayList<TestcaseVO>();
+					XSSFSheet xssfsheet = null;
+					xssfsheet=workbook.getSheetAt(sheet_index);
 
 
-			//loop to convert data to VO Object. Except first Row.
-			for(int i= 1; i<xssfsheet.getPhysicalNumberOfRows(); i++){
-				XSSFRow currentRow= xssfsheet.getRow(i);
-				TestcaseVO vo= new TestcaseVO();
+					//					xssfsheet = workbook.getSheetAt(0); //read testcase sheet;
 
-				//get Cell Values
-				if(!"".equals(currentRow.getCell(0).getStringCellValue())){
-					for(int j= 0 ; j<colSize; j ++){
-						XSSFCell currentCell = currentRow.getCell(j);	
-						if(currentCell !=null){
-							//Set vo Values.
-							setVOvalue(vo,voOption[j],workbook,currentCell);
+					//Read first line and set vo info.
+					XSSFRow firstrow = xssfsheet.getRow(0);
+					XSSFCell infocell = null;
+					int colSize= firstrow.getPhysicalNumberOfCells();
+					int[] voOption = new int[colSize];
+					for(int i=0; i < colSize; i++){
+						infocell= firstrow.getCell(i);
+
+						for(int j =0; j < TESTDATASET.length; j++){
+							if(infocell.getStringCellValue().contains(TESTDATASET[j])){						
+								//remember index
+								voOption[i]=j;
+								break;
+							}	
 						}
 					}
+
+					//Read ClassName.
+					XSSFSheet clzhidden= workbook.getSheet("ClassMethodhidden");
+					if(clzhidden!=null){
+						XSSFRow clzNames= clzhidden.getRow(0);
+						Iterator<Cell> it= clzNames.cellIterator();
+						Cell cell=null;
+						while(it.hasNext()){
+							cell=it.next();
+							String fullString = formatter.formatCellValue(cell);
+							String key= fullString.substring(fullString.lastIndexOf(".")+1, fullString.length());
+							classFullNames.put(key, fullString);
+						}
+					}
+
+
+					//loop to convert data to VO Object. Except first Row.
+					for(int i= 1; i<xssfsheet.getPhysicalNumberOfRows(); i++){
+						XSSFRow currentRow= xssfsheet.getRow(i);
+						TestcaseVO vo= new TestcaseVO();
+						vo.setSuiteNumber(caselists.size());
+						//get Cell Values
+						if(!"".equals(currentRow.getCell(0).getStringCellValue())){
+							for(int j= 0 ; j<colSize; j ++){
+								XSSFCell currentCell = currentRow.getCell(j);	
+								if(currentCell !=null){
+									//Set vo Values.
+									setVOvalue(vo,voOption[j],workbook,currentCell);
+								}
+							}
+						}
+						caselist.add(vo);
+					}
+
+					caselists.add(caselist); //save sheets		
+
 				}
-				caselist.add(vo);
+
 			}
+			// ArrayList<TestCaseVO> 의 List형태로 리턴.
+			//Invoker에서 global한 Suite Index를 두어 Parameterize 리턴함수가 다른 배열을 리턴하도록.
 			workbook.close();
 		}
 		inputstream.close();
 
-		return caselist;
+		return caselists;
 	} 
 
 	//Set Vo values depend on first Row
@@ -273,7 +285,7 @@ public class ExcelReader {
 			}	
 			else if(targetType.equals(boolean.class)) return (boolean)Boolean.parseBoolean(paramString);
 			else if(targetType.equals(byte.class)) return (byte)Byte.parseByte(paramString);
-			
+
 			else //mock;
 				return paramString;	
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
