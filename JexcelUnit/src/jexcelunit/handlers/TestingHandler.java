@@ -71,7 +71,7 @@ public class TestingHandler extends AbstractHandler {
 								"\tprivate static void setUp() {",
 								"\t\t/* Make Your Mock Objects  using mockObject.put(\"mock name\", mock object);",
 								"\t\t* Make Your Custom Exceptions using  addException(your Exception e);*/",
-								"\t}\n\n@Parameters( name = \"{index}: {0}\")",
+								"\t}\n\n@Parameters( name = \"{index}: suite {0} : {1}\")",
 								"\tpublic static Collection<Object[][]> parameterized(){",
 								"\t\tsetUp();",
 								"\t\treturn parmeterizingExcel();",

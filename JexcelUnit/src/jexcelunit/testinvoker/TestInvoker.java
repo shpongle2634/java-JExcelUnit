@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.junit.Before;
@@ -252,12 +253,12 @@ public class TestInvoker {
 	 * @throws IllegalAccessException 
 	 * @throws IllegalArgumentException 
 	 ********************************************************************** */
-	private void auto_Assert(Object testresult, Field f,Class memeberclz ) throws IllegalArgumentException, IllegalAccessException{
-		if(isNeedUnBoxing(memeberclz) ){
+	private void auto_Assert(Object testresult, Field f,Class memberclz ) throws IllegalArgumentException, IllegalAccessException{
+		if(isNeedUnBoxing(memberclz) ){
 			System.out.println( "Assert 결과  (예상값/테스트결과): "+f.get(expectedResult)+ " "+f.get(testresult));
 			assertThat(f.get(testresult),is(f.get(expectedResult)));
 		}
-		else if(memeberclz.isArray()){//배열원소 비교
+		else if(memberclz.isArray()){//배열원소 비교
 			if(Array.getLength(f.get(testresult)) == Array.getLength(f.get(expectedResult))){
 				for(int i= 0; i<Array.getLength(f.get(testresult)); i++){
 					if(Array.get(f.get(testresult), i)!=null &&Array.get(f.get(expectedResult), i)!=null){
@@ -265,6 +266,17 @@ public class TestInvoker {
 						assertThat(Array.get(f.get(testresult), i), is(Array.get(f.get(expectedResult), i)));
 					}
 				}
+			}
+		}else if(Collection.class.isInstance(f.get(expectedResult))){
+			Collection expect=(Collection) f.get(expectedResult);
+			Collection result=(Collection) f.get(testresult);
+			Iterator ex_it = expect.iterator();
+			Iterator re_it = result.iterator();
+			while(ex_it.hasNext() && re_it.hasNext()){
+				Object ex=ex_it.next();
+				Object re=re_it.next();
+				System.out.println( "Assert 결과  (예상값/테스트결과): "+ex +" "+ re);
+				assertThat(re, is(ex));
 			}
 		}
 	}	
@@ -292,15 +304,24 @@ public class TestInvoker {
 		try {			
 			testresult=targetmethod.invoke(classmap.get(targetclz), params);
 			
+			Class returnType= targetmethod.getReturnType();
+			
 			if(expectedResult !=null){
-				if(isNeedUnBoxing(expectedResult.getClass())){ //원시값 테스트
+				if(isNeedUnBoxing(testresult.getClass())){ //원시값 테스트
 					System.out.println( "Assert 결과  (예상값/테스트결과): " +expectedResult +" " +testresult); //예상결과와 실제결과 출력
 					//toString 오버라이딩을 통해 객체 상태를 하는 습관을 가진다면, 이곳에 인풋 객체의 상태를 출력가능하다.
 					assertThat(testresult,is(expectedResult)); //테스팅 결과를 확인.
 				}
 				else{//결과가 원시객체가 아닌 임의 객체인경우
-					Class type =expectedResult.getClass();
-					Field[] flz =type.getDeclaredFields();
+					Class[] type =new Class[1];
+					type[0]=testresult.getClass();//실제 리턴타입
+					Object[] returnObj=new Object[1];
+					returnObj[0]=expectedResult;
+					if(!type[0].equals(expectedResult.getClass())){//예상값이 mock객체인경우.
+						returnObj=getMock(type,returnObj);
+						expectedResult=returnObj[0];
+					}
+					Field[] flz =type[0].getDeclaredFields();
 
 					for(Field f: flz){
 						if (!f.isSynthetic()){
@@ -315,6 +336,8 @@ public class TestInvoker {
 							}
 						}
 					}
+					
+					
 				}
 			}
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
