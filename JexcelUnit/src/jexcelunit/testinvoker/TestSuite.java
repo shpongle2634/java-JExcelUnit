@@ -20,7 +20,7 @@ public class TestSuite extends TestInvoker{
 		 * */	
 	}
 
-	@Parameters( name = "{index}: {0}")
+	@Parameters( name = "{index}: Suite{0} {1}")
 	public static Collection<Object[][]> parameterized(){
 		setUp();
 		return parmeterizingExcel();

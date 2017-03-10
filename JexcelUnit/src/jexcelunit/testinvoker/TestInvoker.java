@@ -22,11 +22,12 @@ import org.junit.runners.Parameterized.Parameters;
 
 import jexcelunit.excel.ExcelReader;
 import jexcelunit.excel.TestcaseVO;
+import junit.framework.Assert;
 
 import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.*;
 
-/**
+/*****
  * 클래스 설명 : Reflection을 통한 통합 테스팅 코드.
  * 이 클래스는 import하게된 부분을 보게되면 알 수있듯, CoffeeMaker를 알고 있지않다. 즉,특정 프로젝트와 연관이 없다.
  * 이 클래스를 상속받아 테스트하고자 하는 프로젝트에 맞게 사용하면 된다.
@@ -153,7 +154,7 @@ public class TestInvoker {
 	private Class unBoxing(Class wrapper){
 		switch(wrapper.getTypeName().charAt(10)){
 		case 'S': return wrapper.getTypeName().contains("Short")?short.class:String.class;							
-		case 'B': return wrapper.getTypeName().contains("Byte")?Byte.class:Boolean.class;
+		case 'B': return wrapper.getTypeName().contains("Byte")?Byte.class:boolean.class;
 		case 'C':return char.class;
 		case 'I':return int.class;
 		case 'L':return long.class;
@@ -194,18 +195,18 @@ public class TestInvoker {
 		}
 	}
 
-	private Object[] getMock(Class[] types, Object[] params) throws Exception{
+	private Object[] getMock(Class[] types, Object[] params){
 		for(int i= 0; i<types.length; i++){
 			Class paramClass=params[i].getClass();
 			if(isNeedUnBoxing(paramClass))
 				paramClass= unBoxing(paramClass);
 
 			if(!types[i].equals(paramClass)){
-				Object mockObject=mock.get((String)params[i]);
-				if(mockObject.getClass().equals(types[i])){
+				Object mockObject=mock.get(params[i]);
+				if(mockObject.getClass().equals(types[i]) && mockObject!=null){
 					params[i]=mockObject;
 				}else
-					throw new Exception();
+					throw new IllegalArgumentException("Wrong Argument Type");
 			}
 		}
 		return params;
@@ -248,8 +249,10 @@ public class TestInvoker {
 	 * 			Field  f			: testresult의 맴버 변수의 이름
 	 * 			Class  memeberclz	: testresult의 맴버 변수의 타입 
 	 * 역할         : 예상결과를 비교해준다. PrimitiveType이 아닌경우 객체 내부의 필드값을 꺼내서 일일이 비교해준다.
+	 * @throws IllegalAccessException 
+	 * @throws IllegalArgumentException 
 	 ********************************************************************** */
-	private void auto_Assert(Object testresult, Field f,Class memeberclz ) throws Exception{
+	private void auto_Assert(Object testresult, Field f,Class memeberclz ) throws IllegalArgumentException, IllegalAccessException{
 		if(isNeedUnBoxing(memeberclz) ){
 			System.out.println( "Assert 결과  (예상값/테스트결과): "+f.get(expectedResult)+ " "+f.get(testresult));
 			assertThat(f.get(testresult),is(f.get(expectedResult)));
@@ -268,7 +271,7 @@ public class TestInvoker {
 
 
 	@Test
-	public void testMethod() {
+	public void testMethod() throws Throwable {
 		//setObj();
 		if(targetmethod==null){ //생성자 테스트인 경우.
 			constructor_test();
@@ -277,18 +280,18 @@ public class TestInvoker {
 
 		Object testresult=null;
 		System.out.println( "\n"+(testnumber++) + " : "+testname +"\n 테스트 클래스 : " +targetclz.getSimpleName());//테스트 번호와 어떤객체로부터  테스트가 이루어지는지출력
-		try {
 
-			if(targetmethod!=null)
-				targetmethod.setAccessible(true);//private 메소드를 테스트하기 위해
 
-			System.out.println("테스트 메소드 : "+targetmethod.getName()); //메소드 이름출력
+		if(targetmethod!=null)
+			targetmethod.setAccessible(true);//private 메소드를 테스트하기 위해
 
-			//Method param 모크객체 셋팅.
-			Class[] paramsTypes= targetmethod.getParameterTypes();
-			Object[] params= getMock(paramsTypes, method_params);
-			testresult=targetmethod.invoke(classmap.get(targetclz), params); 				
-
+		System.out.println("테스트 메소드 : "+targetmethod.getName()); //메소드 이름출력
+		//Method param 모크객체 셋팅.
+		Class[] paramsTypes= targetmethod.getParameterTypes();
+		Object[] params= getMock(paramsTypes, method_params);
+		try {			
+			testresult=targetmethod.invoke(classmap.get(targetclz), params);
+			
 			if(expectedResult !=null){
 				if(isNeedUnBoxing(expectedResult.getClass())){ //원시값 테스트
 					System.out.println( "Assert 결과  (예상값/테스트결과): " +expectedResult +" " +testresult); //예상결과와 실제결과 출력
@@ -298,25 +301,45 @@ public class TestInvoker {
 				else{//결과가 원시객체가 아닌 임의 객체인경우
 					Class type =expectedResult.getClass();
 					Field[] flz =type.getDeclaredFields();
+
 					for(Field f: flz){
 						if (!f.isSynthetic()){
 							f.setAccessible(true);
-							Class memeberclz=f.getType();
-							System.out.println(memeberclz.getSimpleName()+ " "+f.getName());
-							auto_Assert(testresult, f, memeberclz);
+							Class memberclz=f.getType();
+							System.out.println(memberclz.getSimpleName()+ " "+f.getName());
+							try {
+								auto_Assert(testresult, f, memberclz);
+							} catch (IllegalArgumentException | IllegalAccessException e) {
+								// TODO Auto-generated catch block
+								handleException(e);
+							}
 						}
 					}
 				}
-
 			}
-		} catch (Exception e){	
-			//리플렉션 자체가 java.lang.reflect.InvocationTargetException 익셉션을 던지게 된다.
-			//따라서 StackTrace에서 caused 된 에러를 찾아서 캐치해야한다. 아래는 caused된 익셉션 클래스를 읽어온다.
-			handleException(e);
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			// TODO Auto-generated catch block
+			Throwable fillstack=e.fillInStackTrace();
+			Throwable cause=null;
+			if(fillstack !=null){
+				cause= fillstack.getCause(); 
+				if(cause!=null) cause.printStackTrace();
+				throw(cause);
+			}//Method Exception.
+		}catch(AssertionError e){
+			//정확한 라인 찾기 이슈..
+			StackTraceElement[] elem =new StackTraceElement[1];			
+			elem[0]=new StackTraceElement(targetclz.getName(), targetmethod.getName(), targetclz.getCanonicalName(),1);
+			e.setStackTrace(elem);
+			throw(e);
 		}
 
-		if(targetmethod !=null)//메소드가 정상실행되었다면,
-			System.out.println("테스트 완료");
-		else {System.out.println("해당 메소드가 존재하지 않습니다."); fail();}//메소드를 탐색했으나 없는경우.
+	}
+
+
+	@Before
+	public void log(){
+		//1.로그관리. 엑셀 Success 설정.
+		//2.드롭다운 가능한 리스트뷰로. 로그 파일도 만들것.. 정확히 어느 클래스의 어디서 오류가 났는지
 	}
 }
