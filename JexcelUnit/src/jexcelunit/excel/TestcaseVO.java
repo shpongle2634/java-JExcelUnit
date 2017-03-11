@@ -3,7 +3,7 @@ package jexcelunit.excel;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-
+@SuppressWarnings("rawtypes")
 public class TestcaseVO {
 
 	private int suiteNumber;

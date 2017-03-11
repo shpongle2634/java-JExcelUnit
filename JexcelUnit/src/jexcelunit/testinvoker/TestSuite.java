@@ -5,7 +5,7 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 
 import org.junit.runners.Parameterized.Parameters;
-
+@SuppressWarnings("rawtypes")
 public class TestSuite extends TestInvoker{
 	public TestSuite(int suite,String testname, Class targetclz,Constructor constructor, Object[] constructor_params, Method targetmethod,
 			Object[] param1, Object expectedResult) {
@@ -20,6 +20,7 @@ public class TestSuite extends TestInvoker{
 		 * */	
 	}
 
+	@SuppressWarnings("unchecked")
 	@Parameters( name = "{index}: Suite{0} {1}")
 	public static Collection<Object[][]> parameterized(){
 		setUp();

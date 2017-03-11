@@ -3,7 +3,6 @@ package jexcelunit.utils;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 
 
@@ -13,6 +12,7 @@ import java.util.HashMap;
  * Details : get Classes and analyze Class's Methods and Constructors
  * 
  * */
+@SuppressWarnings("rawtypes")
 public class ClassAnalyzer {
 	
 	

@@ -33,6 +33,7 @@ import jexcelunit.utils.ClassInfo;
  * @see org.eclipse.core.commands.IHandler
  * @see org.eclipse.core.commands.AbstractHandler
  */
+@SuppressWarnings("rawtypes")
 public class ExcelingHandler extends AbstractHandler {
 
 	@Override
@@ -61,9 +62,9 @@ public class ExcelingHandler extends AbstractHandler {
 				HashMap<String,ClassInfo> classinfos= analyzer.getTestInfos();
 
 				//Create Excel File.
-				ExcelCreator exceling= new ExcelCreator();
+				ExcelCreator exceling= new ExcelCreator(targetproject.getName(), targetproject.getLocation().toString(), classinfos);
 				try {
-					exceling.createXlsx(targetproject.getName(), targetproject.getLocation().toString(), classinfos);
+					exceling.createXlsx();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -90,14 +91,15 @@ public class ExcelingHandler extends AbstractHandler {
 
 			//Valid Target Classes and send to Class Parser.
 			for(String s: ce.getClasslist()){
-					targetClasses.add(loader.loadClass(s));
-			}
+				Class clz= loader.loadClass(s);
 
+				targetClasses.add(clz);
+			}
+			loader.close();
 			//For test
 			for(Class clz: targetClasses){
 				System.out.println(clz.getName());
 			}
-
 		}catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

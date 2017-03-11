@@ -4,8 +4,7 @@ import java.io.File;
 import java.io.FileWriter;
 
 import java.io.PrintWriter;
-import java.lang.reflect.Method;
-import java.util.Collection;
+
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -20,7 +19,7 @@ import org.eclipse.ui.dialogs.ListSelectionDialog;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.model.BaseWorkbenchContentProvider;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
-import org.junit.runners.Parameterized.Parameters;
+
 
 
 

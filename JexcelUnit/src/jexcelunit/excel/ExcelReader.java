@@ -6,23 +6,18 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.text.DateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
+
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import javax.swing.text.DateFormatter;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
-import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFCell;
-import org.apache.poi.xssf.usermodel.XSSFRichTextString;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -33,6 +28,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
  * Description : Read Excel Sheet and Convert to Testcases set.
  * 
  * */
+@SuppressWarnings("rawtypes")
 public class ExcelReader {
 	public final int TESTNAME=0, TESTCLASS=1, CONSTPARAM=2, METHOD=3, METHODPARAM=4, EXPECTED=5, RESULT=6, SUCCESS=7;
 	public final String[] TESTDATASET = {"TestName" ,"TestClass","Constructor Param", "TestMethod", "Method Param", "Expected", "Result", "Success"};
@@ -52,7 +48,6 @@ public class ExcelReader {
 	/*
 	 * Excel Reading Issue
 	 * */
-	@SuppressWarnings("resource")
 	public ArrayList<ArrayList<TestcaseVO>> readExcel(String projectname, String rootpath) throws IOException{
 		ArrayList<ArrayList<TestcaseVO>> caselists= new ArrayList<ArrayList<TestcaseVO>>();
 
@@ -263,6 +258,7 @@ public class ExcelReader {
 	}
 
 
+	@SuppressWarnings("unchecked")
 	private Object convertObject(Class targetType,String paramString){
 		try {
 			Object paramObject=null;

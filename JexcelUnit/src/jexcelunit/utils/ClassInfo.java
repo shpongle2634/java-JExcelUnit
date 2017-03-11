@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
 
+@SuppressWarnings("rawtypes")
 public class ClassInfo{
 	
 	Class clz=null;

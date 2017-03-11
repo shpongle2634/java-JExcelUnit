@@ -15,15 +15,14 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 
 import jexcelunit.excel.ExcelReader;
 import jexcelunit.excel.TestcaseVO;
-import junit.framework.Assert;
 
 import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.*;
@@ -48,6 +47,7 @@ import static org.hamcrest.CoreMatchers.*;
  *  2. JUnit과 같은 런타임 환경을 하나 직접 만들던가.. 이건좀 오래걸릴수도. JUnit을 만들어야하니까;
  *  3. 
  **/
+@SuppressWarnings("rawtypes")
 @RunWith(Parameterized.class) //테스트 케이스를 이용할것이다.
 public class TestInvoker {
 	private static Map<Class, Object> classmap= new HashMap<Class, Object>(); //해쉬맵으로 테스트에 필요한 객체들을 하나씩만 유지한다.
@@ -166,7 +166,7 @@ public class TestInvoker {
 		}
 	}
 
-	@SuppressWarnings("unused")
+
 	@Before
 	public void setObj(){
 		if(suitenumber !=suite){ //새로운 시나리오 테스트.
@@ -281,7 +281,6 @@ public class TestInvoker {
 		}
 	}	
 
-
 	@Test
 	public void testMethod() throws Throwable {
 		//setObj();
@@ -303,9 +302,7 @@ public class TestInvoker {
 		Object[] params= getMock(paramsTypes, method_params);
 		try {			
 			testresult=targetmethod.invoke(classmap.get(targetclz), params);
-			
-			Class returnType= targetmethod.getReturnType();
-			
+				
 			if(expectedResult !=null){
 				if(isNeedUnBoxing(testresult.getClass())){ //원시값 테스트
 					System.out.println( "Assert 결과  (예상값/테스트결과): " +expectedResult +" " +testresult); //예상결과와 실제결과 출력
@@ -360,7 +357,7 @@ public class TestInvoker {
 	}
 
 
-	@Before
+	@After
 	public void log(){
 		//1.로그관리. 엑셀 Success 설정.
 		//2.드롭다운 가능한 리스트뷰로. 로그 파일도 만들것.. 정확히 어느 클래스의 어디서 오류가 났는지

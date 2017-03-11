@@ -1,20 +1,17 @@
 package jexcelunit.excel;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.apache.poi.ss.usermodel.CellCopyPolicy;
 import org.apache.poi.ss.usermodel.ClientAnchor;
 import org.apache.poi.ss.usermodel.Comment;
 import org.apache.poi.ss.usermodel.CreationHelper;
@@ -33,6 +30,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTWorkbook;
 
 import jexcelunit.utils.ClassInfo;
 
@@ -42,26 +40,144 @@ import jexcelunit.utils.ClassInfo;
  * Vendor  : Taehoon Seo
  * Description : create excel file including classes, methods and constructor informations.
  * */
+@SuppressWarnings("rawtypes")
 public class ExcelCreator{
 	private final int CONSTRUCTOR = 0;
 	private final int METHOD = 1;
 	public final String[] TESTDATASET = {"TestName" ,"TestClass","Constructor Param", "TestMethod", "Method Param", "Expected", "Result", "Success"};
 
-	//create xlsx for Testcases.
-	public void createXlsx(String projectName ,String rootpath , HashMap<String, ClassInfo> classinfos) throws IOException{
-		/*
-		 * 테스트 이름, 클래스, 생성자파라미터, 메소드, 메소드파라미터, 리턴, 결과
-		 * 1. 다중 파라미터를 어떻게 ? 파라미터 개수륿 분석해서 칼럼 수 조정할것
-		 * 2. 모크객체의 이용방법은 어떻게? 모크객체 이름으로 접근하도록을 기본. 모크객체 생성도 엑셀로 지원 가능?
-		 * 3. 테스트방식 : 시나리오 or 독립.
-		 * 4. 생성파일 네이밍.
-		 * 5. 중복파일 처리.
-		 * */
+
+	private int consCount=0;
+	private int metsCount=0;
+	private FileOutputStream fileoutputstream= null;
+	private XSSFWorkbook workbook = null;
+	private String projectName= null, rootpath=null;
+	private HashMap<String, ClassInfo> classinfos=null;
+	private File existingExcel= null;
+	
+	
+
+	public ExcelCreator(String projectName,String rootpath ,HashMap<String, ClassInfo> classinfos){
+		this.projectName=projectName;
+		this.rootpath= rootpath;
+		this.classinfos= classinfos;
+		
+		consCount=getMaxParamCount(CONSTRUCTOR,classinfos);
+		metsCount=getMaxParamCount(METHOD,classinfos);
+	}
 
 
-		//Check .xlxs file is exists
+	public void initWorkSheets(XSSFWorkbook workbook){
+		//Init All names.
+		CTWorkbook ctbook=  workbook.getCTWorkbook();
+		ctbook.unsetDefinedNames();
+		ctbook.setDefinedNames(null);
+
+		for(int sheet_index=0;sheet_index<workbook.getNumberOfSheets();sheet_index++){
+			boolean isHidden=workbook.isSheetHidden(sheet_index);
+			if(isHidden){//Init hidden Sheets
+					
+					workbook.removeSheetAt(sheet_index);
+
+			}else {
+				XSSFSheet sheet = workbook.getSheetAt(sheet_index);
+				XSSFRow firstRow = sheet.getRow(0);
+				if(firstRow != null){
+
+					//counting Constructor param Number and Method param Number.
+					int old_conNum=0;
+					int old_metNum=0;
+					for(int cell_index =0; cell_index< firstRow.getPhysicalNumberOfCells(); cell_index++){
+						XSSFCell cell=null;
+						cell=firstRow.getCell(cell_index);
+						if(cell.getStringCellValue().contains("Constructor Param")){
+							old_conNum++;
+						}
+						if(cell.getStringCellValue().contains("Method Param")){
+							old_metNum++;
+						}
+					}
+
+					//칼럼수 조절.
+					int con_change= consCount-old_conNum;
+					int met_change = metsCount- old_metNum;
+					if(con_change>0){//차이만큼 칼럼 추가.
+						for(int i=0;i< con_change; i++){
+							shiftColumn(sheet, 1+old_conNum, con_change);
+						}
+					}else if(con_change<0){//차이만큼 삭제
+						for(int i=0;i> con_change; i--){
+							removeColumn(sheet, 1+old_conNum, -con_change);
+						}
+					}
+
+					if(met_change>0){//차이만큼 칼럼 추가.
+						for(int i=0;i< met_change; i++){
+							shiftColumn(sheet, 2+consCount, met_change);
+						}
+					}else if(met_change<0){//차이만큼 삭제
+						for(int i=0;i> met_change; i--){
+							removeColumn(sheet, 2+consCount, -met_change);
+						}
+					}
+
+				}
+				sheet.removeRow(sheet.getRow(0));//remove 첫번째 줄은 삭제할것.
+			}
+		}
+
+	}
+
+	private void shiftColumn(XSSFSheet sheet, int from, int offset){
+		XSSFRow currentRow =null;
+		CellCopyPolicy ccp = new CellCopyPolicy();
+
+		if(sheet !=null){
+			for(int i=0; i<sheet.getPhysicalNumberOfRows(); i++){
+				currentRow =sheet.getRow(i);
+				XSSFCell currentCell =null;
+				for(int j=currentRow.getPhysicalNumberOfCells()-1; j>=from;j--){
+					currentCell = currentRow.getCell(j);
+					currentRow.createCell(j+offset).copyCellFrom(currentCell, ccp);
+				}
+				for(int k=from; k< from+offset ; k++){
+					currentCell = currentRow.getCell(k);
+					currentRow.removeCell(currentCell);
+				}
+			}
+		}
+	}
+
+	//셀인덱스를 기준으로.
+	private void removeColumn(XSSFSheet sheet, int from, int offset){
+		XSSFRow currentRow =null;
+		CellCopyPolicy ccp = new CellCopyPolicy();
+
+
+		if(sheet !=null){
+			for(int i=0; i<sheet.getPhysicalNumberOfRows(); i++){
+				currentRow =sheet.getRow(i);
+				XSSFCell currentCell =null;
+				int colNum =currentRow.getPhysicalNumberOfCells();
+				for(int j=from+offset-1; j<colNum;j++){
+					currentCell = currentRow.getCell(j);
+					if(currentCell !=null)
+						currentRow.getCell(j-offset).copyCellFrom(currentCell, ccp);					
+				}
+				for(int k=colNum-offset; k< colNum ; k++){
+					currentCell = currentRow.getCell(k);
+					currentRow.removeCell(currentCell);
+				}
+
+			}
+		}
+	}
+
+
+	private File getExistingExcel(){
 		boolean will_create=true;
 		File root = new File(rootpath);
+		File xlsx= null;
 		File[] filelist=  root.listFiles();
 		for(File f: filelist){
 			//			System.out.println(f.getName());
@@ -69,58 +185,87 @@ public class ExcelCreator{
 				IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 				will_create= MessageDialog.openQuestion(
 						window.getShell(),
-						"Do you want to create new .xlxs or overwrite?",
-						"Warnning : If you overwrite, you can lose your data");
-				if(will_create)f.delete();
+						"Do you want to Overwrite it? Yes :Overwrite No : Delete and Create it",
+						"WARNING : If you overwrite it, you can lose its data");
+				if(will_create)xlsx=f;
+				else f.delete();
 				break;
 			}
 		}
+		return xlsx;
+	}
+	
+	
+	//create xlsx for Testcases.
+	public void createXlsx() throws IOException{
+		/*
+		 * 테스트 이름, 클래스, 생성자파라미터, 메소드, 메소드파라미터, 리턴, 결과
+		 * 1. 다중 파라미터를 어떻게 ? 파라미터 개수륿 분석해서 칼럼 수 조정할것 DONE
+		 * 2. 모크객체의 이용방법은 어떻게? 모크객체 이름으로 접근하도록을 기본. 모크객체 생성도 엑셀로 지원 가능? DONE
+		 * 3. 테스트방식 : 시나리오 or 독립. => 시트를 슈트단위로 하여 DONE.
+		 * 4. 생성파일 네이밍. => TODO 새창.
+		 * 5. 중복파일 처리. => TODO DATAVALIDATION NAMING
+		 * 	5-1. UPDATE 방식으로 유효성,네임 초기화 및 재설정. 칼럼 조정.
+		 * 6. SUCCESS 처리=> TODO 엑셀에 셋팅.
+		 * 7. 로그처리=>TODO Stack ListView로 제공. 로그파일 생성.
+		 * */
+		//Check .xlxs file is exists
 
-		//Create
-		if(will_create){
-			XSSFWorkbook workbook = new XSSFWorkbook();
-			XSSFSheet xssfSheet = workbook.createSheet("TestSuite 1");	
-			XSSFRow row =null;
-			XSSFCell cell =null;
+		existingExcel=getExistingExcel();
 
+		//Create or Update
+		XSSFSheet xssfSheet = null;
+		XSSFRow row =null;
+		XSSFCell cell =null;
+		FileInputStream inputstream=null;
+		try{
+			if(existingExcel!=null){
+				
+				inputstream = new FileInputStream(existingExcel.getCanonicalPath());
+				workbook= new XSSFWorkbook(inputstream);
+				initWorkSheets(workbook);
+				//Update.
+			}else{
+				workbook=new XSSFWorkbook();
+				xssfSheet= workbook.createSheet("TestSuite 1");	
+			}
 			//make hidden sheet
+
 			hiddensheet(workbook,classinfos);
 
 			row=xssfSheet.createRow(0);//번줄은 info
 
 			//칼럼의 갯수는 생성자 혹은 메소드 파라미터에 의해 가변적으로 정할것.
 			//칼럼에 Data Validation을 지정.
-			int consCount=getMaxParamCount(CONSTRUCTOR,classinfos);
-			int metsCount=getMaxParamCount(METHOD,classinfos);
+
 			int cellvalindex=0;
 			int totalCellCount= TESTDATASET.length + consCount + metsCount-2;
 			for(int i =0; i<totalCellCount; i++){
 				String val=TESTDATASET[cellvalindex];
 
-
 				if(val.equals("Constructor Param")){					
 					//Set Param Validation Type
 					/*
 					 * 03 - 08 이슈 정리 : 
-					 * 1. 로그 관리 : 로그 파일 생성 로그에 표시할 정보를 정해야..
+					 * 1. 로그 관리 : 로그 파일 생성 로그에 표시할 정보를 정해야.. =>TODO
 					 * 1-1. success 설정. @after 메소드로 처리?.
-					  
-					 * 2. 독립/시나리오 테스팅 => sheet를 suite 단위로
-					 * 2-1 시트를 생성하고 싶을때 => 복사해야하나.
-					 * 2-2 sheet를 실행할 경우.한 sheet당 TestSuite클래스를 suite단위로 추가할 수 있는지.
-					 
-					 * 3. 덮어쓰기 시 data validation 재설정. 셀 변경.
+
+					 * 2. 독립/시나리오 테스팅 => sheet를 suite 단위로  => DONE
+					 * 2-1 시트를 생성하고 싶을때 => 복사해야하나. ㅇㅇ
+					 * 2-2 sheet를 실행할 경우.한 sheet당 TestSuite클래스를 suite단위로 추가할 수 있는지. ㅇㅇ
+
+					 * 3. 덮어쓰기 시 data validation 재설정. 셀 변경. => TODO on 3.11
 					 * 3-1 메소드 파라미터가 늘어 셀을 추가해야할 경우
 					 * 3-2 메소드 파라미터가 줄어 셀을 삭제해야할 경우.
 
-					 * 4. 프로젝트 src 폴더가 다른경우가 존재. ex) 웹.
+					 * 4. 프로젝트 src 폴더가 다른경우가 존재. ex) 웹. =>TODO
 					 * => 프로퍼티 설정으로 src폴더를 지정해야할듯
 					 * */
 					for(int k=0; k<consCount; k++){
 						cell=row.createCell(i+k);
 						xssfSheet.setColumnWidth(i+k, 4500);
 						cell.setCellValue(val+(k+1));
-						
+
 					}
 					i+=consCount-1;
 					cellvalindex++;
@@ -154,16 +299,25 @@ public class ExcelCreator{
 
 			setValidation("Class", xssfSheet, 1);
 			//save xlsx
-			FileOutputStream fileoutputstream=new FileOutputStream(rootpath+"/"+ projectName+".xlsx");
+			fileoutputstream=new FileOutputStream(rootpath+"/"+ projectName+".xlsx");
 			//파일을 쓴다
 			workbook.write(fileoutputstream);
-			if(workbook!=null) workbook.close();
-			//필수로 닫아주어야함
-			if( fileoutputstream!=null)
-				fileoutputstream.close();
 
 			System.out.println("Created");
+		}catch(Exception e){
+			e.printStackTrace();
+		}finally{
+			//필수로 닫아주어야함
+
+			if(workbook!=null) workbook.close();
+			if( fileoutputstream!=null)
+				fileoutputstream.close();
+			if(workbook!=null) workbook.close();
+			if( fileoutputstream!=null)
+				fileoutputstream.close();
+			if(inputstream !=null) inputstream.close();
 		}
+
 
 	}
 
@@ -205,7 +359,7 @@ public class ExcelCreator{
 			//클래스 -메소드 설정
 			XSSFCell infocell=clz_met_firstrow.createCell(clz_met_col_index);
 			infocell.setCellValue(info.getClz().getName());
-		
+
 			//Method loop 
 			Set<Method> mets = info.getMethods();
 			Iterator<Method> mit =mets.iterator();
@@ -257,8 +411,8 @@ public class ExcelCreator{
 					met_par_cell = met_par_firstrow.createCell(mets_total);
 					met_par_cell.setCellValue(methodStr);
 
-					
-					
+
+
 					//Set Simple method Name.
 					ClientAnchor methodanchor= factory.createClientAnchor();
 					methodanchor.setCol1(clz_met_col_index);
@@ -279,7 +433,7 @@ public class ExcelCreator{
 						String formula= "MethodParamhidden!$"+cell+"$2:$"+cell+"$" + (params.length+1);
 						namedCell.setRefersToFormula(formula);
 					}
-					
+
 					mets_total++;
 				}//Method loop End
 
@@ -361,11 +515,6 @@ public class ExcelCreator{
 		workbook.setSheetHidden(3, true);
 	}
 
-	//Init DataValidation for Update Cell
-	private void initValidation(){
-
-
-	}
 
 	//클래스 이름 제약
 	private void setValidation(String namedcell, XSSFSheet xssfSheet ,int col){
@@ -375,19 +524,17 @@ public class ExcelCreator{
 		DataValidationConstraint constraint = null;
 		DataValidationHelper validationHelper = null;
 		validationHelper = new XSSFDataValidationHelper(xssfSheet);
+
 		constraint= validationHelper.createFormulaListConstraint(namedcell);
 		CellRangeAddressList addresslist =null;
 		if(constraint !=null){
 			addresslist = new CellRangeAddressList(1,500,col,col);
 			//			System.out.println(constraint.getFormula1());
 			dataValidation= validationHelper.createValidation(constraint, addresslist);
-
-
 			dataValidation.setSuppressDropDownArrow(true);
 			dataValidation.setShowErrorBox(true);
 			dataValidation.createErrorBox("Wrong Input", "You must input Right Type.");
 			xssfSheet.addValidationData(dataValidation);
-
 		}		
 	}
 
