@@ -13,15 +13,12 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.poi.ss.usermodel.CellCopyPolicy;
-import org.apache.poi.ss.usermodel.ClientAnchor;
-import org.apache.poi.ss.usermodel.Comment;
 import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.DataValidation;
 import org.apache.poi.ss.usermodel.DataValidationConstraint;
 import org.apache.poi.ss.usermodel.DataValidationHelper;
 import org.apache.poi.ss.usermodel.Drawing;
 import org.apache.poi.ss.usermodel.Name;
-import org.apache.poi.ss.usermodel.RichTextString;
 import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
@@ -32,6 +29,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTWorksheet;
 
 import jexcelunit.utils.ClassInfo;
 
@@ -83,6 +81,7 @@ public class ExcelCreator{
 		}
 
 
+
 		String[] rmvSheet= new String[workbook.getNumberOfSheets()];
 		int rm_Sheetindex=0;
 
@@ -92,8 +91,11 @@ public class ExcelCreator{
 			}else {
 				XSSFSheet sheet = workbook.getSheetAt(sheet_index);
 				XSSFRow firstRow = sheet.getRow(0);
-				if(firstRow != null){
 
+				//init DataValidations.
+				unsetValidation(sheet);
+
+				if(firstRow != null){
 					//counting Constructor param Number and Method param Number.
 					int old_conNum=0;
 					int old_metNum=0;
@@ -154,11 +156,16 @@ public class ExcelCreator{
 				XSSFCell currentCell =null;
 				for(int j=currentRow.getPhysicalNumberOfCells()-1; j>=from;j--){
 					currentCell = currentRow.getCell(j);
-					currentRow.createCell(j+offset).copyCellFrom(currentCell, ccp);
+					if(currentCell !=null)
+						currentRow.createCell(j+offset).copyCellFrom(currentCell, ccp);
 				}
 				for(int k=from; k< from+offset ; k++){
 					currentCell = currentRow.getCell(k);
-					currentRow.removeCell(currentCell);
+					if(currentCell !=null){
+						if(currentCell.getCellComment() !=null)
+							currentCell.removeCellComment();
+						currentRow.removeCell(currentCell);
+					}
 				}
 			}
 		}
@@ -168,21 +175,24 @@ public class ExcelCreator{
 	private void removeColumn(XSSFSheet sheet, int from, int offset){
 		XSSFRow currentRow =null;
 		CellCopyPolicy ccp = new CellCopyPolicy();
-		
-
 		if(sheet !=null){
-			for(int i=0; i<sheet.getPhysicalNumberOfRows(); i++){
+			int colNum =sheet.getRow(0).getPhysicalNumberOfCells();
+			for(int i=0; i<sheet.getPhysicalNumberOfRows(); i++){ 
 				currentRow =sheet.getRow(i);
 				XSSFCell currentCell =null;
-				int colNum =currentRow.getPhysicalNumberOfCells();
+
 				for(int j=from+offset-1; j<colNum;j++){
 					currentCell = currentRow.getCell(j);
 					if(currentCell !=null)
-						currentRow.getCell(j-offset).copyCellFrom(currentCell, ccp);					
+						currentRow.getCell(j-offset).copyCellFrom(currentCell, ccp);
 				}
 				for(int k=colNum-offset; k< colNum ; k++){
 					currentCell = currentRow.getCell(k);
-					currentRow.removeCell(currentCell);
+					if(currentCell !=null){
+						if(currentCell.getCellComment() !=null)
+							currentCell.removeCellComment();
+						currentRow.removeCell(currentCell);
+					}
 				}
 
 			}
@@ -404,20 +414,6 @@ public class ExcelCreator{
 					met_par_cell = met_par_firstrow.createCell(mets_total);
 					met_par_cell.setCellValue(methodStr);
 
-
-
-					//Set Simple method Name.
-					ClientAnchor methodanchor= factory.createClientAnchor();
-					methodanchor.setCol1(clz_met_col_index);
-					methodanchor.setCol2(clz_met_col_index+3);
-					methodanchor.setRow1(i);
-					methodanchor.setRow2(i+1);
-
-					Comment methodcomment= drawing.createCellComment(methodanchor);
-					RichTextString method_commentStr = factory.createRichTextString(met.getName());
-					methodcomment.setString(method_commentStr);
-					clz_met_cell.setCellComment(methodcomment);
-
 					if(params.length>0){
 						//Method Parameter List Name.
 						XSSFName namedCell= workbook.createName();
@@ -430,14 +426,11 @@ public class ExcelCreator{
 					mets_total++;
 				}//Method loop End
 
-
-
 				//Set Class-Method Data ReferenceList
 				XSSFName namedcell =workbook.createName();
 				namedcell.setNameName(clz.getSimpleName()); //Nameing이 중요.
 				char currentCol=(char) ('A'+clz_met_col_index);
 				String formula= "ClassMethodhidden!$"+currentCol+"$2:$"+currentCol+"$" + (mets.size()+1);
-				//				System.out.println("Create : " + formula);
 				namedcell.setRefersToFormula(formula);				
 			}
 
@@ -508,11 +501,14 @@ public class ExcelCreator{
 		if(!workbook.isSheetHidden(3)) workbook.setSheetHidden(3, true);
 	}
 
+	private void unsetValidation(XSSFSheet xssfSheet){
+		CTWorksheet ctsheet = xssfSheet.getCTWorksheet();
+		ctsheet.unsetDataValidations();
+		ctsheet.setDataValidations(null);
+	}
 
 	//클래스 이름 제약
 	private void setValidation(String namedcell, XSSFSheet xssfSheet ,int col){
-
-
 		DataValidation dataValidation = null;
 		DataValidationConstraint constraint = null;
 		DataValidationHelper validationHelper = null;
@@ -522,7 +518,6 @@ public class ExcelCreator{
 		CellRangeAddressList addresslist =null;
 		if(constraint !=null){
 			addresslist = new CellRangeAddressList(1,500,col,col);
-			//			System.out.println(constraint.getFormula1());
 			dataValidation= validationHelper.createValidation(constraint, addresslist);
 			dataValidation.setSuppressDropDownArrow(true);
 			dataValidation.setShowErrorBox(true);
