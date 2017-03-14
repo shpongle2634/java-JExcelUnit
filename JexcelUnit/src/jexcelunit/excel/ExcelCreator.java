@@ -13,11 +13,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.poi.ss.usermodel.CellCopyPolicy;
-import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.DataValidation;
 import org.apache.poi.ss.usermodel.DataValidationConstraint;
 import org.apache.poi.ss.usermodel.DataValidationHelper;
-import org.apache.poi.ss.usermodel.Drawing;
 import org.apache.poi.ss.usermodel.Name;
 import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFCell;
@@ -79,8 +77,6 @@ public class ExcelCreator{
 				workbook.removeName(name);
 			}else break;
 		}
-
-
 
 		String[] rmvSheet= new String[workbook.getNumberOfSheets()];
 		int rm_Sheetindex=0;
@@ -228,12 +224,15 @@ public class ExcelCreator{
 	 * 1. 다중 파라미터를 어떻게 ? 파라미터 개수륿 분석해서 칼럼 수 조정할것 DONE
 	 * 2. 모크객체의 이용방법은 어떻게? 모크객체 이름으로 접근하도록을 기본. 모크객체 생성도 엑셀로 지원 가능? DONE
 	 * 3. 테스트방식 : 시나리오 or 독립. => 시트를 슈트단위로 하여 DONE.
-	 * 4. 생성파일 네이밍. => TODO 새창.
-	 * 5. 중복파일 처리. => TODO DATAVALIDATION NAMING
+	 * 4. 생성파일 네이밍. => 9.
+	 * 5. 중복파일 처리. => DONE
 	 * 	5-1. UPDATE 방식으로 유효성,네임 초기화 및 재설정. 칼럼 조정.
-	 * 6. SUCCESS 처리=> TODO 엑셀에 셋팅.
+	 * 6. SUCCESS 처리=> TODO 엑셀에 셋팅.  컬러 조정.
 	 * 7. 로그처리=>TODO Stack ListView로 제공. 로그파일 생성.
-	 * 8. src 폴더의 경로 =>TODO
+	 * 8. src 폴더의 경로 => 9.
+	 * 
+	 * 9. Extension Point  수정 : 버튼 + new. => 새 파일 Wizard 마법사로 슈트 클래스와 xlsx 파일 모두를 생성하게 만들자.
+	 *  9-1. src, targetproject 모두 위저드에서 선택받도록. => 4, 8 동시해결 TODO
 	 * */
 	public void createXlsx() throws IOException{
 		//Check ".xlxs" file is exist.
@@ -323,17 +322,6 @@ public class ExcelCreator{
 		}
 	}
 
-	/*
-	 * 1. 클래스 -생성자 파라미터타입 유효성검증 	파라미터 개수가 같은데, 타입이 다른경우 ? 제약을 걸기에 모호함. 생성자는 이름이 같으니까..	
-	 * 2. 클래스 - 메소드리스트 				ok
-	 * 3. 메소드 - 파라미터 타입				1과 같은 이슈.
-	 * 4. 클래스 - 리턴타입					파라미터가 같으나 리턴이 다른건 없음. 타입제약을 걸기엔 조금 무리가 있겠는데?
-	 * => 결국 제약가능한건 클래스 이름, 클래스에 따른 메소드리스트 정도
-	 * => 코멘트를 이용하면 괜찮! 그리고 리스트제약을 풀네임으로 하면 가능하다.
-	 * => 클래스 선택또한  생성자 포함해서 입력하도록 하자.
-	 * 
-	 * @@ 파라미터 이름까지는 리플렉션으로 얻을 수가 없다고한다 카더라. 외부 라이브러리를 써야하나..
-	 * */
 
 	// Create Hidden sheet for DataValidation List.
 	private void hiddensheet(XSSFWorkbook workbook, HashMap<String,ClassInfo> classinfos){
@@ -349,8 +337,8 @@ public class ExcelCreator{
 		XSSFRow clz_met_firstrow=class_method_sheet.createRow(0);
 		XSSFRow met_par_firstrow =method_param_sheet.createRow(0);
 		XSSFRow cons_par_firstrow = cons_param_sheet.createRow(0);
-		Drawing drawing = class_method_sheet.createDrawingPatriarch();//to Create Cell Comment
-		CreationHelper factory =workbook.getCreationHelper();
+//		Drawing drawing = class_method_sheet.createDrawingPatriarch();//to Create Cell Comment
+//		CreationHelper factory =workbook.getCreationHelper();
 		int clz_met_col_index=0;
 		int cons_total=0, mets_total=0;
 		//Class Loop Start
@@ -455,13 +443,11 @@ public class ExcelCreator{
 					//생성자+파라미터 타입으로  네이밍스트링 만듬
 					consParamNamed+=param.getType().getSimpleName();
 
-
 					//파라미터 타입 셀생성
 					con_par_row=cons_param_sheet.getRow(param_index+1);
 					if(con_par_row ==null) con_par_row=cons_param_sheet.createRow(param_index+1);
 					XSSFCell paramcell=con_par_row.createCell(cons_total);
 					paramcell.setCellValue(param.getType().getSimpleName());
-					//					System.out.println(param.getType());
 				}
 				consName+=')';
 				System.out.println(consName);
@@ -484,8 +470,6 @@ public class ExcelCreator{
 
 			clz_met_col_index++;
 		}//Class loop End.
-
-
 
 		//Set Class Data ReferenceList.
 		XSSFName namedcell =workbook.createName();

@@ -16,11 +16,11 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.jface.window.Window;
 import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.dialogs.ListSelectionDialog;
+import org.eclipse.ui.dialogs.ElementListSelectionDialog;
 import org.eclipse.ui.handlers.HandlerUtil;
-import org.eclipse.ui.model.BaseWorkbenchContentProvider;
-import org.eclipse.ui.model.WorkbenchLabelProvider;
 
 import jexcelunit.excel.ExcelCreator;
 import jexcelunit.utils.ClassAnalyzer;
@@ -36,42 +36,54 @@ import jexcelunit.utils.ClassInfo;
 @SuppressWarnings("rawtypes")
 public class ExcelingHandler extends AbstractHandler {
 
+	private Object[] selectProject(IWorkspaceRoot root,ExecutionEvent event) throws ExecutionException{
+		IWorkbenchWindow window = HandlerUtil.getActiveWorkbenchWindowChecked(event);
+		IProject[] projects= root.getProjects();
+		String[] projectNames = new String[projects.length];
+		int index=0;
+		for(IProject project : projects) projectNames[index++]=project.getName();
+
+		ElementListSelectionDialog dialog = new ElementListSelectionDialog(window.getShell(), new LabelProvider());
+		dialog.setElements(projectNames);
+		dialog.setTitle("Project Selection");
+		dialog.setMultipleSelection(false);
+		if(dialog.open() ==Window.OK){
+			return dialog.getResult();
+		};
+		return null;
+	}
+
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		IWorkbenchWindow window = HandlerUtil.getActiveWorkbenchWindowChecked(event);
 		IWorkspaceRoot root=  ResourcesPlugin.getWorkspace().getRoot();
-		ListSelectionDialog dlg = new ListSelectionDialog(window.getShell(), 
-				root, 
-				new BaseWorkbenchContentProvider(), new WorkbenchLabelProvider(), "Select the Project:");
-		dlg.setTitle("Project Selection");
-		dlg.open();
-
-		Object[] results = (Object[]) dlg.getResult();
+		Object[] results = null;
 		IProject targetproject =null;
 		ArrayList<Class> classlist=null;
-		if(results!=null)
-			for(Object result : results){
+		results = selectProject(root,event);
 
-				//gathering project classes
-				targetproject =root.getProject(result.toString().substring(2));
-				System.out.println(targetproject.getName());
-				classlist=getClasses(targetproject);
+		if(results!=null && results.length ==1)
+			if(String.class.isInstance(results[0])){
+				String result = (String) results[0];
+				targetproject =root.getProject(result);
+				//Setting src folder and xlsx Name.
+				if(targetproject !=null && IProject.class.isInstance(targetproject)){
+					
+					classlist=getClasses(targetproject);
 
-				//analyze class info
-				ClassAnalyzer analyzer= new ClassAnalyzer(classlist);
-				HashMap<String,ClassInfo> classinfos= analyzer.getTestInfos();
+					//analyze class info
+					ClassAnalyzer analyzer= new ClassAnalyzer(classlist);
+					HashMap<String,ClassInfo> classinfos= analyzer.getTestInfos();
 
-				//Create Excel File.
-				ExcelCreator exceling= new ExcelCreator(targetproject.getName(), targetproject.getLocation().toString(), classinfos);
-				try {
-					exceling.createXlsx();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					//Create Excel File.
+					ExcelCreator exceling= new ExcelCreator(targetproject.getName(), targetproject.getLocation().toString(), classinfos);
+					try {
+						exceling.createXlsx();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}					
 				}
-
-			}
-
+			}		
 		return null;
 	}
 
@@ -110,8 +122,6 @@ public class ExcelingHandler extends AbstractHandler {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
-
 		return  targetClasses;
 	}
 }

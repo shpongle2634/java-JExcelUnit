@@ -87,5 +87,19 @@
       
       
    </extension>
+   <extension
+         point="org.eclipse.ui.newWizards">
+      <category
+            id="JexcelUnit"
+            name="Excelling Wizards">
+      </category>
+      <wizard
+            category="JexcelUnit"
+            class="jexcelunit.wizards.ExcellingWizard"
+            icon="icons/sample.gif"
+            id="jexcelunit.wizards.ExcellingWizard"
+            name="TestingExcel">
+      </wizard>
+   </extension>
 
 </plugin>
