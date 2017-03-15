@@ -48,15 +48,15 @@ public class ExcelCreator{
 	private int metsCount=0;
 	private FileOutputStream fileoutputstream= null;
 	private XSSFWorkbook workbook = null;
-	private String projectName= null, rootpath=null;
+	private String fileName= null, containerName=null;
 	private HashMap<String, ClassInfo> classinfos=null;
 	private File existingExcel= null;
 
 
 
-	public ExcelCreator(String projectName,String rootpath ,HashMap<String, ClassInfo> classinfos){
-		this.projectName=projectName;
-		this.rootpath= rootpath;
+	public ExcelCreator(String fileName,String containerName ,HashMap<String, ClassInfo> classinfos){
+		this.fileName=fileName;
+		this.containerName= containerName;
 		this.classinfos= classinfos;
 
 		consCount=getMaxParamCount(CONSTRUCTOR,classinfos);
@@ -198,12 +198,12 @@ public class ExcelCreator{
 
 	private File getExistingExcel(){
 		boolean will_create=true;
-		File root = new File(rootpath);
+		File root = new File(containerName);
 		File xlsx= null;
 		File[] filelist=  root.listFiles();
 		for(File f: filelist){
 			//			System.out.println(f.getName());
-			if(f.getName().equals(projectName+".xlsx")){
+			if(f.getName().equals(fileName+".xlsx")){
 				IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 				will_create= MessageDialog.openQuestion(
 						window.getShell(),
@@ -304,7 +304,7 @@ public class ExcelCreator{
 				}
 			}
 			//save xlsx
-			fileoutputstream=new FileOutputStream(rootpath+"/"+ projectName+".xlsx");
+			fileoutputstream=new FileOutputStream(containerName+"/"+ fileName+".xlsx");
 			workbook.write(fileoutputstream);
 
 			System.out.println("Created");

@@ -1,23 +1,34 @@
 package jexcelunit.wizards;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.net.URLStreamHandler;
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.ui.INewWizard;
 import org.eclipse.ui.IWorkbench;
-import org.eclipse.core.runtime.*;
-import org.eclipse.jface.operation.*;
-import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-
-import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.core.resources.*;
-import org.eclipse.core.runtime.CoreException;
-import java.io.*;
-import org.eclipse.ui.*;
-import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.IWorkbenchWizard;
 
 import jexcelunit.excel.ExcelCreator;
+import jexcelunit.utils.ClassAnalyzer;
+import jexcelunit.utils.ClassExtractor;
 import jexcelunit.utils.ClassInfo;
 
 /**
@@ -30,7 +41,7 @@ import jexcelunit.utils.ClassInfo;
  * as a template) is registered for the same extension, it will
  * be able to open it.
  */
-
+@SuppressWarnings("rawtypes")
 public class ExcellingWizard extends Wizard implements INewWizard {
 	private ExcellingWizardPage page;
 	private ISelection selection;
@@ -61,26 +72,14 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 		final String containerName = page.getContainerName();
 		final String fileName = page.getFileName();
 		final String srcName = page.getSrcName();
-		IRunnableWithProgress op = new IRunnableWithProgress() {
-			public void run(IProgressMonitor monitor) throws InvocationTargetException {
-				try {
-					doFinish(containerName, fileName,srcName, monitor);
-				} catch (CoreException e) {
-					throw new InvocationTargetException(e);
-				} finally {
-					monitor.done();
-				}
-			}
-		};
+		final String rootpath = page.getRootPath();
 		try {
-			getContainer().run(true, false, op);
-		} catch (InterruptedException e) {
-			return false;
-		} catch (InvocationTargetException e) {
-			Throwable realException = e.getTargetException();
-			MessageDialog.openError(getShell(), "Error", realException.getMessage());
-			return false;
+			doFinish(rootpath,containerName, fileName,srcName);
+		} catch (CoreException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
+				
 		return true;
 	}
 
@@ -91,10 +90,9 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 	 */
 
 	private void doFinish(
-			String containerName, String fileName, String srcName, IProgressMonitor monitor)
+			String rootpath,String containerName, String fileName, String srcName)
 					throws CoreException {
 		// create a sample file
-		monitor.beginTask("Creating " + fileName, 2);
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IResource resource = root.findMember(new Path(containerName));
 		if (!resource.exists() || !(resource instanceof IContainer)) {
@@ -102,45 +100,95 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 		}
 
 		// Making ExcelFile...
-		IContainer container = (IContainer) resource;
-		final IFile file = container.getFile(new Path(fileName));
 		try {
-			InputStream stream = openContentStream();
-			if (file.exists()) {
-				file.setContents(stream, true, true, monitor);
-			} else {
-				file.create(stream, true, monitor);
-			}
-			stream.close();
+			ArrayList<Class> classlist= getClasses(rootpath+srcName);
+			ClassAnalyzer analyzer = new ClassAnalyzer(classlist);
+			HashMap<String, ClassInfo> classinfos=analyzer.getTestInfos();
+			ExcelCreator exceller= new ExcelCreator(fileName, rootpath+containerName, classinfos);
+			exceller.createXlsx();
 		} catch (IOException e) {
+			e.printStackTrace();
 		}
-
 		//open xlsx.
-		monitor.worked(1);
-		monitor.setTaskName("Opening file for editing...");
-		getShell().getDisplay().asyncExec(new Runnable() {
-			public void run() {
-				IWorkbenchPage page =
-						PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
-				try {
-					IDE.openEditor(page, file, true);
-				} catch (PartInitException e) {
+		//Make Suite Class.
+		PrintWriter pw = null; 
+		File suiteclass= new File( rootpath+srcName+"/TestSuite.java" );
+		if(!suiteclass.exists()){
+			try {
+				pw =  new PrintWriter(new FileWriter(suiteclass));
+
+				String importinvoker= "import jexcelunit.testinvoker.TestInvoker;"
+						+ "\nimport java.lang.reflect.Method;"
+						+ "\nimport java.lang.reflect.Constructor;"
+						+ "\nimport org.junit.runners.Parameterized.Parameters;"
+						+ "\nimport java.util.Collection;"
+						+ "\n\n";
+				String[] classcode={
+						"public class TestSuite extends TestInvoker{",
+						"\tpublic TestSuite(int suite,String testname, Class targetclz,Constructor constructor, Object[] constructor_params, Method targetmethod,",
+						"\tObject[] param1, Object expectedResult) {\n",
+						"\t\tsuper(suite,testname, targetclz,constructor,constructor_params, targetmethod, param1, expectedResult);",
+						"\t}",
+						"\tprivate static void setUp() {",
+						"\t\t/* Make Your Mock Objects  using mockObject.put(\"mock name\", mock object);",
+						"\t\t* Make Your Custom Exceptions using  addException(your Exception e);*/",
+						"\t}\n\n@Parameters( name = \"{index}: suite {0} : {1}\")",
+						"\tpublic static Collection<Object[][]> parameterized(){",
+						"\t\tsetUp();",
+						"\t\treturn parmeterizingExcel();",
+						"}\n",
+						"}"								
+				};
+
+				pw.println(importinvoker);
+				for(String code : classcode){
+					pw.println(code);
 				}
+				pw.close();
+			}catch (Exception e) {
+				e.printStackTrace();
 			}
-		});
-		monitor.worked(1);
+		}
 	}
 
-	/**
-	 * We will initialize file contents with a sample text.
-	 * @throws IOException 
-	 */
+	private ArrayList<Class> getClasses(String srcPath){
+		ClassExtractor ce= new ClassExtractor();
+		ArrayList<Class> targetClasses= new ArrayList<Class>();
+		try {
+			ce.getClasses(new File(srcPath));
 
-	private InputStream openContentStream() throws IOException {
-		String contents =
-				"This is the initial file contents for *.xlsx file that should be word-sorted in the Preview page of the multi-page editor";
-		return new ByteArrayInputStream(contents.getBytes());
+			//load Class files  *Notice : excepts jar files.
+			ArrayList<URL> urls = new ArrayList<URL>();
+			URLStreamHandler streamhandler =null;
+			File classpath = new File(srcPath.replace("/src","/bin"));
+			urls.add(new URL(null,"file:"+classpath.getCanonicalPath()+File.separator,streamhandler));
+			URLClassLoader loader = new URLClassLoader(urls.toArray(new URL[urls.size()]));
+
+
+			//Valid Target Classes and send to Class Parser.
+			for(String s: ce.getClasslist()){
+				Class clz= loader.loadClass(s);
+
+				targetClasses.add(clz);
+			}
+			loader.close();
+			//For test
+			for(Class clz: targetClasses){
+				System.out.println(clz.getName());
+			}
+		}catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return  targetClasses;
 	}
+	
 
 	private void throwCoreException(String message) throws CoreException {
 		IStatus status =

@@ -30,7 +30,7 @@ public class ExcellingWizardPage extends WizardPage {
 	private Text containerText;
 	private Text srcText;
 	private Text fileText;
-
+	private String rootpath;
 	private ISelection selection;
 
 	/**
@@ -98,7 +98,7 @@ public class ExcellingWizardPage extends WizardPage {
 		});
 
 		label = new Label(container, SWT.NULL);
-		label.setText("&Excel name:");
+		label.setText("&.xlsx name:");
 
 		fileText = new Text(container, SWT.BORDER | SWT.SINGLE);
 		gd = new GridData(GridData.FILL_HORIZONTAL);
@@ -131,11 +131,12 @@ public class ExcellingWizardPage extends WizardPage {
 					container = (IContainer) obj;
 				else
 					container = ((IResource) obj).getParent();
+				rootpath=((IResource) obj).getParent().getLocation().toString();
 				containerText.setText(container.getFullPath().toString());
 				srcText.setText(container.getFullPath().toString()+"/src");
 			}
 		}
-		fileText.setText("Test Suites.xlsx");
+		fileText.setText("Test Suites");
 	}
 
 	/**
@@ -196,14 +197,7 @@ public class ExcellingWizardPage extends WizardPage {
 			updateStatus("File name must be valid");
 			return;
 		}
-		int dotLoc = fileName.lastIndexOf('.');
-		if (dotLoc != -1) {
-			String ext = fileName.substring(dotLoc + 1);
-			if (ext.equalsIgnoreCase("xlsx") == false) {
-				updateStatus("File extension must be \"xlsx\"");
-				return;
-			}
-		}
+
 		updateStatus(null);
 	}
 
@@ -218,6 +212,9 @@ public class ExcellingWizardPage extends WizardPage {
 
 	public String getFileName() {
 		return fileText.getText();
+	}
+	public String getRootPath(){
+		return rootpath;
 	}
 	
 	public String getSrcName(){

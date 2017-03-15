@@ -48,11 +48,11 @@ public class ExcelReader {
 	/*
 	 * Excel Reading Issue
 	 * */
-	public ArrayList<ArrayList<TestcaseVO>> readExcel(String projectname, String rootpath) throws IOException{
+	public ArrayList<ArrayList<TestcaseVO>> readExcel(String fileName, String rootpath) throws IOException{
 		ArrayList<ArrayList<TestcaseVO>> caselists= new ArrayList<ArrayList<TestcaseVO>>();
 
 		//open Excel File.
-		File file = new File(rootpath +'/'+projectname+".xlsx");
+		File file = new File(rootpath +'/'+fileName+".xlsx");
 
 		FileInputStream inputstream = new FileInputStream(file);
 		XSSFWorkbook workbook = null;

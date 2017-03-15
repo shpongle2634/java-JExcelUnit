@@ -80,7 +80,7 @@ public class TestInvoker {
 		this.method_params=param1;
 	}
 
-	public static Collection parmeterizingExcel(){
+	public static Collection parmeterizingExcel(String fileName){
 		ExcelReader reader = new ExcelReader();
 		//메타데이터를 참조할 수 밖에없다.
 		//핸들러 레벨에서 타겟 프로젝트 정보를 생성할것.
@@ -90,9 +90,7 @@ public class TestInvoker {
 
 		if(file.exists()){
 			try {
-				File realPath= new File(file.getCanonicalPath());
-
-				testcases = reader.readExcel(realPath.getName(), file.getCanonicalPath());
+				testcases = reader.readExcel(fileName, file.getCanonicalPath());
 
 				if(testcases.size()>0)
 				{
