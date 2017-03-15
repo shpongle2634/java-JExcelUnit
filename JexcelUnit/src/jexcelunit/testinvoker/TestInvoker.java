@@ -16,6 +16,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,8 +55,9 @@ public class TestInvoker {
 	private static ArrayList<Class> exceptionlist=new ArrayList<Class>();//사용자 정의 예외 클래스들을 담아두는 곳.
 	//	private static Method[] methods; //테스트할 객체의 메소드를 받는부분
 	protected static HashMap<String,Object> mock=new HashMap<String,Object>();//모크객체 모음
-	private static int suitenumber=0;
-	private static int testnumber=0; //테스트 run 넘버
+	private static int suitenumber=0,rowIndex=0,testnumber=0;
+	private static boolean[][] success=null;
+	private static String[][] result=null;
 
 	//테스트 케이스들을 확인할 method_params
 	private int suite;
@@ -66,7 +68,6 @@ public class TestInvoker {
 	private Method targetmethod=null;
 	private Object[] method_params=null;
 	private Object expectedResult=null;
-
 
 	//테스트이름, 테스트할 클래스, 테스트파라미터,  테스트할 메소드이름, 파라미터들,예상결과를 JUnit이 읽어와 실행시키는 부분이다.
 	public TestInvoker(int suite,String testname,Class targetclz,Constructor constructor,Object[] constructor_params,Method targetmethod,Object[] param1,Object expectedResult){
@@ -92,13 +93,20 @@ public class TestInvoker {
 			try {
 				testcases = reader.readExcel(fileName, file.getCanonicalPath());
 
-				if(testcases.size()>0)
-				{
-					int total_row_index=0;
+				if(testcases.size()>0){
+
+					int total_row_index=0, maxRow=0;
 					for(ArrayList<TestcaseVO> testcase : testcases){
-						total_row_index+=testcase.size();
+						int size= testcase.size();
+						total_row_index+=size;
+						if(size>maxRow) maxRow=size;
 					}
 					parameterized = new Object[total_row_index][8];
+					//init success
+					success= new boolean[testcases.size()][maxRow];
+					for(int i=0; i<testcases.size(); i++)
+						Arrays.fill(success[i], true);
+					result= new String[testcases.size()][maxRow];
 
 					int row_index=0;
 					for(ArrayList<TestcaseVO> testcase : testcases){
@@ -169,6 +177,7 @@ public class TestInvoker {
 	public void setObj(){
 		if(suitenumber !=suite){ //새로운 시나리오 테스트.
 			classmap.clear();
+			rowIndex=0;
 		}
 		if(!classmap.containsKey(targetclz)&& targetmethod !=null){ //실행할 객체가 없는경우
 			//System.out.println(classmap.containsKey(targetclz)+"새로생성");
@@ -199,7 +208,6 @@ public class TestInvoker {
 			Class paramClass=params[i].getClass();
 			if(isNeedUnBoxing(paramClass))
 				paramClass= unBoxing(paramClass);
-
 			if(!types[i].equals(paramClass)){
 				Object mockObject=mock.get(params[i]);
 				if(mockObject.getClass().equals(types[i]) && mockObject!=null){
@@ -219,15 +227,17 @@ public class TestInvoker {
 
 			if(constructor_params.length==0)
 				assertNotNull(constructor.newInstance());
-
 			else{
 				//타입이 안맞으면 mock 객체 가져올것.
 				Class[] paramTypes=constructor.getParameterTypes();
 				Object[] params= getMock(paramTypes,constructor_params);
 				assertNotNull(constructor.newInstance(params));
 			}
-
-		}catch(Exception e){handleException(e);}
+		}catch(AssertionError e){
+			success[suite][rowIndex-1]=false;
+			throw(e);
+		}
+		catch(Exception e){handleException(e);}
 	}
 
 
@@ -251,7 +261,8 @@ public class TestInvoker {
 	 * @throws IllegalAccessException 
 	 * @throws IllegalArgumentException 
 	 ********************************************************************** */
-	private void auto_Assert(Object testresult, Field f,Class memberclz ) throws IllegalArgumentException, IllegalAccessException{
+	private void auto_Assert(Object testresult, Field f,Class memberclz ) throws IllegalArgumentException, IllegalAccessException, AssertionError{
+		//		try{
 		if(isNeedUnBoxing(memberclz) ){
 			System.out.println( "Assert 결과  (예상값/테스트결과): "+f.get(expectedResult)+ " "+f.get(testresult));
 			assertThat(f.get(testresult),is(f.get(expectedResult)));
@@ -276,11 +287,17 @@ public class TestInvoker {
 				System.out.println( "Assert 결과  (예상값/테스트결과): "+ex +" "+ re);
 				assertThat(re, is(ex));
 			}
-		}
+		}else fail("There's Custom Object Field.");
+		//		}catch(AssertionError e){
+		//			success[suite-1][successIndex]=false;
+		//			throw(e);
+		//		}finally{ successIndex++;}
 	}	
 
 	@Test
 	public void testMethod() throws Throwable {
+		suitenumber=suite;
+		rowIndex++;
 		//setObj();
 		if(targetmethod==null){ //생성자 테스트인 경우.
 			constructor_test();
@@ -300,10 +317,11 @@ public class TestInvoker {
 		Object[] params= getMock(paramsTypes, method_params);
 		try {			
 			testresult=targetmethod.invoke(classmap.get(targetclz), params);
-				
+//			System.out.println(suite +" " + (rowIndex-1));
+			result[suite][rowIndex-1]=testresult.toString();
 			if(expectedResult !=null){
 				if(isNeedUnBoxing(testresult.getClass())){ //원시값 테스트
-					System.out.println( "Assert 결과  (예상값/테스트결과): " +expectedResult +" " +testresult); //예상결과와 실제결과 출력
+					System.out.println( "Assert 결과  (예상값/테스트결과): " +expectedResult+" " +testresult); //예상결과와 실제결과 출력
 					//toString 오버라이딩을 통해 객체 상태를 하는 습관을 가진다면, 이곳에 인풋 객체의 상태를 출력가능하다.
 					assertThat(testresult,is(expectedResult)); //테스팅 결과를 확인.
 				}
@@ -312,6 +330,7 @@ public class TestInvoker {
 					type[0]=testresult.getClass();//실제 리턴타입
 					Object[] returnObj=new Object[1];
 					returnObj[0]=expectedResult;
+					result[suite][rowIndex-1]=expectedResult.toString(); //result
 					if(!type[0].equals(expectedResult.getClass())){//예상값이 mock객체인경우.
 						returnObj=getMock(type,returnObj);
 						expectedResult=returnObj[0];
@@ -325,17 +344,13 @@ public class TestInvoker {
 							System.out.println(memberclz.getSimpleName()+ " "+f.getName());
 							try {
 								auto_Assert(testresult, f, memberclz);
-							} catch (IllegalArgumentException | IllegalAccessException e) {
-								// TODO Auto-generated catch block
-								handleException(e);
-							}
+							} catch (IllegalArgumentException | IllegalAccessException e) {handleException(e);}
 						}
 					}
-					
-					
 				}
 			}
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			success[suite][rowIndex-1]=false;
 			// TODO Auto-generated catch block
 			Throwable fillstack=e.fillInStackTrace();
 			Throwable cause=null;
@@ -345,19 +360,39 @@ public class TestInvoker {
 				throw(cause);
 			}//Method Exception.
 		}catch(AssertionError e){
+//			System.out.println(rowIndex);
+			success[suite][rowIndex-1]=false;
 			//정확한 라인 찾기 이슈..
 			StackTraceElement[] elem =new StackTraceElement[1];			
 			elem[0]=new StackTraceElement(targetclz.getName(), targetmethod.getName(), targetclz.getCanonicalName(),1);
 			e.setStackTrace(elem);
 			throw(e);
 		}
-
 	}
-
-
-	@After
-	public void log(){
+	@AfterClass
+	public static void log(){
 		//1.로그관리. 엑셀 Success 설정.
 		//2.드롭다운 가능한 리스트뷰로. 로그 파일도 만들것.. 정확히 어느 클래스의 어디서 오류가 났는지
+//		int row=0,col=0;
+//		for(boolean[] b : success){
+//			col=0;
+//			for(boolean bb : b){
+//				System.out.println("success["+row+"]"+"["+col+"] : "+ bb);
+//				col++;
+//			}
+//			row++;
+//		}
+//		row=0;
+//		for(String[] b : result){
+//			col=0;
+//			for(String bb : b){
+//				System.out.println("result["+row+"]"+"["+col+"] : "+ bb);
+//				col++;
+//			}
+//			row++;
+//		}
+		
+		//reSetup Excel
+		
 	}
 }

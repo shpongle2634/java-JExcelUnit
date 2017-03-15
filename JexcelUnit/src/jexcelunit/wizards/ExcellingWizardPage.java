@@ -4,6 +4,7 @@ import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.jface.dialogs.IDialogPage;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.WizardPage;
@@ -30,7 +31,9 @@ public class ExcellingWizardPage extends WizardPage {
 	private Text containerText;
 	private Text srcText;
 	private Text fileText;
+	private Text className;
 	private String rootpath;
+	
 	private ISelection selection;
 
 	/**
@@ -98,7 +101,7 @@ public class ExcellingWizardPage extends WizardPage {
 		});
 
 		label = new Label(container, SWT.NULL);
-		label.setText("&.xlsx name:");
+		label.setText("&Excel name:");
 
 		fileText = new Text(container, SWT.BORDER | SWT.SINGLE);
 		gd = new GridData(GridData.FILL_HORIZONTAL);
@@ -109,6 +112,24 @@ public class ExcellingWizardPage extends WizardPage {
 			}
 		});
 
+		label = new Label(container, SWT.NULL);
+		label.setText("&.xlsx");
+		
+		
+		//Suite Class Name
+		label = new Label(container, SWT.NULL);
+		label.setText("&SuiteClass name:");
+
+		className = new Text(container, SWT.BORDER | SWT.SINGLE);
+		gd = new GridData(GridData.FILL_HORIZONTAL);
+		className.setLayoutData(gd);
+		className.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				dialogChanged();
+			}
+		});
+
+		
 		initialize();
 		dialogChanged();
 		setControl(container);
@@ -137,6 +158,7 @@ public class ExcellingWizardPage extends WizardPage {
 			}
 		}
 		fileText.setText("Test Suites");
+		className.setText("ExcelTester");
 	}
 
 	/**
@@ -164,6 +186,7 @@ public class ExcellingWizardPage extends WizardPage {
 			Object[] result = dialog.getResult();
 			if (result.length == 1) {
 				srcText.setText(((Path) result[0]).toString());
+				rootpath=ResourcesPlugin.getWorkspace().getRoot().getLocation().toString();
 			}
 		}
 	}
@@ -175,7 +198,7 @@ public class ExcellingWizardPage extends WizardPage {
 		IResource container = ResourcesPlugin.getWorkspace().getRoot()
 				.findMember(new Path(getContainerName()));
 		String fileName = getFileName();
-
+		
 		if (getContainerName().length() == 0) {
 			updateStatus("File container must be specified");
 			return;
@@ -219,5 +242,9 @@ public class ExcellingWizardPage extends WizardPage {
 	
 	public String getSrcName(){
 		return srcText.getText();
+	}
+	
+	public String getClassName(){
+		return className.getText();
 	}
 }

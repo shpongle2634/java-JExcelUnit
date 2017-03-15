@@ -232,7 +232,7 @@ public class ExcelCreator{
 	 * 8. src 폴더의 경로 => 9.
 	 * 
 	 * 9. Extension Point  수정 : 버튼 + new. => 새 파일 Wizard 마법사로 슈트 클래스와 xlsx 파일 모두를 생성하게 만들자.
-	 *  9-1. src, targetproject 모두 위저드에서 선택받도록. => 4, 8 동시해결 TODO
+	 *  9-1. src, targetproject 모두 위저드에서 선택받도록. => 4, 8 동시해결  DONE
 	 * */
 	public void createXlsx() throws IOException{
 		//Check ".xlxs" file is exist.
