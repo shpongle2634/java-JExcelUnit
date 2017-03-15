@@ -7,13 +7,11 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -35,6 +33,7 @@ public class ExcelReader {
 	private Set<Class> newInstancable= new HashSet<>();
 	private HashMap<String,String> classFullNames = new HashMap<>();
 	private DataFormatter formatter=new DataFormatter();
+	private FileInputStream inputstream=null;
 	public ExcelReader(){
 		newInstancable.add(String.class);
 		newInstancable.add(Short.class);
@@ -45,18 +44,20 @@ public class ExcelReader {
 		newInstancable.add(Byte.class);
 
 	}
+
+	public XSSFWorkbook getWorkbook(String fileName, String rootpath) throws IOException{
+		//open Excel File.
+		File file = new File(rootpath +'/'+fileName+".xlsx");
+		inputstream = new FileInputStream(file);
+		return new XSSFWorkbook(inputstream);
+	}
 	/*
 	 * Excel Reading Issue
 	 * */
 	public ArrayList<ArrayList<TestcaseVO>> readExcel(String fileName, String rootpath) throws IOException{
 		ArrayList<ArrayList<TestcaseVO>> caselists= new ArrayList<ArrayList<TestcaseVO>>();
-
-		//open Excel File.
-		File file = new File(rootpath +'/'+fileName+".xlsx");
-
-		FileInputStream inputstream = new FileInputStream(file);
 		XSSFWorkbook workbook = null;
-		workbook= new XSSFWorkbook(inputstream);
+		workbook=getWorkbook(fileName, rootpath);
 
 		if(workbook!=null){
 			//Read sheet
@@ -129,7 +130,8 @@ public class ExcelReader {
 			//Invoker에서 global한 Suite Index를 두어 Parameterize 리턴함수가 다른 배열을 리턴하도록.
 			workbook.close();
 		}
-		inputstream.close();
+		if(inputstream !=null)
+			inputstream.close();
 
 		return caselists;
 	} 

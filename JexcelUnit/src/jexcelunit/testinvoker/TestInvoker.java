@@ -23,6 +23,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import jexcelunit.excel.ExcelReader;
+import jexcelunit.excel.ExcelResultSaver;
 import jexcelunit.excel.TestcaseVO;
 
 import static org.junit.Assert.*;
@@ -81,6 +82,14 @@ public class TestInvoker {
 		this.method_params=param1;
 	}
 
+	
+	/*
+	 * 1. 어노테이션으로 엑셀 path를 읽어옴.
+	 * 2. 받아온  path는  다시 저장할때 사용.
+	 * 3. suite가 가진 row index를 또 저장해야하는가 .
+	 * 4. 그럴바에 suiteInfo 라는 맴버클래스를 둬서 관리하는게 나을려나.
+	 * 
+	 * */
 	public static Collection parmeterizingExcel(String fileName){
 		ExcelReader reader = new ExcelReader();
 		//메타데이터를 참조할 수 밖에없다.
@@ -288,10 +297,7 @@ public class TestInvoker {
 				assertThat(re, is(ex));
 			}
 		}else fail("There's Custom Object Field.");
-		//		}catch(AssertionError e){
-		//			success[suite-1][successIndex]=false;
-		//			throw(e);
-		//		}finally{ successIndex++;}
+		//재귀 필요.
 	}	
 
 	@Test
@@ -351,6 +357,7 @@ public class TestInvoker {
 			}
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 			success[suite][rowIndex-1]=false;
+			result[suite][rowIndex-1]="InitError";
 			// TODO Auto-generated catch block
 			Throwable fillstack=e.fillInStackTrace();
 			Throwable cause=null;
@@ -392,7 +399,7 @@ public class TestInvoker {
 //			row++;
 //		}
 		
-		//reSetup Excel
-		
+//		ExcelResultSaver save=new ExcelResultSaver(fileName, rootpath);
+//		save.writeResults(suite, totalRow, result, success);
 	}
 }
