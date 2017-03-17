@@ -16,20 +16,23 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 public class ExcelResultSaver {
 	FileInputStream inputstream;
 	FileOutputStream fileoutputstream;
-	String fileName,rootpath;
+	String filePath,rootpath;
+	XSSFWorkbook workbook;
 	File file;
-	public ExcelResultSaver(String fileName, String rootpath){
-		this.fileName=fileName;
-		this.rootpath= rootpath;
-		this.file = new File(rootpath +'/'+fileName+".xlsx");
+	public ExcelResultSaver(String filePath){
+		this.filePath=filePath;
+		this.file = new File(filePath);
 	}
-	
-	public XSSFWorkbook getWorkbook(String fileName, String rootpath) throws IOException{
+
+	public XSSFWorkbook getWorkbook() throws IOException{
 		//open Excel File.
-		inputstream = new FileInputStream(file);
-		return new XSSFWorkbook(inputstream);
+		if(file.exists()){
+			inputstream = new FileInputStream(file);
+			return new XSSFWorkbook(inputstream);
+		}
+		return null;
 	}
-	
+
 	private int findIndex(XSSFRow firstRow, String charSequence){
 		Iterator<Cell> it= firstRow.cellIterator();
 		DataFormatter formatter=new DataFormatter();
@@ -41,35 +44,40 @@ public class ExcelResultSaver {
 		}
 		return -1;
 	}
-	
+
 	public void writeResults(int suite, int totalRow, String[] result, boolean[] success) throws IOException{
-		XSSFWorkbook workbook = getWorkbook(fileName, rootpath);
+		workbook = getWorkbook();
 		XSSFSheet sheet=workbook.getSheetAt(suite);
 		int resultIndex=findIndex(sheet.getRow(0), "Result");
 		int successIndex=resultIndex+1;
 		XSSFRow currentRow= null;
 		XSSFCell resultCell, successCell;
-		for(int i = 1; i<totalRow; i++){
+		for(int i = 1; i<=totalRow; i++){
 			currentRow= sheet.getRow(i);
-			
+
 			resultCell= currentRow.getCell(resultIndex);
-			if(resultCell ==null) currentRow.createCell(resultIndex);
+			if(resultCell ==null) resultCell=currentRow.createCell(resultIndex);
 			resultCell.setCellValue(result[i-1]);
-			
+
 			successCell = currentRow.getCell(successIndex);
-			if(successCell==null) currentRow.createCell(successIndex);
+			if(successCell==null) successCell=currentRow.createCell(successIndex);
 			successCell.setCellValue(success[i-1]);
 		}
-		fileoutputstream=new FileOutputStream(file);
-		workbook.write(fileoutputstream);
-		workbook.close();
 		close();
-		
+
 	}
-	
-	private void close() throws IOException{
+	public void write() throws IOException{
+		if(file.exists())
+			fileoutputstream=new FileOutputStream(file);
+		if(workbook!=null){
+			workbook.write(fileoutputstream);
+			workbook.close();
+		}
+	}
+
+	public void close() throws IOException{
 		if(inputstream !=null) inputstream.close();
 		if(fileoutputstream !=null) fileoutputstream.close();
 	}
-	
+
 }

@@ -45,19 +45,19 @@ public class ExcelReader {
 
 	}
 
-	public XSSFWorkbook getWorkbook(String fileName, String rootpath) throws IOException{
+	public XSSFWorkbook getWorkbook(String filePath) throws IOException{
 		//open Excel File.
-		File file = new File(rootpath +'/'+fileName+".xlsx");
+		File file = new File(filePath);
 		inputstream = new FileInputStream(file);
 		return new XSSFWorkbook(inputstream);
 	}
 	/*
 	 * Excel Reading Issue
 	 * */
-	public ArrayList<ArrayList<TestcaseVO>> readExcel(String fileName, String rootpath) throws IOException{
+	public ArrayList<ArrayList<TestcaseVO>> readExcel(String filePath) throws IOException{
 		ArrayList<ArrayList<TestcaseVO>> caselists= new ArrayList<ArrayList<TestcaseVO>>();
 		XSSFWorkbook workbook = null;
-		workbook=getWorkbook(fileName, rootpath);
+		workbook=getWorkbook(filePath);
 
 		if(workbook!=null){
 			//Read sheet

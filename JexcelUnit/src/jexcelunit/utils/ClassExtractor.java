@@ -28,12 +28,12 @@ public class ClassExtractor {
 				classpath=f.getName().substring(0,f.getName().indexOf("."));
 				System.out.println(classpath);	
 
-					while(!parent.getName().equals("src")){
-						classpath= parent.getName()+"."+classpath;
-						parent=parent.getParentFile();
-					}
+				while(!parent.getName().equals("src")){
+					classpath= parent.getName()+"."+classpath;
+					parent=parent.getParentFile();
+				}
 
-					classlist.add(classpath);
+				classlist.add(classpath);
 
 			}else if(f.isDirectory()){
 				getClassPaths(f);
@@ -51,19 +51,24 @@ public class ClassExtractor {
 			URLStreamHandler streamhandler =null;
 			File classpath = new File(srcPath.replace("/src","/bin"));
 			urls.add(new URL(null,"file:"+classpath.getCanonicalPath()+File.separator,streamhandler));
+			@SuppressWarnings("resource")
 			URLClassLoader loader = new URLClassLoader(urls.toArray(new URL[urls.size()]));
 
-
+			Class clz=null;
 			//Valid Target Classes and send to Class Parser.
 			for(String s: classlist){
-				Class clz= loader.loadClass(s);
-
-				targetClasses.add(clz);
+				try{
+					clz= loader.loadClass(s);
+					targetClasses.add(clz);
+				}catch(NoClassDefFoundError e){
+					if (e.getMessage().contains("TestInvoker"));
+					else throw(e);
+				}
 			}
 			loader.close();
 			//For test
-			for(Class clz: targetClasses){
-				System.out.println(clz.getName());
+			for(Class c: targetClasses){
+				System.out.println(c.getName());
 			}
 		}catch (MalformedURLException e) {
 			// TODO Auto-generated catch block

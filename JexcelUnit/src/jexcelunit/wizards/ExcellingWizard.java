@@ -107,10 +107,10 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 			e.printStackTrace();
 		}
 		//Make Suite Class.
-		makeSuiteClass(rootpath, fileName, srcName, className);
+		makeSuiteClass(rootpath,containerName, fileName, srcName, className);
 	}
 
-	private void makeSuiteClass(String rootpath,String fileName, String srcName, String className){
+	private void makeSuiteClass(String rootpath, String containerName, String fileName, String srcName, String className){
 		//Make Suite Class.
 		PrintWriter pw = null; 
 		File suiteclass= new File( rootpath+srcName+"/"+className+".java" );
@@ -133,10 +133,10 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 						"\tprivate static void setUp() {",
 						"\t\t/* Make Your Mock Objects  using mockObject.put(\"mock name\", mock object);",
 						"\t\t* Make Your Custom Exceptions using  addException(your Exception e);*/",
-						"\t}\n\n@Parameters( name = \"{index}: suite {0} : {1}\")",
+						"\t}\n\n@SuppressWarnings(\"unchecked\")\n@Parameters( name = \"{index}: suite {0} : {1}\")",
 						"\tpublic static Collection<Object[][]> parameterized(){",
 						"\t\tsetUp();",
-						"\t\treturn parmeterizingExcel(\""+fileName+"\");",
+						"\t\treturn parmeterizingExcel(\""+rootpath+"/"+containerName+"/" +fileName+".xlsx\");",
 						"}\n",
 						"}"								
 				};
@@ -152,7 +152,7 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 		}
 	}
 
-	
+
 
 	private void throwCoreException(String message) throws CoreException {
 		IStatus status =

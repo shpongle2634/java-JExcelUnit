@@ -17,7 +17,9 @@ public class TestSuite extends TestInvoker{
 		// TODO Auto-generated method stub
 		/* Make Your Mock Objects  using mockObject.put("mock name", mock object);
 		 * Make Your Custom Exceptions using  addException(your Exception e);
-		 * */	
+		 * 
+		 * */
+		
 	}
 
 	@SuppressWarnings("unchecked")

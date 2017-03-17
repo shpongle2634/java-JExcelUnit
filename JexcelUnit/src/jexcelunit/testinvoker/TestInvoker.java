@@ -1,6 +1,11 @@
 package jexcelunit.testinvoker;
 
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -15,7 +20,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,9 +29,6 @@ import org.junit.runners.Parameterized;
 import jexcelunit.excel.ExcelReader;
 import jexcelunit.excel.ExcelResultSaver;
 import jexcelunit.excel.TestcaseVO;
-
-import static org.junit.Assert.*;
-import static org.hamcrest.CoreMatchers.*;
 
 /*****
  * 클래스 설명 : Reflection을 통한 통합 테스팅 코드.
@@ -41,13 +42,6 @@ import static org.hamcrest.CoreMatchers.*;
  * 
  * 
  * 
- * 2017-03-01
- * Interface 이슈 .
- * Testing 버튼을 눌렀을때. 
- * JUnit 테스트를 자동으로 시켜줄건가...
- *  1. TestInvoker 를 상속받은  Suite 클래스를 하나 생성해준다. Mock 객체.
- *  2. JUnit과 같은 런타임 환경을 하나 직접 만들던가.. 이건좀 오래걸릴수도. JUnit을 만들어야하니까;
- *  3. 
  **/
 @SuppressWarnings("rawtypes")
 @RunWith(Parameterized.class) //테스트 케이스를 이용할것이다.
@@ -59,6 +53,8 @@ public class TestInvoker {
 	private static int suitenumber=0,rowIndex=0,testnumber=0;
 	private static boolean[][] success=null;
 	private static String[][] result=null;
+	private static File file=null;
+	private static int[] rowSize=null;
 
 	//테스트 케이스들을 확인할 method_params
 	private int suite;
@@ -82,7 +78,7 @@ public class TestInvoker {
 		this.method_params=param1;
 	}
 
-	
+
 	/*
 	 * 1. 어노테이션으로 엑셀 path를 읽어옴.
 	 * 2. 받아온  path는  다시 저장할때 사용.
@@ -90,32 +86,36 @@ public class TestInvoker {
 	 * 4. 그럴바에 suiteInfo 라는 맴버클래스를 둬서 관리하는게 나을려나.
 	 * 
 	 * */
-	public static Collection parmeterizingExcel(String fileName){
+	public static Collection parmeterizingExcel(String filePath){
 		ExcelReader reader = new ExcelReader();
 		//메타데이터를 참조할 수 밖에없다.
 		//핸들러 레벨에서 타겟 프로젝트 정보를 생성할것.
-		File file = new File(".");
+		file = new File(filePath);
 		ArrayList<ArrayList<TestcaseVO>> testcases=null;
 		Object[][] parameterized= null;
 
 		if(file.exists()){
 			try {
-				testcases = reader.readExcel(fileName, file.getCanonicalPath());
+				testcases = reader.readExcel(filePath);
 
 				if(testcases.size()>0){
 
-					int total_row_index=0, maxRow=0;
+					int total_row_index=0, maxRow=0,suiteNum=0;
+					rowSize=new int[testcases.size()]; //suite별  rowSize를 저장할것.
 					for(ArrayList<TestcaseVO> testcase : testcases){
 						int size= testcase.size();
+						rowSize[suiteNum++]=size;
 						total_row_index+=size;
 						if(size>maxRow) maxRow=size;
+
 					}
 					parameterized = new Object[total_row_index][8];
 					//init success
-					success= new boolean[testcases.size()][maxRow];
+					success= new boolean[testcases.size()][maxRow];//성공여부저장할것
 					for(int i=0; i<testcases.size(); i++)
 						Arrays.fill(success[i], true);
-					result= new String[testcases.size()][maxRow];
+
+					result= new String[testcases.size()][maxRow];//결과값 저장.
 
 					int row_index=0;
 					for(ArrayList<TestcaseVO> testcase : testcases){
@@ -167,7 +167,7 @@ public class TestInvoker {
 			}
 	}
 
-	private Class unBoxing(Class wrapper){
+	private Class unWrapping(Class wrapper){
 		switch(wrapper.getTypeName().charAt(10)){
 		case 'S': return wrapper.getTypeName().contains("Short")?short.class:String.class;							
 		case 'B': return wrapper.getTypeName().contains("Byte")?Byte.class:boolean.class;
@@ -177,7 +177,7 @@ public class TestInvoker {
 		case 'D':return double.class;
 		case 'F':return float.class;
 		case 'V':return void.class;
-		default : return null;
+		default : return wrapper;
 		}
 	}
 
@@ -216,13 +216,14 @@ public class TestInvoker {
 		for(int i= 0; i<types.length; i++){
 			Class paramClass=params[i].getClass();
 			if(isNeedUnBoxing(paramClass))
-				paramClass= unBoxing(paramClass);
-			if(!types[i].equals(paramClass)){
+				paramClass= unWrapping(paramClass);
+			
+			if(!types[i].equals(paramClass)){ // 래핑 처리 후에도 타입이 같지 않은 경우. 1. primitive 타입과 wrapper 타입의 차이.	
 				Object mockObject=mock.get(params[i]);
-				if(mockObject.getClass().equals(types[i]) && mockObject!=null){
+				if( types[i].isInstance(mockObject) && mockObject!=null){
 					params[i]=mockObject;
 				}else
-					throw new IllegalArgumentException("Wrong Argument Type");
+					throw new AssertionError("Wrong Parameter Types");
 			}
 		}
 		return params;
@@ -250,10 +251,12 @@ public class TestInvoker {
 	}
 
 
-	private boolean isNeedUnBoxing(Class clz){
-		if(clz.isPrimitive() || (clz.getSuperclass()==Number.class)||
-				(clz==String.class) ||(clz==Character.class)
-				||(clz==Boolean.class)){ //원시값 테스트
+	private boolean isNeedUnBoxing(Class target){
+		
+		if(target.isPrimitive() || (target.getSuperclass()==Number.class)||
+				(target==String.class) ||(target==Character.class)
+				||(target==Boolean.class)){ //원시값 테스트
+			
 			return true;
 		}
 		else
@@ -300,6 +303,11 @@ public class TestInvoker {
 		//재귀 필요.
 	}	
 
+	
+	/* 이슈 
+	 *  모크객체인데 모크객체가 primitive 타입인경우 ? isMock 플래그를 두는게 좋은거같은데
+	 *  
+	 * */
 	@Test
 	public void testMethod() throws Throwable {
 		suitenumber=suite;
@@ -323,24 +331,27 @@ public class TestInvoker {
 		Object[] params= getMock(paramsTypes, method_params);
 		try {			
 			testresult=targetmethod.invoke(classmap.get(targetclz), params);
-//			System.out.println(suite +" " + (rowIndex-1));
+			//			System.out.println(suite +" " + (rowIndex-1));
 			result[suite][rowIndex-1]=testresult.toString();
 			if(expectedResult !=null){
+				//모크 셋업
+				Class[] type =new Class[1];
+				type[0]=testresult.getClass();//실제 리턴타입
+				Object[] returnObj=new Object[1];
+				returnObj[0]=expectedResult;
+				result[suite][rowIndex-1]=expectedResult.toString(); //result
+				if(!type[0].equals(expectedResult.getClass())){//예상값이 mock객체인경우.
+					returnObj=getMock(type,returnObj);
+					expectedResult=returnObj[0];
+				}
+				
 				if(isNeedUnBoxing(testresult.getClass())){ //원시값 테스트
 					System.out.println( "Assert 결과  (예상값/테스트결과): " +expectedResult+" " +testresult); //예상결과와 실제결과 출력
 					//toString 오버라이딩을 통해 객체 상태를 하는 습관을 가진다면, 이곳에 인풋 객체의 상태를 출력가능하다.
 					assertThat(testresult,is(expectedResult)); //테스팅 결과를 확인.
 				}
 				else{//결과가 원시객체가 아닌 임의 객체인경우
-					Class[] type =new Class[1];
-					type[0]=testresult.getClass();//실제 리턴타입
-					Object[] returnObj=new Object[1];
-					returnObj[0]=expectedResult;
-					result[suite][rowIndex-1]=expectedResult.toString(); //result
-					if(!type[0].equals(expectedResult.getClass())){//예상값이 mock객체인경우.
-						returnObj=getMock(type,returnObj);
-						expectedResult=returnObj[0];
-					}
+					
 					Field[] flz =type[0].getDeclaredFields();
 
 					for(Field f: flz){
@@ -367,7 +378,7 @@ public class TestInvoker {
 				throw(cause);
 			}//Method Exception.
 		}catch(AssertionError e){
-//			System.out.println(rowIndex);
+			//			System.out.println(rowIndex);
 			success[suite][rowIndex-1]=false;
 			//정확한 라인 찾기 이슈..
 			StackTraceElement[] elem =new StackTraceElement[1];			
@@ -380,26 +391,24 @@ public class TestInvoker {
 	public static void log(){
 		//1.로그관리. 엑셀 Success 설정.
 		//2.드롭다운 가능한 리스트뷰로. 로그 파일도 만들것.. 정확히 어느 클래스의 어디서 오류가 났는지
-//		int row=0,col=0;
-//		for(boolean[] b : success){
-//			col=0;
-//			for(boolean bb : b){
-//				System.out.println("success["+row+"]"+"["+col+"] : "+ bb);
-//				col++;
-//			}
-//			row++;
-//		}
-//		row=0;
-//		for(String[] b : result){
-//			col=0;
-//			for(String bb : b){
-//				System.out.println("result["+row+"]"+"["+col+"] : "+ bb);
-//				col++;
-//			}
-//			row++;
-//		}
-		
-//		ExcelResultSaver save=new ExcelResultSaver(fileName, rootpath);
-//		save.writeResults(suite, totalRow, result, success);
+		//		int row=0,col=0;
+		//		for(boolean[] b : success){
+		//			col=0;
+		//			for(boolean bb : b){
+		//				System.out.println("success["+row+"]"+"["+col+"] : "+ bb);
+		//				col++;
+		//			}
+		//			row++;
+		//		}
+		try {
+			ExcelResultSaver save=new ExcelResultSaver(file.getCanonicalPath());
+			for(int i=0; i<=suitenumber; i++)
+				save.writeResults(suitenumber, rowSize[suitenumber], result[suitenumber], success[suitenumber]);
+			save.write();
+			save.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }
