@@ -186,7 +186,7 @@ public class TestInvoker {
 	public void setObj(){
 		if(suitenumber !=suite){ //새로운 시나리오 테스트.
 			classmap.clear();
-			rowIndex=0;
+			rowIndex=0; //행 초기화
 		}
 		if(!classmap.containsKey(targetclz)&& targetmethod !=null){ //실행할 객체가 없는경우
 			//System.out.println(classmap.containsKey(targetclz)+"새로생성");
@@ -387,19 +387,9 @@ public class TestInvoker {
 			throw(e);
 		}
 	}
+	//성공여부 및 결과 저장.
 	@AfterClass
 	public static void log(){
-		//1.로그관리. 엑셀 Success 설정.
-		//2.드롭다운 가능한 리스트뷰로. 로그 파일도 만들것.. 정확히 어느 클래스의 어디서 오류가 났는지
-		//		int row=0,col=0;
-		//		for(boolean[] b : success){
-		//			col=0;
-		//			for(boolean bb : b){
-		//				System.out.println("success["+row+"]"+"["+col+"] : "+ bb);
-		//				col++;
-		//			}
-		//			row++;
-		//		}
 		try {
 			ExcelResultSaver save=new ExcelResultSaver(file.getCanonicalPath());
 			for(int i=0; i<=suitenumber; i++)

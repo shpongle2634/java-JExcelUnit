@@ -107,7 +107,8 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 			e.printStackTrace();
 		}
 		//Make Suite Class.
-		makeSuiteClass(rootpath,containerName, fileName, srcName, className);
+		if(className!=null && !className.equals(""))
+			makeSuiteClass(rootpath,containerName, fileName, srcName, className);
 	}
 
 	private void makeSuiteClass(String rootpath, String containerName, String fileName, String srcName, String className){

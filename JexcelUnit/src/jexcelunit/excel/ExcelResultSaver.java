@@ -8,7 +8,10 @@ import java.util.Iterator;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -52,6 +55,14 @@ public class ExcelResultSaver {
 		int successIndex=resultIndex+1;
 		XSSFRow currentRow= null;
 		XSSFCell resultCell, successCell;
+		
+		XSSFCellStyle successStyle=workbook.createCellStyle();
+		XSSFCellStyle failStyle=workbook.createCellStyle();
+		successStyle.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
+		failStyle.setFillForegroundColor(IndexedColors.ROSE.getIndex());
+		successStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+		failStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+		
 		for(int i = 1; i<=totalRow; i++){
 			currentRow= sheet.getRow(i);
 
@@ -62,8 +73,10 @@ public class ExcelResultSaver {
 			successCell = currentRow.getCell(successIndex);
 			if(successCell==null) successCell=currentRow.createCell(successIndex);
 			successCell.setCellValue(success[i-1]);
+			
+			if(success[i-1])successCell.setCellStyle(successStyle);
+			else successCell.setCellStyle(failStyle);
 		}
-		close();
 
 	}
 	public void write() throws IOException{
