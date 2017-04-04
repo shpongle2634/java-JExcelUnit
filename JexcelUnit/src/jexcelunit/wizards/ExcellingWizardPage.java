@@ -68,7 +68,7 @@ public class ExcellingWizardPage extends WizardPage {
 		containerText.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				String src = containerText.getText()+"/src";
-				if(srcText!=null) srcText.setText(src);
+				srcText.setText(src);
 				dialogChanged();
 			}
 		});
@@ -84,8 +84,9 @@ public class ExcellingWizardPage extends WizardPage {
 		//src
 		label = new Label(container, SWT.NULL);
 		label.setText("&src path:");
-
-		srcText = new Text(container, SWT.BORDER | SWT.SINGLE);
+		
+		if(srcText==null)
+			srcText = new Text(container, SWT.BORDER | SWT.SINGLE);
 		gd = new GridData(GridData.FILL_HORIZONTAL);
 		srcText.setLayoutData(gd);
 		srcText.addModifyListener(new ModifyListener() {
@@ -188,7 +189,7 @@ public class ExcellingWizardPage extends WizardPage {
 			Object[] result = dialog.getResult();
 			if (result.length == 1) {
 				srcText.setText(((Path) result[0]).toString());
-				rootpath=ResourcesPlugin.getWorkspace().getRoot().getLocation().toString();
+//				rootpath=ResourcesPlugin.getWorkspace().getRoot().getLocation().toString();
 			}
 		}
 	}
@@ -199,6 +200,7 @@ public class ExcellingWizardPage extends WizardPage {
 	private void dialogChanged() {
 		IResource container = ResourcesPlugin.getWorkspace().getRoot()
 				.findMember(new Path(getContainerName()));
+		rootpath=container.getLocation().toString();
 		String fileName = getFileName();
 		
 		if (getContainerName().length() == 0) {
@@ -243,7 +245,10 @@ public class ExcellingWizardPage extends WizardPage {
 	}
 	
 	public String getSrcName(){
-		return srcText.getText();
+		if(srcText.getText()==null)
+			return containerText.getText()+"/src";
+		else
+			return srcText.getText();
 	}
 	
 	public String getClassName(){

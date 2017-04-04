@@ -324,7 +324,7 @@ public class ExcelCreator{
 					}
 					setValidation("Class", xssfSheet, 1);
 					char colIndex=(char)('A'+totalCellCount-1);
-					//시발 왜 TRUE인데 조건부서식이 적용이 안될까
+
 					XSSFSheetConditionalFormatting cf=xssfSheet.getSheetConditionalFormatting();
 					XSSFConditionalFormattingRule rule1 =cf.createConditionalFormattingRule("INDIRECT(ADDRESS(ROW(),"+totalCellCount+"))=\"SUCCESS\"");
 					XSSFConditionalFormattingRule rule2 =cf.createConditionalFormattingRule("INDIRECT(ADDRESS(ROW(),"+totalCellCount+"))=\"FAIL\"");
