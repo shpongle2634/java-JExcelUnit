@@ -108,10 +108,10 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 		}
 		//Make Suite Class.
 		if(className!=null && !className.equals(""))
-			makeSuiteClass(rootpath,containerName, fileName, srcName, className);
+			makeJExcelUnitRunner(rootpath,containerName, fileName, srcName, className);
 	}
 
-	private void makeSuiteClass(String rootpath, String containerName, String fileName, String srcName, String className){
+	private void makeJExcelUnitRunner(String rootpath, String containerName, String fileName, String srcName, String className){
 		//Make Suite Class.
 		PrintWriter pw = null; 
 		File suiteclass= new File( rootpath+srcName+"/"+className+".java" );

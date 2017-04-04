@@ -7,25 +7,17 @@ import java.util.ArrayList;
 public class TestcaseVO {
 
 	private int suiteNumber;
-	public int getSuiteNumber() {
-		return suiteNumber;
-	}
 
-	public void setSuiteNumber(int suiteNumber) {
-		this.suiteNumber = suiteNumber;
-	}
 
 	private String testname;
 	private Class testclass;
 	private Constructor constructor;
-	
-
 	private Class[] cons_paramTypes;
 	private Method met;
 	private Class[] met_paramTypes;
 	private Object result;	
 	private Object expect;
-	
+	private boolean success;
 	private ArrayList<Object> constructor_params =null;
 	private ArrayList<Object> method_params = null;
 	
@@ -34,8 +26,14 @@ public class TestcaseVO {
 //	private String testmethod;
 	
 
-	private boolean success;
 	
+	public int getSuiteNumber() {
+		return suiteNumber;
+	}
+
+	public void setSuiteNumber(int suiteNumber) {
+		this.suiteNumber = suiteNumber;
+	}
 	public TestcaseVO(){
 		constructor_params= new ArrayList<>();
 		method_params = new ArrayList<>();

@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.poi.hssf.util.HSSFColor;
 import org.apache.poi.ss.usermodel.CellCopyPolicy;
 import org.apache.poi.ss.usermodel.DataValidation;
 import org.apache.poi.ss.usermodel.DataValidationConstraint;
@@ -19,13 +20,16 @@ import org.apache.poi.ss.usermodel.DataValidationHelper;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Name;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFConditionalFormattingRule;
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
 import org.apache.poi.xssf.usermodel.XSSFName;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFSheetConditionalFormatting;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -263,6 +267,9 @@ public class ExcelCreator{
 			cs.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
 			cs.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
+
+
+
 			for(int sheet_index=0; sheet_index<workbook.getNumberOfSheets(); sheet_index++){
 				if( !workbook.isSheetHidden(sheet_index) && !workbook.isSheetVeryHidden(sheet_index)){
 					xssfSheet=workbook.getSheetAt(sheet_index);
@@ -270,6 +277,8 @@ public class ExcelCreator{
 
 					int cellvalindex=0;
 					int totalCellCount= TESTDATASET.length + consCount + metsCount-2;
+
+
 					for(int i =0; i<totalCellCount; i++){
 						String val=TESTDATASET[cellvalindex]; //Column List.
 						if(val.equals("Constructor Param")){					
@@ -278,7 +287,7 @@ public class ExcelCreator{
 								cell=row.createCell(i+k);
 								xssfSheet.setColumnWidth(i+k, 4500);
 								cell.setCellValue(val+(k+1));
-
+								cell.setCellStyle(cs);
 							}
 							i+=consCount-1;
 							cellvalindex++;
@@ -296,6 +305,7 @@ public class ExcelCreator{
 								cell=row.createCell(i+k);
 								xssfSheet.setColumnWidth(i+k, 4000);
 								cell.setCellValue(val+(k+1));
+								cell.setCellStyle(cs);
 							}
 							i+=metsCount-1;
 							cellvalindex++;
@@ -313,6 +323,17 @@ public class ExcelCreator{
 
 					}
 					setValidation("Class", xssfSheet, 1);
+					char colIndex=(char)('A'+totalCellCount-1);
+					//시발 왜 TRUE인데 조건부서식이 적용이 안될까
+					XSSFSheetConditionalFormatting cf=xssfSheet.getSheetConditionalFormatting();
+					XSSFConditionalFormattingRule rule1 =cf.createConditionalFormattingRule("INDIRECT(ADDRESS(ROW(),"+totalCellCount+"))=\"SUCCESS\"");
+					XSSFConditionalFormattingRule rule2 =cf.createConditionalFormattingRule("INDIRECT(ADDRESS(ROW(),"+totalCellCount+"))=\"FAIL\"");
+					rule1.createPatternFormatting().setFillBackgroundColor(HSSFColor.SEA_GREEN.index);
+					rule2.createPatternFormatting().setFillBackgroundColor(HSSFColor.LIGHT_ORANGE.index);
+					
+					XSSFConditionalFormattingRule[] rules ={ rule1, rule2};
+					CellRangeAddress[] range = { CellRangeAddress.valueOf("A2:"+colIndex+"500")};
+					cf.addConditionalFormatting(range, rules);
 				}
 			}
 			//save xlsx
@@ -530,7 +551,6 @@ public class ExcelCreator{
 			ClassInfo ci = classinfos.get(key);
 
 			if(option == CONSTRUCTOR){
-
 				for(Constructor con : ci.getConstructors()){
 					if( max < con.getParameterCount())
 						max = con.getParameterCount();

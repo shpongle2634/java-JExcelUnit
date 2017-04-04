@@ -72,7 +72,7 @@ public class ExcelResultSaver {
 
 			successCell = currentRow.getCell(successIndex);
 			if(successCell==null) successCell=currentRow.createCell(successIndex);
-			successCell.setCellValue(success[i-1]);
+			successCell.setCellValue(success[i-1]?"SUCCESS":"FAIL");
 			
 			if(success[i-1])successCell.setCellStyle(successStyle);
 			else successCell.setCellStyle(failStyle);

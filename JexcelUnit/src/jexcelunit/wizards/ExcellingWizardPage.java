@@ -67,6 +67,8 @@ public class ExcellingWizardPage extends WizardPage {
 		containerText.setLayoutData(gd);
 		containerText.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
+				String src = containerText.getText()+"/src";
+				if(srcText!=null) srcText.setText(src);
 				dialogChanged();
 			}
 		});
