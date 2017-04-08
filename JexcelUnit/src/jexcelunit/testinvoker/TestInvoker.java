@@ -375,6 +375,7 @@ public class TestInvoker {
 			if(fillstack !=null){
 				cause= fillstack.getCause(); 
 				if(cause!=null) cause.printStackTrace();
+				fail();
 				throw(cause);
 			}//Method Exception.
 		}catch(AssertionError e){

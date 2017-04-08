@@ -31,9 +31,9 @@ public class ExcellingWizardPage extends WizardPage {
 	private Text containerText;
 	private Text srcText;
 	private Text fileText;
-	private Text className;
+	private Text runnerName;
 	private String rootpath;
-	
+
 	private ISelection selection;
 
 	/**
@@ -84,7 +84,7 @@ public class ExcellingWizardPage extends WizardPage {
 		//src
 		label = new Label(container, SWT.NULL);
 		label.setText("&src path:");
-		
+
 		if(srcText==null)
 			srcText = new Text(container, SWT.BORDER | SWT.SINGLE);
 		gd = new GridData(GridData.FILL_HORIZONTAL);
@@ -117,22 +117,22 @@ public class ExcellingWizardPage extends WizardPage {
 
 		label = new Label(container, SWT.NULL);
 		label.setText("&.xlsx");
-		
-		
+
+
 		//Suite Class Name
 		label = new Label(container, SWT.NULL);
 		label.setText("&SuiteClass name:");
 
-		className = new Text(container, SWT.BORDER | SWT.SINGLE);
+		runnerName = new Text(container, SWT.BORDER | SWT.SINGLE);
 		gd = new GridData(GridData.FILL_HORIZONTAL);
-		className.setLayoutData(gd);
-		className.addModifyListener(new ModifyListener() {
+		runnerName.setLayoutData(gd);
+		runnerName.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				dialogChanged();
 			}
 		});
 
-		
+
 		initialize();
 		dialogChanged();
 		setControl(container);
@@ -161,7 +161,7 @@ public class ExcellingWizardPage extends WizardPage {
 			}
 		}
 		fileText.setText("Test Suites");
-		className.setText("ExcelTester");
+		runnerName.setText("JExcelUnitRunner");
 	}
 
 	/**
@@ -189,7 +189,7 @@ public class ExcellingWizardPage extends WizardPage {
 			Object[] result = dialog.getResult();
 			if (result.length == 1) {
 				srcText.setText(((Path) result[0]).toString());
-//				rootpath=ResourcesPlugin.getWorkspace().getRoot().getLocation().toString();
+				//rootpath=ResourcesPlugin.getWorkspace().getRoot().getLocation().toString();
 			}
 		}
 	}
@@ -200,9 +200,10 @@ public class ExcellingWizardPage extends WizardPage {
 	private void dialogChanged() {
 		IResource container = ResourcesPlugin.getWorkspace().getRoot()
 				.findMember(new Path(getContainerName()));
-		rootpath=container.getLocation().toString();
+		if(container.getParent()!=null)
+			rootpath=container.getParent().getLocation().toString();
 		String fileName = getFileName();
-		
+
 		if (getContainerName().length() == 0) {
 			updateStatus("File container must be specified");
 			return;
@@ -243,15 +244,15 @@ public class ExcellingWizardPage extends WizardPage {
 	public String getRootPath(){
 		return rootpath;
 	}
-	
+
 	public String getSrcName(){
 		if(srcText.getText()==null)
 			return containerText.getText()+"/src";
 		else
 			return srcText.getText();
 	}
-	
-	public String getClassName(){
-		return className.getText();
+
+	public String getRunnerName(){
+		return runnerName.getText();
 	}
 }

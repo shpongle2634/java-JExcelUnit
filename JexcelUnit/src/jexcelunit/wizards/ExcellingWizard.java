@@ -69,9 +69,9 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 		final String fileName = page.getFileName();
 		final String srcName = page.getSrcName();
 		final String rootpath = page.getRootPath();
-		final String className = page.getClassName();
+		final String runnerName = page.getRunnerName();
 		try {
-			doFinish(rootpath,containerName, fileName,srcName,className);
+			doFinish(rootpath,containerName, fileName,srcName,runnerName);
 		} catch (CoreException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -87,7 +87,7 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 	 */
 
 	private void doFinish(
-			String rootpath,String containerName, String fileName, String srcName, String className)
+			String rootpath,String containerName, String fileName, String srcName, String runnerName)
 					throws CoreException {
 		// create a sample file
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
@@ -103,21 +103,25 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 			HashMap<String, ClassInfo> classinfos=analyzer.getTestInfos();
 			ExcelCreator exceller= new ExcelCreator(fileName, rootpath+containerName, classinfos);
 			exceller.createXlsx();
+			if(runnerName!=null && !runnerName.equals(""))
+				makeJExcelUnitRunner(rootpath,containerName, fileName, srcName, runnerName);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		//Make Suite Class.
-		if(className!=null && !className.equals(""))
-			makeJExcelUnitRunner(rootpath,containerName, fileName, srcName, className);
+		
 	}
 
-	private void makeJExcelUnitRunner(String rootpath, String containerName, String fileName, String srcName, String className){
+	private void makeJExcelUnitRunner(String rootpath, String containerName, String fileName, String srcName, String runnerName){
 		//Make Suite Class.
 		PrintWriter pw = null; 
-		File suiteclass= new File( rootpath+srcName+"/"+className+".java" );
-		if(!suiteclass.exists()){
+		File runnerClass= new File( rootpath+srcName+"/"+runnerName+".java" );
+		
+		
+		//Issue Runner가 존재하면 새  러너를 만들것인지, 혹은 업데이트? 아님 그냥 경고만 ?
+		if(!runnerClass.exists()){
 			try {
-				pw =  new PrintWriter(new FileWriter(suiteclass));
+				pw =  new PrintWriter(new FileWriter(runnerClass));
 
 				String importinvoker= "import jexcelunit.testinvoker.TestInvoker;"
 						+ "\nimport java.lang.reflect.Method;"
@@ -126,13 +130,13 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 						+ "\nimport java.util.Collection;"
 						+ "\n\n";
 				String[] classcode={
-						"public class "+className+" extends TestInvoker{",
-						"\tpublic "+className+"(int suite,String testname, Class targetclz,Constructor constructor, Object[] constructor_params, Method targetmethod,",
+						"public class "+runnerName+" extends TestInvoker{",
+						"\tpublic "+runnerName+"(int suite,String testname, Class targetclz,Constructor constructor, Object[] constructor_params, Method targetmethod,",
 						"\tObject[] param1, Object expectedResult) {\n",
 						"\t\tsuper(suite,testname, targetclz,constructor,constructor_params, targetmethod, param1, expectedResult);",
 						"\t}",
 						"\tprivate static void setUp() {",
-						"\t\t/* Make Your Mock Objects  using mockObject.put(\"mock name\", mock object);",
+						"\t\t/* Make Your Mock Objects  using mock.put(\"mock name\", mock object);",
 						"\t\t* Make Your Custom Exceptions using  addException(your Exception e);*/",
 						"\t}\n\n@SuppressWarnings(\"unchecked\")\n@Parameters( name = \"{index}: suite {0} : {1}\")",
 						"\tpublic static Collection<Object[][]> parameterized(){",

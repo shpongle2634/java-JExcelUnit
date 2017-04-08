@@ -15,11 +15,10 @@ public class TestSuite extends TestInvoker{
 
 	private static void setUp() {
 		// TODO Auto-generated method stub
-		/* Make Your Mock Objects  using mockObject.put("mock name", mock object);
+		/* Make Your Mock Objects  using mock.put("mock name", mock object);
 		 * Make Your Custom Exceptions using  addException(your Exception e);
 		 * 
-		 * */
-		
+		 * */	
 	}
 
 	@SuppressWarnings("unchecked")

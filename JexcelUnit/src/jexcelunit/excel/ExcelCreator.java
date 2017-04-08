@@ -231,14 +231,13 @@ public class ExcelCreator{
 	 * 1. 다중 파라미터를 어떻게 ? 파라미터 개수륿 분석해서 칼럼 수 조정할것 DONE
 	 * 2. 모크객체의 이용방법은 어떻게? 모크객체 이름으로 접근하도록을 기본. 모크객체 생성도 엑셀로 지원 가능? DONE
 	 * 3. 테스트방식 : 시나리오 or 독립. => 시트를 슈트단위로 하여 DONE.
-	 * 4. 생성파일 네이밍. => 9.
+	 * 4. 생성파일 네이밍. => 9. DONE
 	 * 5. 중복파일 처리. => DONE
-	 * 	5-1. UPDATE 방식으로 유효성,네임 초기화 및 재설정. 칼럼 조정.
-	 * 6. SUCCESS 처리=> TODO 엑셀에 셋팅.  컬러 조정.
+	 * 	5-1. UPDATE 방식으로 유효성,네임 초기화 및 재설정 DONE. 칼럼 조정 DONE.
+	 * 6. SUCCESS 처리=> DONE.  컬러 조정 DONE.
 	 * 7. 로그처리=>TODO Stack ListView로 제공. 로그파일 생성.
-	 * 8. src 폴더의 경로 => 9.
-	 * 
-	 * 9. Extension Point  수정 : 버튼 + new. => 새 파일 Wizard 마법사로 슈트 클래스와 xlsx 파일 모두를 생성하게 만들자.
+	 * 8. src 폴더의 경로 => 9. DONE
+	 * 9. Extension Point  수정 : 버튼 + new. => 새 파일 Wizard 마법사로 슈트 클래스와 xlsx 파일 모두를 생성하게 만들자. DONE
 	 *  9-1. src, targetproject 모두 위저드에서 선택받도록. => 4, 8 동시해결  DONE
 	 * */
 	public void createXlsx() throws IOException{
@@ -330,7 +329,7 @@ public class ExcelCreator{
 					XSSFConditionalFormattingRule rule2 =cf.createConditionalFormattingRule("INDIRECT(ADDRESS(ROW(),"+totalCellCount+"))=\"FAIL\"");
 					rule1.createPatternFormatting().setFillBackgroundColor(HSSFColor.SEA_GREEN.index);
 					rule2.createPatternFormatting().setFillBackgroundColor(HSSFColor.LIGHT_ORANGE.index);
-					
+
 					XSSFConditionalFormattingRule[] rules ={ rule1, rule2};
 					CellRangeAddress[] range = { CellRangeAddress.valueOf("A2:"+colIndex+"500")};
 					cf.addConditionalFormatting(range, rules);
@@ -390,7 +389,8 @@ public class ExcelCreator{
 			if(mets.size() >0){
 				XSSFCell clz_met_cell= null;
 				XSSFCell met_par_cell=null;
-				for(int i =1; i <= mets.size() && mit.hasNext(); i ++){
+				int i =1;
+				while(mit.hasNext()){
 					Method met= mit.next();
 
 					//클래스 -메소드 부분
@@ -401,7 +401,7 @@ public class ExcelCreator{
 
 					//Search method Params
 					String methodStr =met.getReturnType().getSimpleName()+" "+met.getName() + "(";
-					String methodNamedStr="MET"+met.getName();
+					String methodNamedStr="MET"+clz.getSimpleName()+met.getReturnType().getSimpleName()+met.getName();
 					Parameter param= null;
 					for(int param_index=0; param_index<params.length; param_index++){
 
@@ -415,6 +415,8 @@ public class ExcelCreator{
 						//METHOD-PARAM SET
 						if(param.getType().isArray())
 							methodNamedStr+=paramType.substring(0, paramType.indexOf('['))+"Array";
+						else if(paramType.contains("<"))
+							methodNamedStr+=paramType.substring(0, paramType.indexOf('<'))+"T";
 						else
 							methodNamedStr+= paramType;
 
@@ -439,18 +441,18 @@ public class ExcelCreator{
 						//Method Parameter List Name.
 						XSSFName namedCell= workbook.createName();
 						namedCell.setNameName(methodNamedStr);
-						char cell = (char) ('A'+ mets_total);
+						String cell=cellIndex(mets_total);
 						String formula= "MethodParamhidden!$"+cell+"$2:$"+cell+"$" + (params.length+1);
 						namedCell.setRefersToFormula(formula);
 					}
-
+					i++;
 					mets_total++;
-				}//Method loop End
+				}//Method loop Endm
 
 				//Set Class-Method Data ReferenceList
 				XSSFName namedcell =workbook.createName();
 				namedcell.setNameName(clz.getSimpleName()); //Nameing이 중요.
-				char currentCol=(char) ('A'+clz_met_col_index);
+				String currentCol=cellIndex(clz_met_col_index);
 				String formula= "ClassMethodhidden!$"+currentCol+"$2:$"+currentCol+"$" + (mets.size()+1);
 				namedcell.setRefersToFormula(formula);				
 			}
@@ -473,8 +475,14 @@ public class ExcelCreator{
 					consName+=param.getType().getSimpleName()+" "+param.getName();
 					if(param_index != params.length-1) consName+=',';
 
+					String paramType=param.getType().getSimpleName();
 					//생성자+파라미터 타입으로  네이밍스트링 만듬
-					consParamNamed+=param.getType().getSimpleName();
+					if(param.getType().isArray())
+						consParamNamed+=paramType.substring(0, paramType.indexOf('['))+"Array";
+					else if(paramType.contains("<"))
+						consParamNamed+=paramType.substring(0, paramType.indexOf('<'))+"T";
+					else 
+						consParamNamed+=paramType;
 
 					//파라미터 타입 셀생성
 					con_par_row=cons_param_sheet.getRow(param_index+1);
@@ -493,8 +501,7 @@ public class ExcelCreator{
 					//생성자 네임생성
 					XSSFName namedcell= workbook.createName();
 					namedcell.setNameName(consParamNamed);
-
-					char cell=(char) ('A'+cons_total);
+					String cell=cellIndex(cons_total);
 					String formula="ConstructorParamhidden!$"+cell+"$2:$"+cell+"$"+(params.length+1);
 					namedcell.setRefersToFormula(formula);
 				}
@@ -507,15 +514,15 @@ public class ExcelCreator{
 		//Set Class Data ReferenceList.
 		XSSFName namedcell =workbook.createName();
 		namedcell.setNameName("Class"); //Nameing이 중요.
-		char cell=(char) ('A'+cons_total-1);
+		String cell=cellIndex(cons_total);
 		String formula= "ConstructorParamhidden!$A$1:$"+cell+"$1";
 		namedcell.setRefersToFormula(formula);
 		System.out.println("total : " + cons_total);
 
 		//Set hidden Sheet if true=  hidden.
-		if(!workbook.isSheetHidden(1)) workbook.setSheetHidden(1, true);
-		if(!workbook.isSheetHidden(2)) workbook.setSheetHidden(2, true);
-		if(!workbook.isSheetHidden(3)) workbook.setSheetHidden(3, true);
+//		if(!workbook.isSheetHidden(1)) workbook.setSheetHidden(1, true);
+//		if(!workbook.isSheetHidden(2)) workbook.setSheetHidden(2, true);
+//		if(!workbook.isSheetHidden(3)) workbook.setSheetHidden(3, true);
 	}
 
 	private void unsetValidation(XSSFSheet xssfSheet){
@@ -543,7 +550,16 @@ public class ExcelCreator{
 		}		
 	}
 
-
+	private static String cellIndex(int offset){
+		char a= 'A'-1;
+		
+		int q=Math.floorDiv(offset, 35),r=offset%35;
+		
+		if(q==0) {
+			return new Character((char) (a+r)).toString();
+		}
+		return cellIndex(q)+(char)(a+r);
+	}
 	private int getMaxParamCount(int option,HashMap<String, ClassInfo> classinfos){
 		int max= 0;
 		Set<String> keys= classinfos.keySet();
