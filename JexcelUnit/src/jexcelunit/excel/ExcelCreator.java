@@ -270,7 +270,8 @@ public class ExcelCreator{
 
 
 			for(int sheet_index=0; sheet_index<workbook.getNumberOfSheets(); sheet_index++){
-				if( !workbook.isSheetHidden(sheet_index) && !workbook.isSheetVeryHidden(sheet_index)){
+//				if( !workbook.isSheetHidden(sheet_index) && !workbook.isSheetVeryHidden(sheet_index)){
+				if( workbook.getSheetAt(sheet_index).getSheetName().equals("TestSuite 1")){
 					xssfSheet=workbook.getSheetAt(sheet_index);
 					row=xssfSheet.createRow(0);//info
 
@@ -445,14 +446,14 @@ public class ExcelCreator{
 						String formula= "MethodParamhidden!$"+cell+"$2:$"+cell+"$" + (params.length+1);
 						namedCell.setRefersToFormula(formula);
 					}
-					i++;
+					i++; 
 					mets_total++;
-				}//Method loop Endm
+				}//Method loop End
 
 				//Set Class-Method Data ReferenceList
 				XSSFName namedcell =workbook.createName();
 				namedcell.setNameName(clz.getSimpleName()); //Nameing이 중요.
-				String currentCol=cellIndex(clz_met_col_index);
+				String currentCol=cellIndex(clz_met_col_index+1);
 				String formula= "ClassMethodhidden!$"+currentCol+"$2:$"+currentCol+"$" + (mets.size()+1);
 				namedcell.setRefersToFormula(formula);				
 			}
@@ -508,13 +509,15 @@ public class ExcelCreator{
 				cons_total++;
 			}//Constructor Loop End
 
+			//여기부분 인덱스가.. 문제 있는지 확인.
 			clz_met_col_index++;
 		}//Class loop End.
 
 		//Set Class Data ReferenceList.
 		XSSFName namedcell =workbook.createName();
 		namedcell.setNameName("Class"); //Nameing이 중요.
-		String cell=cellIndex(cons_total);
+		
+		String cell=cons_total>0?cellIndex(cons_total):"A";
 		String formula= "ConstructorParamhidden!$A$1:$"+cell+"$1";
 		namedcell.setRefersToFormula(formula);
 		System.out.println("total : " + cons_total);
@@ -552,12 +555,12 @@ public class ExcelCreator{
 
 	private static String cellIndex(int offset){
 		char a= 'A'-1;
-		
-		int q=Math.floorDiv(offset, 35),r=offset%35;
-		
+		int q=Math.floorDiv(offset, 26),r=offset%26;
 		if(q==0) {
+			if(r==0)return new Character((char) (a+r+1)).toString();
 			return new Character((char) (a+r)).toString();
 		}
+		if(r==0)return new Character((char) (a+26)).toString();
 		return cellIndex(q)+(char)(a+r);
 	}
 	private int getMaxParamCount(int option,HashMap<String, ClassInfo> classinfos){
