@@ -141,7 +141,7 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 						"\t}\n\n@SuppressWarnings(\"unchecked\")\n@Parameters( name = \"{index}: suite {0} : {1}\")",
 						"\tpublic static Collection<Object[][]> parameterized(){",
 						"\t\tsetUp();",
-						"\t\treturn parmeterizingExcel(\""+rootpath+"/"+containerName+"/" +fileName+".xlsx\");",
+						"\t\treturn parmeterizingExcel(\""+rootpath+containerName+"/"+fileName+".xlsx\");",
 						"}\n",
 						"}"								
 				};

@@ -40,8 +40,6 @@ import jexcelunit.excel.TestcaseVO;
  * Name : 서태훈 
  * (리플랙션을 사용하면 테스트메소드와 사용자 가 원하는 테스트 객체와 완전한 분리가 가능)
  * 
- * 
- * 
  **/
 @SuppressWarnings("rawtypes")
 @RunWith(Parameterized.class) //테스트 케이스를 이용할것이다.
@@ -217,7 +215,7 @@ public class TestInvoker {
 			Class paramClass=params[i].getClass();
 			if(isNeedUnBoxing(paramClass))
 				paramClass= unWrapping(paramClass);
-			
+
 			if(!types[i].equals(paramClass)){ // 래핑 처리 후에도 타입이 같지 않은 경우. 1. primitive 타입과 wrapper 타입의 차이.	
 				Object mockObject=mock.get(params[i]);
 				if( types[i].isInstance(mockObject) && mockObject!=null){
@@ -252,11 +250,11 @@ public class TestInvoker {
 
 
 	private boolean isNeedUnBoxing(Class target){
-		
+
 		if(target.isPrimitive() || (target.getSuperclass()==Number.class)||
 				(target==String.class) ||(target==Character.class)
 				||(target==Boolean.class)){ //원시값 테스트
-			
+
 			return true;
 		}
 		else
@@ -303,7 +301,7 @@ public class TestInvoker {
 		//재귀 필요.
 	}	
 
-	
+
 	/* 이슈 
 	 *  모크객체인데 모크객체가 primitive 타입인경우 ? isMock 플래그를 두는게 좋은거같은데
 	 *  
@@ -318,9 +316,8 @@ public class TestInvoker {
 			return;
 		}
 
-		Object testresult=null;
+		Object testResult=null;
 		System.out.println( "\n"+(testnumber++) + " : "+testname +"\n 테스트 클래스 : " +targetclz.getSimpleName());//테스트 번호와 어떤객체로부터  테스트가 이루어지는지출력
-
 
 		if(targetmethod!=null)
 			targetmethod.setAccessible(true);//private 메소드를 테스트하기 위해
@@ -330,28 +327,35 @@ public class TestInvoker {
 		Class[] paramsTypes= targetmethod.getParameterTypes();
 		Object[] params= getMock(paramsTypes, method_params);
 		try {			
-			testresult=targetmethod.invoke(classmap.get(targetclz), params);
-			//			System.out.println(suite +" " + (rowIndex-1));
-			result[suite][rowIndex-1]=testresult.toString();
-			if(expectedResult !=null){
-				//모크 셋업
-				Class[] type =new Class[1];
-				type[0]=testresult.getClass();//실제 리턴타입
-				Object[] returnObj=new Object[1];
-				returnObj[0]=expectedResult;
-				result[suite][rowIndex-1]=expectedResult.toString(); //result
-				if(!type[0].equals(expectedResult.getClass())){//예상값이 mock객체인경우.
-					returnObj=getMock(type,returnObj);
-					expectedResult=returnObj[0];
+
+			testResult=targetmethod.invoke(classmap.get(targetclz), params);
+
+			if(targetmethod.getReturnType()==null ||targetmethod.getReturnType().equals(void.class));
+			else{
+				Class[] type=null;Object[] returnObj=null;
+				if(testResult !=null){
+					//모크 셋업
+					type= new Class[1];
+					result[suite][rowIndex-1]=testResult.toString();
+					type[0]= testResult.getClass();//실제 리턴타입
+				}				
+
+				if(expectedResult !=null){
+					returnObj=new Object[1];
+					returnObj[0]=expectedResult;
+					if(type!=null)
+						if(!type[0].equals(expectedResult.getClass())){//예상값이 mock객체인경우.
+							returnObj=getMock(type,returnObj);
+							expectedResult=returnObj[0];
+						}
 				}
-				
-				if(isNeedUnBoxing(testresult.getClass())){ //원시값 테스트
-					System.out.println( "Assert 결과  (예상값/테스트결과): " +expectedResult+" " +testresult); //예상결과와 실제결과 출력
+				//검증
+				if(isNeedUnBoxing(testResult.getClass())){ //원시값 테스트
+					System.out.println( "Assert 결과  (예상값/테스트결과): " +expectedResult+" " +testResult); //예상결과와 실제결과 출력
 					//toString 오버라이딩을 통해 객체 상태를 하는 습관을 가진다면, 이곳에 인풋 객체의 상태를 출력가능하다.
-					assertThat(testresult,is(expectedResult)); //테스팅 결과를 확인.
+					assertThat(testResult,is(expectedResult)); //테스팅 결과를 확인.
 				}
 				else{//결과가 원시객체가 아닌 임의 객체인경우
-					
 					Field[] flz =type[0].getDeclaredFields();
 
 					for(Field f: flz){
@@ -360,12 +364,13 @@ public class TestInvoker {
 							Class memberclz=f.getType();
 							System.out.println(memberclz.getSimpleName()+ " "+f.getName());
 							try {
-								auto_Assert(testresult, f, memberclz);
+								auto_Assert(testResult, f, memberclz);
 							} catch (IllegalArgumentException | IllegalAccessException e) {handleException(e);}
 						}
 					}
 				}
 			}
+
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 			success[suite][rowIndex-1]=false;
 			result[suite][rowIndex-1]="InitError";
@@ -379,7 +384,6 @@ public class TestInvoker {
 				throw(cause);
 			}//Method Exception.
 		}catch(AssertionError e){
-			//			System.out.println(rowIndex);
 			success[suite][rowIndex-1]=false;
 			//정확한 라인 찾기 이슈..
 			StackTraceElement[] elem =new StackTraceElement[1];			

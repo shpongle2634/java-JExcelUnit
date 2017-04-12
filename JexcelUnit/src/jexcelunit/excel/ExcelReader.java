@@ -109,7 +109,7 @@ public class ExcelReader {
 						TestcaseVO vo= new TestcaseVO();
 						vo.setSuiteNumber(caselists.size());
 						//get Cell Values
-						if(!"".equals(currentRow.getCell(0).getStringCellValue())){
+						if(currentRow.getCell(0)!=null){
 							for(int j= 0 ; j<colSize; j ++){
 								XSSFCell currentCell = currentRow.getCell(j);	
 								if(currentCell !=null){

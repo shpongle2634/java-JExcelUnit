@@ -523,9 +523,9 @@ public class ExcelCreator{
 		System.out.println("total : " + cons_total);
 
 		//Set hidden Sheet if true=  hidden.
-//		if(!workbook.isSheetHidden(1)) workbook.setSheetHidden(1, true);
-//		if(!workbook.isSheetHidden(2)) workbook.setSheetHidden(2, true);
-//		if(!workbook.isSheetHidden(3)) workbook.setSheetHidden(3, true);
+		if(!workbook.isSheetHidden(1)) workbook.setSheetHidden(1, true);
+		if(!workbook.isSheetHidden(2)) workbook.setSheetHidden(2, true);
+		if(!workbook.isSheetHidden(3)) workbook.setSheetHidden(3, true);
 	}
 
 	private void unsetValidation(XSSFSheet xssfSheet){
