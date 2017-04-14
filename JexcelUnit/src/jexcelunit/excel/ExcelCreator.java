@@ -328,8 +328,8 @@ public class ExcelCreator{
 					XSSFSheetConditionalFormatting cf=xssfSheet.getSheetConditionalFormatting();
 					XSSFConditionalFormattingRule rule1 =cf.createConditionalFormattingRule("INDIRECT(ADDRESS(ROW(),"+totalCellCount+"))=\"SUCCESS\"");
 					XSSFConditionalFormattingRule rule2 =cf.createConditionalFormattingRule("INDIRECT(ADDRESS(ROW(),"+totalCellCount+"))=\"FAIL\"");
-					rule1.createPatternFormatting().setFillBackgroundColor(HSSFColor.SEA_GREEN.index);
-					rule2.createPatternFormatting().setFillBackgroundColor(HSSFColor.LIGHT_ORANGE.index);
+					rule1.createPatternFormatting().setFillBackgroundColor(HSSFColor.LIGHT_GREEN.index);
+					rule2.createPatternFormatting().setFillBackgroundColor(HSSFColor.ROSE.index);
 
 					XSSFConditionalFormattingRule[] rules ={ rule1, rule2};
 					CellRangeAddress[] range = { CellRangeAddress.valueOf("A2:"+colIndex+"500")};

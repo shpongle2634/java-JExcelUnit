@@ -6,8 +6,7 @@ import java.util.ArrayList;
 @SuppressWarnings("rawtypes")
 public class TestcaseVO {
 
-	private int suiteNumber;
-
+	private String sheetName;
 
 	private String testname;
 	private Class testclass;
@@ -27,12 +26,12 @@ public class TestcaseVO {
 	
 
 	
-	public int getSuiteNumber() {
-		return suiteNumber;
+	public String getSheetName() {
+		return sheetName;
 	}
 
-	public void setSuiteNumber(int suiteNumber) {
-		this.suiteNumber = suiteNumber;
+	public void setSheetName(String sheetName) {
+		this.sheetName = sheetName;
 	}
 	public TestcaseVO(){
 		constructor_params= new ArrayList<>();

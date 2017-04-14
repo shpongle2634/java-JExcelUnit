@@ -48,9 +48,9 @@ public class ExcelResultSaver {
 		return -1;
 	}
 
-	public void writeResults(int suite, int totalRow, String[] result, boolean[] success) throws IOException{
-		workbook = getWorkbook();
-		XSSFSheet sheet=workbook.getSheetAt(suite);
+	public void writeResults(String sheetName, int totalRow, String[] result, boolean[] success) throws IOException{
+		if(workbook==null) workbook = getWorkbook();
+		XSSFSheet sheet=workbook.getSheet(sheetName);
 		int resultIndex=findIndex(sheet.getRow(0), "Result");
 		int successIndex=resultIndex+1;
 		XSSFRow currentRow= null;

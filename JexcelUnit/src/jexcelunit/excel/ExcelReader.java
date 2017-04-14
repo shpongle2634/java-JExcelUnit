@@ -60,6 +60,19 @@ public class ExcelReader {
 		workbook=getWorkbook(filePath);
 
 		if(workbook!=null){
+			//Read ClassName. and main Tain Map<Simple Name,Full Name>
+			XSSFSheet clzhidden= workbook.getSheet("ClassMethodhidden");
+			if(clzhidden!=null){
+				XSSFRow clzNames= clzhidden.getRow(0);
+				Iterator<Cell> it= clzNames.cellIterator();
+				Cell cell=null;
+				while(it.hasNext()){
+					cell=it.next();
+					String fullString = formatter.formatCellValue(cell);
+					String key= fullString.substring(fullString.lastIndexOf(".")+1, fullString.length());
+					classFullNames.put(key, fullString);
+				}
+			}
 			//Read sheet
 			for(int sheet_index=0;sheet_index<workbook.getNumberOfSheets();sheet_index++){
 
@@ -67,9 +80,6 @@ public class ExcelReader {
 					ArrayList<TestcaseVO> caselist=new ArrayList<TestcaseVO>();
 					XSSFSheet xssfsheet = null;
 					xssfsheet=workbook.getSheetAt(sheet_index);
-
-
-					//					xssfsheet = workbook.getSheetAt(0); //read testcase sheet;
 
 					//Read first line and set vo info.
 					XSSFRow firstrow = xssfsheet.getRow(0);
@@ -88,26 +98,11 @@ public class ExcelReader {
 						}
 					}
 
-					//Read ClassName.
-					XSSFSheet clzhidden= workbook.getSheet("ClassMethodhidden");
-					if(clzhidden!=null){
-						XSSFRow clzNames= clzhidden.getRow(0);
-						Iterator<Cell> it= clzNames.cellIterator();
-						Cell cell=null;
-						while(it.hasNext()){
-							cell=it.next();
-							String fullString = formatter.formatCellValue(cell);
-							String key= fullString.substring(fullString.lastIndexOf(".")+1, fullString.length());
-							classFullNames.put(key, fullString);
-						}
-					}
-
-
 					//loop to convert data to VO Object. Except first Row.
 					for(int i= 1; i<xssfsheet.getPhysicalNumberOfRows(); i++){
 						XSSFRow currentRow= xssfsheet.getRow(i);
 						TestcaseVO vo= new TestcaseVO();
-						vo.setSuiteNumber(caselists.size());
+						vo.setSheetName(xssfsheet.getSheetName());
 						//get Cell Values
 						if(currentRow.getCell(0)!=null){
 							for(int j= 0 ; j<colSize; j ++){
@@ -188,16 +183,25 @@ public class ExcelReader {
 			}
 			break;
 		case CONSTPARAM:
+
 			//Extract Parameter Type and convert Object or Mock Object;
 			String con_paramString= formatter.formatCellValue(currentCell);//String value
 
-			Class[] con_paramTypes= vo.getCons_param();
-			if(con_paramTypes.length>0&& con_paramTypes!=null){
-				int index= vo.getConstructorParams().size();
-				Class con_targetType =con_paramTypes[index];
-				Object conparam=convertObject(con_targetType,con_paramString);
-				vo.addConstructorParam(conparam);
-			}
+			Class[] con_paramTypes= null;
+			con_paramTypes= vo.getCons_param();
+			try{
+				if(con_paramTypes==null && con_paramString !=null){
+					throw new Exception("Detected Wrong Constructor Parameter.\n at "+currentCell.getSheet().getSheetName()+"\n at "+(currentCell.getRowIndex()+1));
+				}
+
+				if(con_paramTypes.length>0&& con_paramTypes!=null){
+					int index= vo.getConstructorParams().size();
+					Class con_targetType =con_paramTypes[index];
+					Object conparam=convertObject(con_targetType,con_paramString);
+					vo.addConstructorParam(conparam);
+				}}catch(Exception e){
+					e.printStackTrace();
+				}
 			break;
 		case METHOD://Set Method and Parameter Types
 			String fullmet= formatter.formatCellValue(currentCell);
@@ -212,13 +216,15 @@ public class ExcelReader {
 			for(Method met : mets){
 				boolean find=true;
 				if(metName.equals(met.getName())){
-					Class[] params = met.getParameterTypes();
-					if(params.length==metParamsText.length){
+					Class[] params =null;
+					params= met.getParameterTypes();
+					if(params==null && metParamsText.length==0){ find =true;}
+					else if(params.length==metParamsText.length){
 						for(int mp_index=0; mp_index<metParamsText.length; mp_index++){
 							String paramType = metParamsText[mp_index].split(" ")[0];
 							if(!params[mp_index].getSimpleName().equals(paramType))
 							{
-								find=false;//Worng
+								find=false;//Wrong
 								break;
 							}	
 						}	
@@ -234,14 +240,23 @@ public class ExcelReader {
 
 			break;
 		case METHODPARAM: //Extract parameter and convert Object
-			String met_paramString= formatter.formatCellValue(currentCell);//String value
-			Class[] met_paramTypes= vo.getMet_param();
-			if(met_paramTypes.length>0&&met_paramTypes !=null){
-				int met_param_index= vo.getMethodParams().size();
-				Class met_targetType=met_paramTypes[met_param_index]; //Current Param Type
 
-				Object metparam=convertObject(met_targetType,met_paramString);
-				vo.addMethodParam(metparam);		
+			String met_paramString= formatter.formatCellValue(currentCell);//String value
+			Class[] met_paramTypes= null;
+			met_paramTypes=vo.getMet_param();
+			try{
+				if(met_paramTypes==null && met_paramString !=null){
+					throw new Exception("Detected Wrong Method Parameter.\n at "+currentCell.getSheet().getSheetName()+"\n at "+(currentCell.getRowIndex()+1));
+				}
+				if(met_paramTypes.length>0&&met_paramTypes !=null){
+					int met_param_index= vo.getMethodParams().size();
+					Class met_targetType=met_paramTypes[met_param_index]; //Current Param Type
+
+					Object metparam=convertObject(met_targetType,met_paramString);
+					vo.addMethodParam(metparam);		
+				}
+			}catch(Exception e){
+				e.printStackTrace();
 			}
 			break;
 		case EXPECTED:

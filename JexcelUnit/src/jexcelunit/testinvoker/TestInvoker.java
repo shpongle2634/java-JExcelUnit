@@ -46,16 +46,18 @@ import jexcelunit.excel.TestcaseVO;
 public class TestInvoker {
 	private static Map<Class, Object> classmap= new HashMap<Class, Object>(); //해쉬맵으로 테스트에 필요한 객체들을 하나씩만 유지한다.
 	private static ArrayList<Class> exceptionlist=new ArrayList<Class>();//사용자 정의 예외 클래스들을 담아두는 곳.
+	private static ArrayList<String> sheetNames=new ArrayList<String>();
 	//	private static Method[] methods; //테스트할 객체의 메소드를 받는부분
 	protected static HashMap<String,Object> mock=new HashMap<String,Object>();//모크객체 모음
-	private static int suitenumber=0,rowIndex=0,testnumber=0;
+	private static int sheetNum= 0,rowIndex=0,testnumber=0;
 	private static boolean[][] success=null;
 	private static String[][] result=null;
 	private static File file=null;
 	private static int[] rowSize=null;
-
+	private static String currentSheet=null;
+	
 	//테스트 케이스들을 확인할 method_params
-	private int suite;
+	private String sheet=null;
 	private String testname=null;
 	private Class targetclz=null;
 	private Constructor constructor = null;
@@ -65,8 +67,8 @@ public class TestInvoker {
 	private Object expectedResult=null;
 
 	//테스트이름, 테스트할 클래스, 테스트파라미터,  테스트할 메소드이름, 파라미터들,예상결과를 JUnit이 읽어와 실행시키는 부분이다.
-	public TestInvoker(int suite,String testname,Class targetclz,Constructor constructor,Object[] constructor_params,Method targetmethod,Object[] param1,Object expectedResult){
-		this.suite=suite;
+	public TestInvoker(String sheet,String testname,Class targetclz,Constructor constructor,Object[] constructor_params,Method targetmethod,Object[] param1,Object expectedResult){
+		this.sheet=sheet;
 		this.testname= (String)testname;
 		this.targetclz=targetclz;
 		this.constructor=constructor;
@@ -117,9 +119,12 @@ public class TestInvoker {
 
 					int row_index=0;
 					for(ArrayList<TestcaseVO> testcase : testcases){
+						if(testcase.size()>0){ 
+							sheetNames.add(testcase.get(0).getSheetName());
+						}
 						if(row_index < total_row_index){
 							for(TestcaseVO currentCase: testcase){
-								parameterized[row_index][0]=currentCase.getSuiteNumber();
+								parameterized[row_index][0]=currentCase.getSheetName();
 								parameterized[row_index][1]=currentCase.getTestname();
 								parameterized[row_index][2]=currentCase.getTestclass();
 								parameterized[row_index][3]=currentCase.getConstructor();
@@ -140,6 +145,7 @@ public class TestInvoker {
 			}
 		}
 		//읽어들인 리스트를 String, Class, Object[] Object, String Object로 바까야함.
+		currentSheet=sheetNames.get(0);
 		return Arrays.asList(parameterized);
 	} 
 
@@ -182,9 +188,10 @@ public class TestInvoker {
 
 	@Before
 	public void setObj(){
-		if(suitenumber !=suite){ //새로운 시나리오 테스트.
+		if(currentSheet !=sheet){ //새로운 시나리오 테스트.
 			classmap.clear();
 			rowIndex=0; //행 초기화
+			sheetNum++;
 		}
 		if(!classmap.containsKey(targetclz)&& targetmethod !=null){ //실행할 객체가 없는경우
 			//System.out.println(classmap.containsKey(targetclz)+"새로생성");
@@ -242,7 +249,7 @@ public class TestInvoker {
 				assertNotNull(constructor.newInstance(params));
 			}
 		}catch(AssertionError e){
-			success[suite][rowIndex-1]=false;
+			success[sheetNum][rowIndex-1]=false;
 			throw(e);
 		}
 		catch(Exception e){handleException(e);}
@@ -308,7 +315,7 @@ public class TestInvoker {
 	 * */
 	@Test
 	public void testMethod() throws Throwable {
-		suitenumber=suite;
+		currentSheet=sheet;
 		rowIndex++;
 		//setObj();
 		if(targetmethod==null){ //생성자 테스트인 경우.
@@ -336,7 +343,7 @@ public class TestInvoker {
 				if(testResult !=null){
 					//모크 셋업
 					type= new Class[1];
-					result[suite][rowIndex-1]=testResult.toString();
+					result[sheetNum][rowIndex-1]=testResult.toString();
 					type[0]= testResult.getClass();//실제 리턴타입
 				}				
 
@@ -372,8 +379,8 @@ public class TestInvoker {
 			}
 
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-			success[suite][rowIndex-1]=false;
-			result[suite][rowIndex-1]="InitError";
+			success[sheetNum][rowIndex-1]=false;
+			result[sheetNum][rowIndex-1]="InitError";
 			// TODO Auto-generated catch block
 			Throwable fillstack=e.fillInStackTrace();
 			Throwable cause=null;
@@ -384,12 +391,15 @@ public class TestInvoker {
 				throw(cause);
 			}//Method Exception.
 		}catch(AssertionError e){
-			success[suite][rowIndex-1]=false;
+			success[sheetNum][rowIndex-1]=false;
 			//정확한 라인 찾기 이슈..
 			StackTraceElement[] elem =new StackTraceElement[1];			
 			elem[0]=new StackTraceElement(targetclz.getName(), targetmethod.getName(), targetclz.getCanonicalName(),1);
 			e.setStackTrace(elem);
 			throw(e);
+		}catch(Exception e){
+			e.printStackTrace();
+			fail();
 		}
 	}
 	//성공여부 및 결과 저장.
@@ -397,8 +407,9 @@ public class TestInvoker {
 	public static void log(){
 		try {
 			ExcelResultSaver save=new ExcelResultSaver(file.getCanonicalPath());
-			for(int i=0; i<=suitenumber; i++)
-				save.writeResults(suitenumber, rowSize[suitenumber], result[suitenumber], success[suitenumber]);
+			for(int i=0; i<=sheetNum; i++){
+				save.writeResults(sheetNames.get(i), rowSize[i], result[i], success[i]);
+			}
 			save.write();
 			save.close();
 		} catch (IOException e) {

@@ -7,7 +7,7 @@ import java.util.Collection;
 import org.junit.runners.Parameterized.Parameters;
 @SuppressWarnings("rawtypes")
 public class TestSuite extends TestInvoker{
-	public TestSuite(int suite,String testname, Class targetclz,Constructor constructor, Object[] constructor_params, Method targetmethod,
+	public TestSuite(String suite,String testname, Class targetclz,Constructor constructor, Object[] constructor_params, Method targetmethod,
 			Object[] param1, Object expectedResult) {
 		super(suite,testname, targetclz,constructor, constructor_params, targetmethod, param1, expectedResult);
 		// TODO Auto-generated constructor stub
