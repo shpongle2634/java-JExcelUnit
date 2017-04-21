@@ -10,14 +10,18 @@ import java.lang.reflect.Parameter;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import org.apache.poi.hssf.usermodel.DVConstraint;
 import org.apache.poi.hssf.util.HSSFColor;
+import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.CellCopyPolicy;
 import org.apache.poi.ss.usermodel.DataValidation;
 import org.apache.poi.ss.usermodel.DataValidationConstraint;
 import org.apache.poi.ss.usermodel.DataValidationHelper;
 import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Name;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -25,6 +29,7 @@ import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFConditionalFormattingRule;
+import org.apache.poi.xssf.usermodel.XSSFDataValidationConstraint;
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
 import org.apache.poi.xssf.usermodel.XSSFName;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -43,6 +48,11 @@ import jexcelunit.utils.ClassInfo;
  * Created : 2017.02.23
  * Vendor  : Taehoon Seo
  * Description : create excel file including classes, methods and constructor informations.
+ * 
+ * '17 /04/ 21 TODO
+ *  1. 모크객체 = >결국 코딩해야 하는데 뭐가 편할까   모크생성 시트를 만들까?!
+ *  2. 형상관리처럼 시각화
+ *  3. 시나리오 테스트/ 독립테스트 설정 필드.첫줄에 여러 테스트 모드를 지원할 것.
  * */
 @SuppressWarnings("rawtypes")
 public class ExcelCreator{
@@ -224,6 +234,37 @@ public class ExcelCreator{
 		return xlsx;
 	}
 
+	/*
+	 * 1. Scenario mode. 
+	 * 2. Unit Tests
+	 * */
+	private void makeSetTestModeRow(XSSFSheet sheet, int rowIndex){
+		XSSFRow row= sheet.getRow(rowIndex);
+		if(row == null) row= sheet.createRow(rowIndex);
+		
+		XSSFCellStyle cs=workbook.createCellStyle();
+		cs.setFillForegroundColor(IndexedColors.LIGHT_CORNFLOWER_BLUE.getIndex());
+		cs.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+		cs.setAlignment(HorizontalAlignment.CENTER);
+		cs.setBorderTop(BorderStyle.MEDIUM);
+		cs.setBorderBottom(BorderStyle.MEDIUM);
+		cs.setBorderLeft(BorderStyle.MEDIUM);
+		cs.setBorderRight(BorderStyle.MEDIUM);
+		
+		//Field Name;
+		XSSFCell cell = row.createCell(0);
+		cell.setCellValue("Test MODE");
+		cell.setCellStyle(cs);
+		
+		//validation Name
+		cell= row.createCell(1);
+		DataValidationHelper dvh= new XSSFDataValidationHelper(sheet);
+		CellRangeAddressList addr= new CellRangeAddressList(row.getRowNum(),row.getRowNum(), 1, 1);
+		DataValidationConstraint dvConstraint=dvh.createExplicitListConstraint(new String[]{"시나리오", "단위테스트"});
+		DataValidation dv= dvh.createValidation(dvConstraint, addr);
+		sheet.addValidationData(dv);
+		cell.setCellStyle(cs);
+	}
 
 	//create xlsx for Testcases.
 	/*
@@ -265,15 +306,19 @@ public class ExcelCreator{
 			XSSFCellStyle cs=workbook.createCellStyle();
 			cs.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
 			cs.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-
-
-
-
+			cs.setAlignment(HorizontalAlignment.CENTER);
+			cs.setBorderTop(BorderStyle.MEDIUM);
+			cs.setBorderBottom(BorderStyle.MEDIUM);
+			cs.setBorderLeft(BorderStyle.MEDIUM);
+			cs.setBorderRight(BorderStyle.MEDIUM);
+			
+			
 			for(int sheet_index=0; sheet_index<workbook.getNumberOfSheets(); sheet_index++){
-//				if( !workbook.isSheetHidden(sheet_index) && !workbook.isSheetVeryHidden(sheet_index)){
-				if( workbook.getSheetAt(sheet_index).getSheetName().equals("TestSuite 1")){
+				if( !workbook.isSheetHidden(sheet_index) && !workbook.isSheetVeryHidden(sheet_index)){
+					//				if( workbook.getSheetAt(sheet_index).getSheetName().equals("TestSuite 1")){
 					xssfSheet=workbook.getSheetAt(sheet_index);
-					row=xssfSheet.createRow(0);//info
+					makeSetTestModeRow(xssfSheet, 0);
+					row=xssfSheet.createRow(1);//info
 
 					int cellvalindex=0;
 					int totalCellCount= TESTDATASET.length + consCount + metsCount-2;
@@ -516,7 +561,7 @@ public class ExcelCreator{
 		//Set Class Data ReferenceList.
 		XSSFName namedcell =workbook.createName();
 		namedcell.setNameName("Class"); //Nameing이 중요.
-		
+
 		String cell=cons_total>0?cellIndex(cons_total):"A";
 		String formula= "ConstructorParamhidden!$A$1:$"+cell+"$1";
 		namedcell.setRefersToFormula(formula);
@@ -544,7 +589,7 @@ public class ExcelCreator{
 		constraint= validationHelper.createFormulaListConstraint(namedcell);
 		CellRangeAddressList addresslist =null;
 		if(constraint !=null){
-			addresslist = new CellRangeAddressList(1,500,col,col);
+			addresslist = new CellRangeAddressList(2,500,col,col);
 			dataValidation= validationHelper.createValidation(constraint, addresslist);
 			dataValidation.setSuppressDropDownArrow(true);
 			dataValidation.setShowErrorBox(true);

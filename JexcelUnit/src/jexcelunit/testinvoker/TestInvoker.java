@@ -55,7 +55,7 @@ public class TestInvoker {
 	private static File file=null;
 	private static int[] rowSize=null;
 	private static String currentSheet=null;
-	
+
 	//테스트 케이스들을 확인할 method_params
 	private String sheet=null;
 	private String testname=null;
@@ -121,6 +121,7 @@ public class TestInvoker {
 					for(ArrayList<TestcaseVO> testcase : testcases){
 						if(testcase.size()>0){ 
 							sheetNames.add(testcase.get(0).getSheetName());
+							currentSheet=sheetNames.get(0);
 						}
 						if(row_index < total_row_index){
 							for(TestcaseVO currentCase: testcase){
@@ -145,7 +146,7 @@ public class TestInvoker {
 			}
 		}
 		//읽어들인 리스트를 String, Class, Object[] Object, String Object로 바까야함.
-		currentSheet=sheetNames.get(0);
+
 		return Arrays.asList(parameterized);
 	} 
 
@@ -380,7 +381,14 @@ public class TestInvoker {
 
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 			success[sheetNum][rowIndex-1]=false;
-			result[sheetNum][rowIndex-1]="InitError";
+			if(exceptionlist.contains(e.getClass())){
+				result[sheetNum][rowIndex-1]="Method Exception Occurred";
+				StackTraceElement[] elem =new StackTraceElement[1];			
+				elem[0]=new StackTraceElement(targetclz.getName(), targetmethod.getName(), targetclz.getCanonicalName(),1);
+				e.setStackTrace(elem);
+				throw(e);
+			}
+			else {result[sheetNum][rowIndex-1]="InitError : Check Cell's data or Custom Exception";
 			// TODO Auto-generated catch block
 			Throwable fillstack=e.fillInStackTrace();
 			Throwable cause=null;
@@ -390,6 +398,7 @@ public class TestInvoker {
 				fail();
 				throw(cause);
 			}//Method Exception.
+			}
 		}catch(AssertionError e){
 			success[sheetNum][rowIndex-1]=false;
 			//정확한 라인 찾기 이슈..
