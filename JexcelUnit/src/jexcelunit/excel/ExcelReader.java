@@ -29,11 +29,13 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 @SuppressWarnings("rawtypes")
 public class ExcelReader {
 	public final int TESTNAME=0, TESTCLASS=1, CONSTPARAM=2, METHOD=3, METHODPARAM=4, EXPECTED=5, RESULT=6, SUCCESS=7;
-	public final String[] TESTDATASET = {"TestName" ,"TestClass","Constructor Param", "TestMethod", "Method Param", "Expected", "Result", "Success"};
+	public final String[] TESTDATASET = {"TestName" ,"TestClass","ConsParam", "TestMethod", "MetParam", "Expected", "Result", "Success"};
 	private Set<Class> newInstancable= new HashSet<>();
 	private HashMap<String,String> classFullNames = new HashMap<>();
 	private DataFormatter formatter=new DataFormatter();
 	private FileInputStream inputstream=null;
+	private ArrayList<String> testModes= new ArrayList<String>();
+
 	public ExcelReader(){
 		newInstancable.add(String.class);
 		newInstancable.add(Short.class);
@@ -41,8 +43,8 @@ public class ExcelReader {
 		newInstancable.add(Integer.class);
 		newInstancable.add(Short.class);
 		newInstancable.add(Float.class);
+		newInstancable.add(Long.class);
 		newInstancable.add(Byte.class);
-
 	}
 
 	public XSSFWorkbook getWorkbook(String filePath) throws IOException{
@@ -50,6 +52,21 @@ public class ExcelReader {
 		File file = new File(filePath);
 		inputstream = new FileInputStream(file);
 		return new XSSFWorkbook(inputstream);
+	}
+
+	private void setClassMap(XSSFSheet clzmetSheet){
+		XSSFRow clzNames= clzmetSheet.getRow(0);
+		Iterator<Cell> it= clzNames.cellIterator();
+		Cell cell=null;
+		while(it.hasNext()){
+			cell=it.next();
+			String fullString = formatter.formatCellValue(cell);
+			String key= fullString.substring(fullString.lastIndexOf(".")+1, fullString.length());
+			classFullNames.put(key, fullString);
+		}
+	}
+	public ArrayList<String> getTestSheetMode(){
+		return testModes;
 	}
 	/*
 	 * Excel Reading Issue
@@ -63,16 +80,9 @@ public class ExcelReader {
 			//Read ClassName. and main Tain Map<Simple Name,Full Name>
 			XSSFSheet clzhidden= workbook.getSheet("ClassMethodhidden");
 			if(clzhidden!=null){
-				XSSFRow clzNames= clzhidden.getRow(0);
-				Iterator<Cell> it= clzNames.cellIterator();
-				Cell cell=null;
-				while(it.hasNext()){
-					cell=it.next();
-					String fullString = formatter.formatCellValue(cell);
-					String key= fullString.substring(fullString.lastIndexOf(".")+1, fullString.length());
-					classFullNames.put(key, fullString);
-				}
+				setClassMap(clzhidden);
 			}
+
 			//Read sheet
 			for(int sheet_index=0;sheet_index<workbook.getNumberOfSheets();sheet_index++){
 
@@ -81,13 +91,22 @@ public class ExcelReader {
 					XSSFSheet xssfsheet = null;
 					xssfsheet=workbook.getSheetAt(sheet_index);
 
-					//Read first line and set vo info.
-					XSSFRow firstrow = xssfsheet.getRow(0);
+					//Read First Line and Check Test Mode.
+					XSSFRow firstRow = xssfsheet.getRow(0);
+					XSSFCell testModeCell= firstRow.getCell(1);
+					if(testModeCell==null) testModes.add("Scenario");
+					else{
+						String testMode= formatter.formatCellValue(testModeCell);
+						testModes.add(testMode);
+					}
+
+					//Read Second line and set vo info.
+					XSSFRow secondRow = xssfsheet.getRow(1);
 					XSSFCell infocell = null;
-					int colSize= firstrow.getPhysicalNumberOfCells();
+					int colSize= secondRow.getPhysicalNumberOfCells();
 					int[] voOption = new int[colSize];
 					for(int i=0; i < colSize; i++){
-						infocell= firstrow.getCell(i);
+						infocell= secondRow.getCell(i);
 
 						for(int j =0; j < TESTDATASET.length; j++){
 							if(infocell.getStringCellValue().contains(TESTDATASET[j])){						
@@ -98,8 +117,8 @@ public class ExcelReader {
 						}
 					}
 
-					//loop to convert data to VO Object. Except first Row.
-					for(int i= 1; i<xssfsheet.getPhysicalNumberOfRows(); i++){
+					//loop to convert data to VO Object. Except First, Second Row.
+					for(int i= 2; i<xssfsheet.getPhysicalNumberOfRows(); i++){
 						XSSFRow currentRow= xssfsheet.getRow(i);
 						TestcaseVO vo= new TestcaseVO();
 						vo.setSheetName(xssfsheet.getSheetName());
@@ -115,7 +134,6 @@ public class ExcelReader {
 						}
 						caselist.add(vo);
 					}
-
 					caselists.add(caselist); //save sheets		
 
 				}

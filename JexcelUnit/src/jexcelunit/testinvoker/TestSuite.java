@@ -20,10 +20,10 @@ public class TestSuite extends TestInvoker{
 		 * 
 		 * */	
 	}
-
+	
 	@SuppressWarnings("unchecked")
-	@Parameters( name = "{index}: Suite{0} {1}")
-	public static Collection<Object[][]> parameterized(){
+	@Parameters( name = "[{0}] Test NO.{index} : {1}")
+	public static Collection<Object[][]> parameterized() throws InstantiationException{
 		setUp();
 		return parmeterizingExcel("");
 	}

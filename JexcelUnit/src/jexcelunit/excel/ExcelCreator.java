@@ -10,10 +10,8 @@ import java.lang.reflect.Parameter;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-import org.apache.poi.hssf.usermodel.DVConstraint;
 import org.apache.poi.hssf.util.HSSFColor;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.CellCopyPolicy;
@@ -29,7 +27,6 @@ import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFConditionalFormattingRule;
-import org.apache.poi.xssf.usermodel.XSSFDataValidationConstraint;
 import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
 import org.apache.poi.xssf.usermodel.XSSFName;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -53,6 +50,7 @@ import jexcelunit.utils.ClassInfo;
  *  1. 모크객체 = >결국 코딩해야 하는데 뭐가 편할까   모크생성 시트를 만들까?!
  *   모크 객체에 필요한 것들 => 모크 이름. 모크 클래스. 생성자 파라미터, 호출 후 수행할 함수 , 파라미터들이 필요..
  *  2. 형상관리처럼 시각화 -> 분석한 모듈과 파라미터 타입에 따라서 재귀적으로 접근하도록 해야함.
+ *  UML 테스트 는 어떨라나 ??!!! Star UML처럼 분석하여 시각화 하고, 파라미터 및 테스트를 드래그앤 드롭식으로 하고, 엑셀과 같은 데이터 뷰도 제공?!!!
  *  3. 시나리오 테스트/ 독립테스트 설정 필드.첫줄에 여러 테스트 모드를 지원할 것. -TODO
  * */
 @SuppressWarnings("rawtypes")
@@ -332,7 +330,7 @@ public class ExcelCreator{
 							//Set Param Validation Type
 							for(int k=0; k<consCount; k++){
 								cell=row.createCell(i+k);
-								xssfSheet.setColumnWidth(i+k, 2600);
+								xssfSheet.setColumnWidth(i+k, 2700);
 								cell.setCellValue(val+(k+1));
 								cell.setCellStyle(cs);
 							}
@@ -341,7 +339,7 @@ public class ExcelCreator{
 						}
 						else if(val.equals("TestMethod")){
 							xssfSheet.setColumnWidth(i, 3000);
-							setValidation("INDIRECT(LEFT($B2,FIND(\"(\",$B2)-1))", xssfSheet, i);
+							setValidation("INDIRECT(LEFT($B3,FIND(\"(\",$B3)-1))", xssfSheet, i);
 							cell=row.createCell(i);
 							cell.setCellValue(val);
 							cellvalindex++;
@@ -350,7 +348,7 @@ public class ExcelCreator{
 
 							for(int k=0; k<metsCount; k++){
 								cell=row.createCell(i+k);
-								xssfSheet.setColumnWidth(i+k, 2600);
+								xssfSheet.setColumnWidth(i+k, 2700);
 								cell.setCellValue(val+(k+1));
 								cell.setCellStyle(cs);
 							}
@@ -379,7 +377,7 @@ public class ExcelCreator{
 					rule2.createPatternFormatting().setFillBackgroundColor(HSSFColor.ROSE.index);
 
 					XSSFConditionalFormattingRule[] rules ={ rule1, rule2};
-					CellRangeAddress[] range = { CellRangeAddress.valueOf("A2:"+colIndex+"500")};
+					CellRangeAddress[] range = { CellRangeAddress.valueOf("A3:"+colIndex+"500")};
 					cf.addConditionalFormatting(range, rules);
 				}
 			}

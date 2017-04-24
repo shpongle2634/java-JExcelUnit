@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -44,12 +45,11 @@ import jexcelunit.excel.TestcaseVO;
 @SuppressWarnings("rawtypes")
 @RunWith(Parameterized.class) //테스트 케이스를 이용할것이다.
 public class TestInvoker {
-	private static Map<Class, Object> classmap= new HashMap<Class, Object>(); //해쉬맵으로 테스트에 필요한 객체들을 하나씩만 유지한다.
+	private static Map<Class, Object> classmap=new HashMap<Class, Object>(); //해쉬맵으로 테스트에 필요한 객체들을 하나씩만 유지한다.
 	private static ArrayList<Class> exceptionlist=new ArrayList<Class>();//사용자 정의 예외 클래스들을 담아두는 곳.
-	private static ArrayList<String> sheetNames=new ArrayList<String>();
-	//	private static Method[] methods; //테스트할 객체의 메소드를 받는부분
+	private static Map<String,String> sheets=new HashMap<String,String>();
 	protected static HashMap<String,Object> mock=new HashMap<String,Object>();//모크객체 모음
-	private static int sheetNum= 0,rowIndex=0,testnumber=0;
+	private static int sheetNum= -1,rowIndex=0,testnumber=0;
 	private static boolean[][] success=null;
 	private static String[][] result=null;
 	private static File file=null;
@@ -86,7 +86,7 @@ public class TestInvoker {
 	 * 4. 그럴바에 suiteInfo 라는 맴버클래스를 둬서 관리하는게 나을려나.
 	 * 
 	 * */
-	public static Collection parmeterizingExcel(String filePath){
+	public static Collection parmeterizingExcel(String filePath) throws InstantiationException{
 		ExcelReader reader = new ExcelReader();
 		//메타데이터를 참조할 수 밖에없다.
 		//핸들러 레벨에서 타겟 프로젝트 정보를 생성할것.
@@ -107,7 +107,6 @@ public class TestInvoker {
 						rowSize[suiteNum++]=size;
 						total_row_index+=size;
 						if(size>maxRow) maxRow=size;
-
 					}
 					parameterized = new Object[total_row_index][8];
 					//init success
@@ -117,12 +116,21 @@ public class TestInvoker {
 
 					result= new String[testcases.size()][maxRow];//결과값 저장.
 
+
+					//Setting SheetNames and TestMode.
+					ArrayList<String> sheetModes=reader.getTestSheetMode();
+					if( sheetModes.size() != testcases.size()) throw new InstantiationException("Check Sheet Info");
+
+					for(int i=0; i<sheetModes.size(); i++){
+						ArrayList<TestcaseVO> testcase = testcases.get(i);
+						if(testcase.size()>0)
+							sheets.put(testcase.get(0).getSheetName(), sheetModes.get(i));
+						else throw new InstantiationException("There's no Test Case in the Sheet : "+testcase.get(0).getSheetName());
+					}
+
+					//Set @Parameters.
 					int row_index=0;
 					for(ArrayList<TestcaseVO> testcase : testcases){
-						if(testcase.size()>0){ 
-							sheetNames.add(testcase.get(0).getSheetName());
-							currentSheet=sheetNames.get(0);
-						}
 						if(row_index < total_row_index){
 							for(TestcaseVO currentCase: testcase){
 								parameterized[row_index][0]=currentCase.getSheetName();
@@ -137,7 +145,6 @@ public class TestInvoker {
 							}
 						}
 					}
-
 				}
 
 			} catch (IOException e) {
@@ -189,32 +196,43 @@ public class TestInvoker {
 
 	@Before
 	public void setObj(){
-		if(currentSheet !=sheet){ //새로운 시나리오 테스트.
-			classmap.clear();
+		if(currentSheet !=sheet){ 
+			if(sheets.get(sheet).equals("Scenario")) //새로운 시나리오 테스트
+				classmap.clear();
 			rowIndex=0; //행 초기화
 			sheetNum++;
 		}
-		if(!classmap.containsKey(targetclz)&& targetmethod !=null){ //실행할 객체가 없는경우
-			//System.out.println(classmap.containsKey(targetclz)+"새로생성");
-			constructor.setAccessible(true);
-			try {
-				if(constructor_params.length==0)
-					classmap.put(targetclz, constructor.newInstance());
 
-				else{
-					Class[] paramTypes=constructor.getParameterTypes();
-					Object[] params= getMock(paramTypes,constructor_params);
-					classmap.put(targetclz, constructor.newInstance(params));
-				}
+		if(sheets.get(sheet).equals("Scenario")){
+			if(!classmap.containsKey(targetclz)&& targetmethod !=null){ //시나리오 테스트에서 실행할 객체가 없는경우
+				makeTestInstance();
+			}	
+		}
+		else if(sheets.get(sheet).equals("Units")){
+			if(classmap.containsKey(targetclz))
+				classmap.remove(targetclz);
+			makeTestInstance();
+		}
 
-			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
-					| InvocationTargetException e) {
-				// TODO Auto-generated catch block
-				handleException(e);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+	}
+	private void makeTestInstance(){
+		constructor.setAccessible(true);
+		try {
+			if(constructor_params.length==0)
+				classmap.put(targetclz, constructor.newInstance());
+			else{
+				Class[] paramTypes=constructor.getParameterTypes();
+				Object[] params= getMock(paramTypes,constructor_params);
+				classmap.put(targetclz, constructor.newInstance(params));
 			}
+
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+				| InvocationTargetException e) {
+			// TODO Auto-generated catch block
+			handleException(e);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 
@@ -416,8 +434,12 @@ public class TestInvoker {
 	public static void log(){
 		try {
 			ExcelResultSaver save=new ExcelResultSaver(file.getCanonicalPath());
-			for(int i=0; i<=sheetNum; i++){
-				save.writeResults(sheetNames.get(i), rowSize[i], result[i], success[i]);
+			Set<String> sheetNames=sheets.keySet();
+			Iterator sit= sheetNames.iterator();
+			for(int i=0; i<=sheetNum&&sit.hasNext(); i++){
+				String sheetname=(String)sit.next();
+//				System.out.println(sheetname);
+				save.writeResults(sheetname, rowSize[i], result[i], success[i]);
 			}
 			save.write();
 			save.close();

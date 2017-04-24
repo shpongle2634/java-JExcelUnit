@@ -130,16 +130,17 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 						+ "\nimport java.util.Collection;"
 						+ "\n\n";
 				String[] classcode={
-						"public class "+runnerName+" extends TestInvoker{",
-						"\tpublic "+runnerName+"(int suite,String testname, Class targetclz,Constructor constructor, Object[] constructor_params, Method targetmethod,",
+						"@SuppressWarnings(\"rawtypes\")\n"
+						+ "public class "+runnerName+" extends TestInvoker{",
+						"\tpublic "+runnerName+"(String suite,String testname, Class targetclz,Constructor constructor, Object[] constructor_params, Method targetmethod,",
 						"\tObject[] param1, Object expectedResult) {\n",
 						"\t\tsuper(suite,testname, targetclz,constructor,constructor_params, targetmethod, param1, expectedResult);",
 						"\t}",
 						"\tprivate static void setUp() {",
 						"\t\t/* Make Your Mock Objects  using mock.put(\"mock name\", mock object);",
 						"\t\t* Make Your Custom Exceptions using  addException(your Exception e);*/",
-						"\t}\n\n@SuppressWarnings(\"unchecked\")\n@Parameters( name = \"{index}: suite {0} : {1}\")",
-						"\tpublic static Collection<Object[][]> parameterized(){",
+						"\t}\n\n@SuppressWarnings(\"unchecked\")\n@Parameters( name = \"[{0}] Test NO.{index} : {1}\")",
+						"\tpublic static Collection<Object[][]> parameterized()  throws InstantiationException {",
 						"\t\tsetUp();",
 						"\t\treturn parmeterizingExcel(\""+rootpath+containerName+"/"+fileName+".xlsx\");",
 						"}\n",

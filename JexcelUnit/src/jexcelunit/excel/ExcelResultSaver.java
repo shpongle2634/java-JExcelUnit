@@ -51,7 +51,7 @@ public class ExcelResultSaver {
 	public void writeResults(String sheetName, int totalRow, String[] result, boolean[] success) throws IOException{
 		if(workbook==null) workbook = getWorkbook();
 		XSSFSheet sheet=workbook.getSheet(sheetName);
-		int resultIndex=findIndex(sheet.getRow(0), "Result");
+		int resultIndex=findIndex(sheet.getRow(1), "Result");
 		int successIndex=resultIndex+1;
 		XSSFRow currentRow= null;
 		XSSFCell resultCell, successCell;
@@ -62,19 +62,19 @@ public class ExcelResultSaver {
 		failStyle.setFillForegroundColor(IndexedColors.ROSE.getIndex());
 		successStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 		failStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-		
-		for(int i = 1; i<=totalRow; i++){
+		int caseIndex=2;
+		for(int i = caseIndex; i<totalRow+caseIndex; i++){
 			currentRow= sheet.getRow(i);
 
 			resultCell= currentRow.getCell(resultIndex);
 			if(resultCell ==null) resultCell=currentRow.createCell(resultIndex);
-			resultCell.setCellValue(result[i-1]);
+			resultCell.setCellValue(result[i-caseIndex]);
 
 			successCell = currentRow.getCell(successIndex);
 			if(successCell==null) successCell=currentRow.createCell(successIndex);
-			successCell.setCellValue(success[i-1]?"SUCCESS":"FAIL");
+			successCell.setCellValue(success[i-caseIndex]?"SUCCESS":"FAIL");
 			
-			if(success[i-1])successCell.setCellStyle(successStyle);
+			if(success[i-caseIndex])successCell.setCellStyle(successStyle);
 			else successCell.setCellStyle(failStyle);
 		}
 
