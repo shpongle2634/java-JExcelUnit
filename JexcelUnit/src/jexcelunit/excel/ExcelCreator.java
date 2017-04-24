@@ -50,8 +50,8 @@ import jexcelunit.utils.ClassInfo;
  *  1. 모크객체 = >결국 코딩해야 하는데 뭐가 편할까   모크생성 시트를 만들까?!
  *   모크 객체에 필요한 것들 => 모크 이름. 모크 클래스. 생성자 파라미터, 호출 후 수행할 함수 , 파라미터들이 필요..
  *  2. 형상관리처럼 시각화 -> 분석한 모듈과 파라미터 타입에 따라서 재귀적으로 접근하도록 해야함.
- *  UML 테스트 는 어떨라나 ??!!! Star UML처럼 분석하여 시각화 하고, 파라미터 및 테스트를 드래그앤 드롭식으로 하고, 엑셀과 같은 데이터 뷰도 제공?!!!
- *  3. 시나리오 테스트/ 독립테스트 설정 필드.첫줄에 여러 테스트 모드를 지원할 것. -TODO
+ *  UML 테스트 는 어떨라나 ??!!! Star UML처럼 분석하여 시각화 하고, 파라미터 및 테스트를 드래그앤 드롭식으로 테스트 가능하게?! + 엑셀같은 데이터 작성 툴 제공?!!!
+ *  3. 시나리오 테스트/ 독립테스트 설정 필드.첫줄에 여러 테스트 모드를 지원할 것. - DONE
  * */
 @SuppressWarnings("rawtypes")
 public class ExcelCreator{
@@ -98,10 +98,10 @@ public class ExcelCreator{
 		int rm_Sheetindex=0;
 
 		for(int sheet_index=0;sheet_index<workbook.getNumberOfSheets();sheet_index++){
-			if(workbook.isSheetHidden(sheet_index)){//Init hidden Sheets
+			if(workbook.isSheetHidden(sheet_index)||workbook.isSheetVeryHidden(sheet_index)){//Init hidden Sheets
 				rmvSheet[rm_Sheetindex++]= workbook.getSheetName(sheet_index); //Save Delete Sheet's name
 			}else {
-//				workbook.getSheetName(sheet_index).contains("Mock Sheet");
+				//				workbook.getSheetName(sheet_index).contains("Mock Sheet");
 				XSSFSheet sheet = workbook.getSheetAt(sheet_index);
 				XSSFRow firstRow = sheet.getRow(1);
 
@@ -147,9 +147,11 @@ public class ExcelCreator{
 					}
 				}
 				sheet.removeRow(sheet.getRow(1));//remove 첫번째 줄은 삭제할것.
+				sheet.removeRow(sheet.getRow(0));
 			}
 		}
 
+		//remove Hidden Sheet.
 		for(int i=0; i<rm_Sheetindex; i++){
 			if(rmvSheet[i] !=null){
 				int where = workbook.getSheetIndex(rmvSheet[i]);
@@ -241,7 +243,7 @@ public class ExcelCreator{
 	private void makeSetTestModeRow(XSSFSheet sheet, int rowIndex){
 		XSSFRow row= sheet.getRow(rowIndex);
 		if(row == null) row= sheet.createRow(rowIndex);
-		
+
 		XSSFCellStyle cs=workbook.createCellStyle();
 		cs.setFillForegroundColor(IndexedColors.LIGHT_CORNFLOWER_BLUE.getIndex());
 		cs.setFillPattern(FillPatternType.SOLID_FOREGROUND);
@@ -250,12 +252,12 @@ public class ExcelCreator{
 		cs.setBorderBottom(BorderStyle.MEDIUM);
 		cs.setBorderLeft(BorderStyle.MEDIUM);
 		cs.setBorderRight(BorderStyle.MEDIUM);
-		
+
 		//Field Name;
 		XSSFCell cell = row.createCell(0);
 		cell.setCellValue("Test MODE");
 		cell.setCellStyle(cs);
-		
+
 		//validation Name
 		cell= row.createCell(1);
 		DataValidationHelper dvh= new XSSFDataValidationHelper(sheet);
@@ -311,14 +313,15 @@ public class ExcelCreator{
 			cs.setBorderBottom(BorderStyle.MEDIUM);
 			cs.setBorderLeft(BorderStyle.MEDIUM);
 			cs.setBorderRight(BorderStyle.MEDIUM);
-			
-			
+
+
 			for(int sheet_index=0; sheet_index<workbook.getNumberOfSheets(); sheet_index++){
 				if( !workbook.isSheetHidden(sheet_index) && !workbook.isSheetVeryHidden(sheet_index)){
 					//				if( workbook.getSheetAt(sheet_index).getSheetName().equals("TestSuite 1")){
 					xssfSheet=workbook.getSheetAt(sheet_index);
 					makeSetTestModeRow(xssfSheet, 0); //Selection Test Mode Row
-					row=xssfSheet.createRow(1);//info
+					row=xssfSheet.getRow(1);//info
+					if(row==null)row = xssfSheet.createRow(1);
 
 					int cellvalindex=0;
 					int totalCellCount= TESTDATASET.length + consCount + metsCount-2;
@@ -496,11 +499,9 @@ public class ExcelCreator{
 				}//Method loop End
 
 				//Set Class-Method Data ReferenceList
-				XSSFName namedcell =workbook.createName();
-				namedcell.setNameName(clz.getSimpleName()); //Nameing이 중요.
 				String currentCol=cellIndex(clz_met_col_index+1);
 				String formula= "ClassMethodhidden!$"+currentCol+"$2:$"+currentCol+"$" + (mets.size()+1);
-				namedcell.setRefersToFormula(formula);				
+				setNamedName(workbook, clz.getSimpleName(), formula);
 			}
 
 			//생성자 리스트 및 생성자 파라미터
@@ -545,38 +546,44 @@ public class ExcelCreator{
 
 				if(params.length>0){
 					//생성자 네임생성
-					XSSFName namedcell= workbook.createName();
-					namedcell.setNameName(consParamNamed);
 					String cell=cellIndex(cons_total);
 					String formula="ConstructorParamhidden!$"+cell+"$2:$"+cell+"$"+(params.length+1);
-					namedcell.setRefersToFormula(formula);
+					setNamedName(workbook, consParamNamed, formula);
 				}
 				cons_total++;
 			}//Constructor Loop End
 
-			//여기부분 인덱스가.. 문제 있는지 확인.
 			clz_met_col_index++;
 		}//Class loop End.
 
 		//Set Class Data ReferenceList.
-		XSSFName namedcell =workbook.createName();
-		namedcell.setNameName("Class"); //Nameing이 중요.
-
 		String cell=cons_total>0?cellIndex(cons_total):"A";
 		String formula= "ConstructorParamhidden!$A$1:$"+cell+"$1";
-		namedcell.setRefersToFormula(formula);
+		setNamedName(workbook, "Class", formula);
 		System.out.println("total : " + cons_total);
 
 		//Set hidden Sheet if true=  hidden.
-		if(!workbook.isSheetHidden(1)) workbook.setSheetHidden(1, true);
-		if(!workbook.isSheetHidden(2)) workbook.setSheetHidden(2, true);
-		if(!workbook.isSheetHidden(3)) workbook.setSheetHidden(3, true);
+		int consParam=workbook.getSheetIndex("ConstructorParamhidden");
+		int metParam= workbook.getSheetIndex("MethodParamhidden");
+		int clzMet=workbook.getSheetIndex("ClassMethodhidden");
+
+		if(!workbook.isSheetHidden(consParam)) workbook.setSheetHidden(consParam, true);
+		if(!workbook.isSheetHidden(metParam)) workbook.setSheetHidden(metParam, true);
+		if(!workbook.isSheetHidden(clzMet)) workbook.setSheetHidden(clzMet, true);
+	}
+
+	private void setNamedName(XSSFWorkbook workbook, String name, String formula){
+		XSSFName namedcell =workbook.createName();
+		namedcell.setNameName(name); //Nameing이 중요.
+		namedcell.setRefersToFormula(formula);
 	}
 
 	private void unsetValidation(XSSFSheet xssfSheet){
 		CTWorksheet ctsheet = xssfSheet.getCTWorksheet();
-		ctsheet.unsetDataValidations();
-		ctsheet.setDataValidations(null);
+		if(ctsheet.isSetDataValidations()){
+			ctsheet.unsetDataValidations();
+			ctsheet.setDataValidations(null);
+		}
 	}
 
 	//클래스 이름 제약
