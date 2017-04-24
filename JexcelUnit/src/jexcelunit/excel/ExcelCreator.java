@@ -51,14 +51,15 @@ import jexcelunit.utils.ClassInfo;
  * 
  * '17 /04/ 21 TODO
  *  1. 모크객체 = >결국 코딩해야 하는데 뭐가 편할까   모크생성 시트를 만들까?!
- *  2. 형상관리처럼 시각화
- *  3. 시나리오 테스트/ 독립테스트 설정 필드.첫줄에 여러 테스트 모드를 지원할 것.
+ *   모크 객체에 필요한 것들 => 모크 이름. 모크 클래스. 생성자 파라미터, 호출 후 수행할 함수 , 파라미터들이 필요..
+ *  2. 형상관리처럼 시각화 -> 분석한 모듈과 파라미터 타입에 따라서 재귀적으로 접근하도록 해야함.
+ *  3. 시나리오 테스트/ 독립테스트 설정 필드.첫줄에 여러 테스트 모드를 지원할 것. -TODO
  * */
 @SuppressWarnings("rawtypes")
 public class ExcelCreator{
 	private final int CONSTRUCTOR = 0;
 	private final int METHOD = 1;
-	public final String[] TESTDATASET = {"TestName" ,"TestClass","Constructor Param", "TestMethod", "Method Param", "Expected", "Result", "Success"};
+	public final String[] TESTDATASET = {"TestName" ,"TestClass","ConsParam", "TestMethod", "MetParam", "Expected", "Result", "Success"};
 
 
 	private int consCount=0;
@@ -102,8 +103,9 @@ public class ExcelCreator{
 			if(workbook.isSheetHidden(sheet_index)){//Init hidden Sheets
 				rmvSheet[rm_Sheetindex++]= workbook.getSheetName(sheet_index); //Save Delete Sheet's name
 			}else {
+//				workbook.getSheetName(sheet_index).contains("Mock Sheet");
 				XSSFSheet sheet = workbook.getSheetAt(sheet_index);
-				XSSFRow firstRow = sheet.getRow(0);
+				XSSFRow firstRow = sheet.getRow(1);
 
 				//init DataValidations.
 				unsetValidation(sheet);
@@ -115,10 +117,10 @@ public class ExcelCreator{
 					for(int cell_index =0; cell_index< firstRow.getPhysicalNumberOfCells(); cell_index++){
 						XSSFCell cell=null;
 						cell=firstRow.getCell(cell_index);
-						if(cell.getStringCellValue().contains("Constructor Param")){
+						if(cell.getStringCellValue().contains("ConsParam")){
 							old_conNum++;
 						}
-						if(cell.getStringCellValue().contains("Method Param")){
+						if(cell.getStringCellValue().contains("MetParam")){
 							old_metNum++;
 						}
 					}
@@ -146,7 +148,7 @@ public class ExcelCreator{
 						}
 					}
 				}
-				sheet.removeRow(sheet.getRow(0));//remove 첫번째 줄은 삭제할것.
+				sheet.removeRow(sheet.getRow(1));//remove 첫번째 줄은 삭제할것.
 			}
 		}
 
@@ -260,7 +262,7 @@ public class ExcelCreator{
 		cell= row.createCell(1);
 		DataValidationHelper dvh= new XSSFDataValidationHelper(sheet);
 		CellRangeAddressList addr= new CellRangeAddressList(row.getRowNum(),row.getRowNum(), 1, 1);
-		DataValidationConstraint dvConstraint=dvh.createExplicitListConstraint(new String[]{"시나리오", "단위테스트"});
+		DataValidationConstraint dvConstraint=dvh.createExplicitListConstraint(new String[]{"Scenario", "Units"});
 		DataValidation dv= dvh.createValidation(dvConstraint, addr);
 		sheet.addValidationData(dv);
 		cell.setCellStyle(cs);
@@ -317,7 +319,7 @@ public class ExcelCreator{
 				if( !workbook.isSheetHidden(sheet_index) && !workbook.isSheetVeryHidden(sheet_index)){
 					//				if( workbook.getSheetAt(sheet_index).getSheetName().equals("TestSuite 1")){
 					xssfSheet=workbook.getSheetAt(sheet_index);
-					makeSetTestModeRow(xssfSheet, 0);
+					makeSetTestModeRow(xssfSheet, 0); //Selection Test Mode Row
 					row=xssfSheet.createRow(1);//info
 
 					int cellvalindex=0;
@@ -326,11 +328,11 @@ public class ExcelCreator{
 
 					for(int i =0; i<totalCellCount; i++){
 						String val=TESTDATASET[cellvalindex]; //Column List.
-						if(val.equals("Constructor Param")){					
+						if(val.equals("ConsParam")){					
 							//Set Param Validation Type
 							for(int k=0; k<consCount; k++){
 								cell=row.createCell(i+k);
-								xssfSheet.setColumnWidth(i+k, 4500);
+								xssfSheet.setColumnWidth(i+k, 2600);
 								cell.setCellValue(val+(k+1));
 								cell.setCellStyle(cs);
 							}
@@ -344,11 +346,11 @@ public class ExcelCreator{
 							cell.setCellValue(val);
 							cellvalindex++;
 						}
-						else if(val.equals("Method Param")){
+						else if(val.equals("MetParam")){
 
 							for(int k=0; k<metsCount; k++){
 								cell=row.createCell(i+k);
-								xssfSheet.setColumnWidth(i+k, 4000);
+								xssfSheet.setColumnWidth(i+k, 2600);
 								cell.setCellValue(val+(k+1));
 								cell.setCellStyle(cs);
 							}
