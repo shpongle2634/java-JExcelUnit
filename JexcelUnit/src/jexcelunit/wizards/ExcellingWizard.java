@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -67,11 +68,13 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 	public boolean performFinish() {
 		final String containerName = page.getContainerName();
 		final String fileName = page.getFileName();
-		final String srcName = page.getSrcName();
-		final String rootpath = page.getRootPath();
+		final String srcPath = page.getSrcPath();
+		final String rootPath = page.getRootPath();
 		final String runnerName = page.getRunnerName();
+		final String encoding= page.getEncoding();
+
 		try {
-			doFinish(rootpath,containerName, fileName,srcName,runnerName);
+			doFinish(rootPath,containerName, fileName,srcPath,runnerName ,encoding);
 		} catch (CoreException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -87,10 +90,14 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 	 */
 
 	private void doFinish(
-			String rootpath,String containerName, String fileName, String srcName, String runnerName)
+			String rootpath,String containerName, String fileName, String srcPath, String runnerName,String encoding)
 					throws CoreException {
 		// create a sample file
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		//		IProject project= root.getProject(containerName);
+		//		// Creating a build configuration
+		//		ResourcesPlugin.getWorkspace().newBuildConfig(project.getName(), "containParams");
+
 		IResource resource = root.findMember(new Path(containerName));
 		if (!resource.exists() || !(resource instanceof IContainer)) {
 			throwCoreException("Container \"" + containerName + "\" does not exist.");
@@ -98,26 +105,31 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 
 		// Making ExcelFile...
 		try {
-			ArrayList<Class> classlist= new ClassExtractor().getClasses(rootpath+srcName);
+			IProject project=resource.getProject();
+			ArrayList<Class> classlist= new ClassExtractor().getClasses(project, encoding);
 			ClassAnalyzer analyzer = new ClassAnalyzer(classlist);
 			HashMap<String, ClassInfo> classinfos=analyzer.getTestInfos();
 			ExcelCreator exceller= new ExcelCreator(fileName, rootpath+containerName, classinfos);
 			exceller.createXlsx();
 			if(runnerName!=null && !runnerName.equals(""))
-				makeJExcelUnitRunner(rootpath,containerName, fileName, srcName, runnerName);
+				makeJExcelUnitRunner(rootpath,containerName, fileName, srcPath, runnerName);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		//Make Suite Class.
-		
+		catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 	}
 
 	private void makeJExcelUnitRunner(String rootpath, String containerName, String fileName, String srcName, String runnerName){
 		//Make Suite Class.
 		PrintWriter pw = null; 
 		File runnerClass= new File( rootpath+srcName+"/"+runnerName+".java" );
-		
-		
+
+
 		//Issue Runner가 존재하면 새  러너를 만들것인지, 혹은 업데이트? 아님 그냥 경고만 ?
 		if(!runnerClass.exists()){
 			try {
@@ -131,20 +143,20 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 						+ "\n\n";
 				String[] classcode={
 						"@SuppressWarnings(\"rawtypes\")\n"
-						+ "public class "+runnerName+" extends TestInvoker{",
-						"\tpublic "+runnerName+"(String suite,String testname, Class targetclz,Constructor constructor, Object[] constructor_params, Method targetmethod,",
-						"\tObject[] param1, Object expectedResult) {\n",
-						"\t\tsuper(suite,testname, targetclz,constructor,constructor_params, targetmethod, param1, expectedResult);",
-						"\t}",
-						"\tprivate static void setUp() {",
-						"\t\t/* Make Your Mock Objects  using mock.put(\"mock name\", mock object);",
-						"\t\t* Make Your Custom Exceptions using  addException(your Exception e);*/",
-						"\t}\n\n@SuppressWarnings(\"unchecked\")\n@Parameters( name = \"[{0}] Test NO.{index} : {1}\")",
-						"\tpublic static Collection<Object[][]> parameterized()  throws InstantiationException {",
-						"\t\tsetUp();",
-						"\t\treturn parmeterizingExcel(\""+rootpath+containerName+"/"+fileName+".xlsx\");",
-						"}\n",
-						"}"								
+								+ "public class "+runnerName+" extends TestInvoker{",
+								"\tpublic "+runnerName+"(String suite,String testname, Class targetclz,Constructor constructor, Object[] constructor_params, Method targetmethod,",
+								"\tObject[] param1, Object expectedResult) {\n",
+								"\t\tsuper(suite,testname, targetclz,constructor,constructor_params, targetmethod, param1, expectedResult);",
+								"\t}",
+								"\tprivate static void setUp() {",
+								"\t\t/* Make Your Mock Objects  using mock.put(\"mock name\", mock object);",
+								"\t\t* Make Your Custom Exceptions using  addException(your Exception e);*/",
+								"\t}\n\n@SuppressWarnings(\"unchecked\")\n@Parameters( name = \"[{0}] Test NO.{index} : {1}\")",
+								"\tpublic static Collection<Object[][]> parameterized()  throws InstantiationException {",
+								"\t\tsetUp();",
+								"\t\treturn parmeterizingExcel(\""+rootpath+containerName+"/"+fileName+".xlsx\");",
+								"}\n",
+								"}"								
 				};
 
 				pw.println(importinvoker);

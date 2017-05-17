@@ -1,8 +1,10 @@
 package jexcelunit.wizards;
 
 import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.dialogs.IDialogPage;
 import org.eclipse.jface.viewers.ISelection;
@@ -33,6 +35,7 @@ public class ExcellingWizardPage extends WizardPage {
 	private Text fileText;
 	private Text runnerName;
 	private String rootpath;
+	private String encoding;
 
 	private ISelection selection;
 
@@ -158,6 +161,14 @@ public class ExcellingWizardPage extends WizardPage {
 				rootpath=((IResource) obj).getParent().getLocation().toString();
 				containerText.setText(container.getFullPath().toString());
 				srcText.setText(container.getFullPath().toString()+"/src");
+				
+				try {
+					encoding= container.getDefaultCharset();
+
+				} catch (CoreException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}
 		fileText.setText("Test Suites");
@@ -176,10 +187,20 @@ public class ExcellingWizardPage extends WizardPage {
 		if (dialog.open() == ContainerSelectionDialog.OK) {
 			Object[] result = dialog.getResult();
 			if (result.length == 1) {
-				containerText.setText(((Path) result[0]).toString());
+				String containerName= result[0].toString();
+				IProject prj =ResourcesPlugin.getWorkspace().getRoot().getProject(containerName);
+				try {
+					encoding= prj.getDefaultCharset();
+				} catch (CoreException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}					
+				containerText.setText(containerName);
 			}
+
 		}
 	}
+
 
 	private void handleSrcBrowse() {
 		ContainerSelectionDialog dialog = new ContainerSelectionDialog(
@@ -189,7 +210,6 @@ public class ExcellingWizardPage extends WizardPage {
 			Object[] result = dialog.getResult();
 			if (result.length == 1) {
 				srcText.setText(((Path) result[0]).toString());
-				//rootpath=ResourcesPlugin.getWorkspace().getRoot().getLocation().toString();
 			}
 		}
 	}
@@ -245,7 +265,7 @@ public class ExcellingWizardPage extends WizardPage {
 		return rootpath;
 	}
 
-	public String getSrcName(){
+	public String getSrcPath(){
 		if(srcText.getText()==null)
 			return containerText.getText()+"/src";
 		else
@@ -254,5 +274,9 @@ public class ExcellingWizardPage extends WizardPage {
 
 	public String getRunnerName(){
 		return runnerName.getText();
+	}
+
+	public String getEncoding(){
+		return encoding;
 	}
 }

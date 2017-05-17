@@ -1,87 +1,93 @@
 package jexcelunit.utils;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLStreamHandler;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IncrementalProjectBuilder;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.JavaCore;
+
 /*
- * Created : 2017-02 -17
- * Vendor : Tae hoon Seo
- * Description : Get Class URI List of Project's src
+ *  
+ * TODO 위의 옵션들이 다 만들어지면 => 클래스 시각화 시작.
+ * + Eclipse Custom UI.
+ * + UML-lic Testing.
  * */
 @SuppressWarnings("rawtypes")
 public class ClassExtractor {
 
-	private ArrayList<String> classlist= new ArrayList<>();
 
+	private List<String> getAllFiles(File dir, String extension) { 
+		ArrayList<String> fileList = new ArrayList<>(); 
+		getAllFiles(dir, extension, fileList); 
+		return fileList; 
+	} 
 
-	private void getClassPaths(File item){
-		for (File f : item.listFiles()){
-			//			System.out.println(f.toURI());
-
-			if(f.isFile()){
+	private void getAllFiles(File dir, String extension, List<String> fileList) { 
+		for (File f : dir.listFiles()) { 
+			if (f.getName().endsWith(extension)) { 
 				String classpath = "";
 				File parent=f.getParentFile();
 				classpath=f.getName().substring(0,f.getName().indexOf("."));
-				System.out.println(classpath);	
+				//				System.out.println(classpath);	
 
-				while(!parent.getName().equals("src")){
+				while(!parent.getName().equals("bin")){
 					classpath= parent.getName()+"."+classpath;
 					parent=parent.getParentFile();
 				}
+				fileList.add(classpath); 
+			} 
+			if (f.isDirectory()) { 
+				getAllFiles(f, extension, fileList);
+			} 
+		} 
+	} 
 
-				classlist.add(classpath);
 
-			}else if(f.isDirectory()){
-				getClassPaths(f);
-			}			
-		}
-	}
+	public ArrayList<Class> getClasses(IProject project,String encoding) throws Exception 	{
+		String rootPath= project.getLocation().toString();
+		String binPath= rootPath+"/bin";
+		ArrayList<Class> classList= new ArrayList<Class>();
 
-	public ArrayList<Class> getClasses(String srcPath){
-		ArrayList<Class> targetClasses= new ArrayList<Class>();
-		try {
-			getClassPaths(new File(srcPath));
+		//빌드시, 파라미터 이름 포함해서 컴파일하도록 IJavaProject 생성.
+		IJavaProject test= JavaCore.create(project);
+		Map<String, String> ops = test.getOptions(true);
+		ops.replace("org.eclipse.jdt.core.compiler.codegen.methodParameters", JavaCore.GENERATE);
+		test.setOptions(ops);
+		project = test.getProject();
+		project.build(IncrementalProjectBuilder.FULL_BUILD, new NullProgressMonitor());
 
-			//load Class files  *Notice : excepts jar files.
-			ArrayList<URL> urls = new ArrayList<URL>();
-			URLStreamHandler streamhandler =null;
-			File classpath = new File(srcPath.replace("/src","/bin"));
-			urls.add(new URL(null,"file:"+classpath.getCanonicalPath()+File.separator,streamhandler));
-			@SuppressWarnings("resource")
-			URLClassLoader loader = new URLClassLoader(urls.toArray(new URL[urls.size()]));
+		//클래스 로딩을 위해 패키지명 추출
+		File dir =  new File(binPath);
+		List<String> classFiles= getAllFiles(dir, ".class");
 
-			Class clz=null;
-			//Valid Target Classes and send to Class Parser.
-			for(String s: classlist){
-				try{
-					clz= loader.loadClass(s);
-					targetClasses.add(clz);
-				}catch(NoClassDefFoundError e){
-					if (e.getMessage().contains("TestInvoker"));
-					else throw(e);
-				}
+		List<URL> urls = new ArrayList<URL>();
+		URLStreamHandler streamHandler = null;
+		urls.add(new URL(null, "file:"+dir.getCanonicalPath()+File.separator, streamHandler));
+
+		//클래스 로드
+		@SuppressWarnings("resource")
+		URLClassLoader loader= new URLClassLoader(urls.toArray(new URL[urls.size()]));
+
+		for (String string : classFiles) {
+			try{
+				classList.add(loader.loadClass(string));
 			}
-			loader.close();
-			//For test
-			for(Class c: targetClasses){
-				System.out.println(c.getName());
+			catch(NoClassDefFoundError e){
+				if (e.getMessage().contains("TestInvoker"));
+				else throw(e);
 			}
-		}catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
-		return  targetClasses;
-	}
+		loader.close();
 
+		return classList;
+	}
 
 }
