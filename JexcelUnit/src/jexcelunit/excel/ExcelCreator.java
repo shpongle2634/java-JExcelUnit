@@ -8,7 +8,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -38,7 +37,7 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTWorksheet;
 
-import jexcelunit.utils.ClassInfo;
+import jexcelunit.classmodule.ClassInfo;
 
 
 /*
@@ -433,15 +432,13 @@ public class ExcelCreator{
 			infocell.setCellValue(info.getClz().getName());
 
 			//Method loop 
-			Set<Method> mets = info.getMethods();
-			Iterator<Method> mit =mets.iterator();
-			if(mets.size() >0){
+			Method[] mets = info.getMethods();
+			if(mets.length >0){
 				XSSFCell clz_met_cell= null;
 				XSSFCell met_par_cell=null;
 				int i =1;
-				while(mit.hasNext()){
-					Method met= mit.next();
-
+				for(Method met : mets){
+					
 					//클래스 -메소드 부분
 					XSSFRow clz_met_row= class_method_sheet.getRow(i);
 
@@ -500,13 +497,13 @@ public class ExcelCreator{
 
 				//Set Class-Method Data ReferenceList
 				String currentCol=cellIndex(clz_met_col_index+1);
-				String formula= "ClassMethodhidden!$"+currentCol+"$2:$"+currentCol+"$" + (mets.size()+1);
-				setNamedName(workbook, clz.getSimpleName(), formula);
+				String formula= "ClassMethodhidden!$"+currentCol+"$2:$"+currentCol+"$" + (mets.length+1);
+				setNamedName(workbook, info.getName(), formula);
 			}
 
 			//생성자 리스트 및 생성자 파라미터
 			XSSFRow con_par_row=null;
-			Constructor[] conset= clz.getDeclaredConstructors();
+			Constructor[] conset= info.getConstructors();
 			Constructor con =null;
 			for(int con_index=0; con_index< conset.length; con_index++){ 
 				con= conset[con_index];

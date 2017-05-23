@@ -23,10 +23,10 @@ import org.eclipse.ui.INewWizard;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchWizard;
 
+import jexcelunit.classmodule.ClassAnalyzer;
+import jexcelunit.classmodule.ClassExtractor;
+import jexcelunit.classmodule.ClassInfo;
 import jexcelunit.excel.ExcelCreator;
-import jexcelunit.utils.ClassAnalyzer;
-import jexcelunit.utils.ClassExtractor;
-import jexcelunit.utils.ClassInfo;
 
 /**
  * This is a sample new wizard. Its role is to create a new file 
@@ -94,10 +94,7 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 					throws CoreException {
 		// create a sample file
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		//		IProject project= root.getProject(containerName);
-		//		// Creating a build configuration
-		//		ResourcesPlugin.getWorkspace().newBuildConfig(project.getName(), "containParams");
-
+		
 		IResource resource = root.findMember(new Path(containerName));
 		if (!resource.exists() || !(resource instanceof IContainer)) {
 			throwCoreException("Container \"" + containerName + "\" does not exist.");

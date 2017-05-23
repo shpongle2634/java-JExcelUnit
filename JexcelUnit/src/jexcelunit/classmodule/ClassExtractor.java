@@ -1,4 +1,4 @@
-package jexcelunit.utils;
+package jexcelunit.classmodule;
 
 import java.io.File;
 import java.net.URL;

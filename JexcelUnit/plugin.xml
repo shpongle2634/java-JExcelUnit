@@ -70,5 +70,21 @@
             name="Testable Excel .xlsx">
       </wizard>
    </extension>
-
+   <extension
+         point="org.eclipse.ui.perspectiveExtensions">
+   </extension>
+  <extension
+         point="org.eclipse.ui.views">
+      <category
+            name="JExcelUnit Views"
+            id="jexcelunit.category.treeview">
+      </category>
+      <view
+            name="JExcelUnit TestMaker"
+            icon="icons/sample.gif"
+            category="jexcelunit.category.treeview"
+            class="jexcelunit.treeview.ClassTreeView"
+            id="jexcelunit.treeview.ClassTreeView">
+      </view>
+   </extension>
 </plugin>
