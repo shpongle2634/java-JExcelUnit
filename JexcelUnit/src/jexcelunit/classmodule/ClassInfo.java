@@ -33,17 +33,21 @@ public class ClassInfo extends Info{
 	
 	// for infos
 	private void initialize(){
+		//Constructor Info Create
 		constructors= clz.getDeclaredConstructors();
 		cosntructorInfos = new ConstructorInfo[constructors.length];
 		for (int i =0; i<constructors.length; i++) {
 			cosntructorInfos[i] = new ConstructorInfo(constructors[i]);
 		}
+		
+		//Field Info Create
 		fields= clz.getDeclaredFields();
 		fieldInfos= new ParameterInfo[fields.length];
 		for(int i=0; i<fields.length; i++){
 			fieldInfos[i] =new ParameterInfo(fields[i]);
 		}
 		
+		//Method Info Create
 		methods = clz.getDeclaredMethods();
 		methodInfos= new MethodInfo[methods.length];
 		for(int i=0; i<methods.length; i++){
@@ -77,6 +81,30 @@ public class ClassInfo extends Info{
 
 	public void setClz(Class clz) {
 		this.clz = clz;
+	}
+
+	public ParameterInfo[] getFieldInfos() {
+		return fieldInfos;
+	}
+
+	public void setFieldInfos(ParameterInfo[] fieldInfos) {
+		this.fieldInfos = fieldInfos;
+	}
+
+	public MethodInfo[] getMethodInfos() {
+		return methodInfos;
+	}
+
+	public void setMethodInfos(MethodInfo[] methodInfos) {
+		this.methodInfos = methodInfos;
+	}
+
+	public ConstructorInfo[] getCosntructorInfos() {
+		return cosntructorInfos;
+	}
+
+	public void setCosntructorInfos(ConstructorInfo[] cosntructorInfos) {
+		this.cosntructorInfos = cosntructorInfos;
 	}
 
 }

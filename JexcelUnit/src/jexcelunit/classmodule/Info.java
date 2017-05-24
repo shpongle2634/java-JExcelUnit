@@ -38,6 +38,10 @@ public abstract class Info implements IAdaptable {
 		this.parent = parent;
 	}
 
-	
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return name;
+	}
 	
 }

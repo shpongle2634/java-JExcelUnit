@@ -29,9 +29,9 @@ public class ClassAnalyzer {
 		}
 		for(Class clz :classes){
 			ClassInfo result = new ClassInfo(clz);
-			ClassMap.INSTANCE.getInstance().put(clz.getSimpleName(),result);
+			ClassInfoMap.INSTANCE.getInstance().put(clz.getSimpleName(),result);
 		}
-		return ClassMap.INSTANCE.getInstance();
+		return ClassInfoMap.INSTANCE.getInstance();
 	}
 	
 

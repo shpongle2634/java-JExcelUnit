@@ -4,11 +4,11 @@ import java.util.HashMap;
 
 
 //SingleTon ClassHashMap
-public enum ClassMap {
+public enum ClassInfoMap {
 	INSTANCE;
 	
 	private final HashMap<String,ClassInfo> classInfoList;	
-	ClassMap(){
+	ClassInfoMap(){
 		classInfoList= new HashMap<String, ClassInfo>();
 	}
 	public HashMap<String,ClassInfo> getInstance(){
