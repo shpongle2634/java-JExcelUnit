@@ -6,7 +6,6 @@ import java.lang.reflect.Parameter;
 public class ConstructorInfo extends Info{
 
 	private Constructor constructor;
-	private ParameterInfo[] parameters ,sequences;
 
 	public ConstructorInfo(Constructor constructor){
 		//Constructor and Name.
@@ -14,15 +13,11 @@ public class ConstructorInfo extends Info{
 		name = constructor.getName();
 
 		//Parameter ¼³Á¤
-		parameters = new ParameterInfo[constructor.getParameterCount()];
 		Parameter[] params= constructor.getParameters();
-		for(int i=0; i< parameters.length; i++)
-			parameters[i] = new ParameterInfo(params[i]);
-		
+		for(int i=0; i< params.length; i++)
+			addChildren(new ParameterInfo(params[i]));
 		//not Implemented yet. Sequence.
-
 	}
-
 
 	public Constructor getConstructor() {
 		return constructor;
@@ -32,21 +27,9 @@ public class ConstructorInfo extends Info{
 		this.constructor = constructor;
 	}
 
-	public ParameterInfo[] getParameters() {
-		return parameters;
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return this.name + " : Constructor";
 	}
-
-	public void setParameters(ParameterInfo[] parameters) {
-		this.parameters = parameters;
-	}
-
-	public ParameterInfo[] getSequences() {
-		return sequences;
-	}
-
-	public void setSequences(ParameterInfo[] sequences) {
-		this.sequences = sequences;
-	}
-
-
 }

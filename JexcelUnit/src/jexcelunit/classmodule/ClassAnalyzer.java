@@ -16,7 +16,7 @@ import java.util.HashMap;
 public class ClassAnalyzer {
 
 	private final ArrayList<Class> classes;
-	
+
 	//Target Classes
 	public ClassAnalyzer(ArrayList<Class> classes){
 		this.classes=classes;
@@ -28,12 +28,14 @@ public class ClassAnalyzer {
 			return null;
 		}
 		for(Class clz :classes){
-			ClassInfo result = new ClassInfo(clz);
-			ClassInfoMap.INSTANCE.getInstance().put(clz.getSimpleName(),result);
+			if(! ClassInfoMap.INSTANCE.getInstance().containsKey(clz.getSimpleName()) && !PrimitiveChecker.isPrimitive(clz)){
+				ClassInfo result = new ClassInfo(clz);
+				ClassInfoMap.INSTANCE.getInstance().put(clz.getSimpleName(),result);
+			}
 		}
 		return ClassInfoMap.INSTANCE.getInstance();
 	}
-	
 
-	
+
+
 }

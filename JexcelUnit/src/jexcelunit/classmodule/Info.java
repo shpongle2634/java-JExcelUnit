@@ -1,5 +1,7 @@
 package jexcelunit.classmodule;
 
+import java.util.ArrayList;
+
 import org.eclipse.core.runtime.IAdaptable;
 
 
@@ -16,6 +18,8 @@ import org.eclipse.core.runtime.IAdaptable;
 public abstract class Info implements IAdaptable {
 	protected String name;
 	protected Info parent;
+	protected ArrayList<Info> children = new ArrayList<>();
+	
 	
 	@Override
 	public <T> T getAdapter(Class<T> arg0) {
@@ -38,6 +42,19 @@ public abstract class Info implements IAdaptable {
 		this.parent = parent;
 	}
 
+	public ArrayList<Info> getChildren(){
+		return children;
+	}
+	public void addChildren(Info child){
+		if(this.children !=null)
+			this.children.add(child);
+	}
+	
+	public boolean hasChildren(){
+		if((children!=null))
+			return children.size()>0?true: false;
+		return false;
+	}
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub

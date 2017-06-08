@@ -22,11 +22,13 @@ import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.ui.INewWizard;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchWizard;
+import org.eclipse.ui.PlatformUI;
 
 import jexcelunit.classmodule.ClassAnalyzer;
 import jexcelunit.classmodule.ClassExtractor;
 import jexcelunit.classmodule.ClassInfo;
-import jexcelunit.excel.ExcelCreator;
+import jexcelunit.classmodule.Info;
+import jexcelunit.treeview.ClassTreeView;
 
 /**
  * This is a sample new wizard. Its role is to create a new file 
@@ -105,11 +107,32 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 			IProject project=resource.getProject();
 			ArrayList<Class> classlist= new ClassExtractor().getClasses(project, encoding);
 			ClassAnalyzer analyzer = new ClassAnalyzer(classlist);
+			
+			
 			HashMap<String, ClassInfo> classinfos=analyzer.getTestInfos();
-			ExcelCreator exceller= new ExcelCreator(fileName, rootpath+containerName, classinfos);
-			exceller.createXlsx();
-			if(runnerName!=null && !runnerName.equals(""))
-				makeJExcelUnitRunner(rootpath,containerName, fileName, srcPath, runnerName);
+			
+			//TODO : build callStack Tree 
+			
+			for (ClassInfo class1 :  classinfos.values()) {
+				String msg="";
+				msg += class1.getName();
+				if(class1.hasChildren()){
+					for (Info cinfo : class1.getChildren()) {
+						msg += cinfo.getName() +", ";	
+					}
+				}
+				
+				System.out.println( msg);
+			}
+			ClassTreeView treeview = (ClassTreeView)PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().showView(ClassTreeView.ID);
+			treeview.updateView(classinfos.values());
+			treeview.setFocus();
+			// Excelling Part 
+			
+//			ExcelCreator exceller= new ExcelCreator(fileName, rootpath+containerName, classinfos);
+//			boolean success = exceller.createXlsx();
+//			if(success && runnerName!=null && !runnerName.equals(""))
+//				makeJExcelUnitRunner(rootpath,containerName, fileName, srcPath, runnerName);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

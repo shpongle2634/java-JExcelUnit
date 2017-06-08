@@ -4,27 +4,34 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
 
 public class ParameterInfo extends Info {
-	
+
 	private String fieldName;
 	private ClassInfo paramInfo;
 	@SuppressWarnings("rawtypes")
 	public ParameterInfo(Class clz) {
 		// TODO Auto-generated constructor stub
+		
 		fieldName = "arg";
 		ClassInfo classInfo;
-		if((classInfo=ClassInfoMap.INSTANCE.getInstance().get(clz.getSimpleName())) !=null){
+		if((classInfo=PrimitiveChecker.checkClassInfos(clz)) !=null){
 			paramInfo= classInfo;
 		}
 		else{ 
 			paramInfo= new ClassInfo(clz);
-			ClassInfoMap.INSTANCE.getInstance().put(clz.getSimpleName(), paramInfo);
+			if(PrimitiveChecker.isPrimitive(clz))
+				ClassInfoMap.INSTANCE.getInstance().put(clz.getName(), paramInfo);
+			else 
+				ClassInfoMap.INSTANCE.getInstance().put(clz.getSimpleName(), paramInfo);
 		}
+		
+		this.name = paramInfo.getName();
 	}
-	
+
+
 	public ParameterInfo(Parameter parameter){
 		this(parameter.getType());
 		fieldName= parameter.getName();
-	
+
 	}
 	public ParameterInfo(Field field){
 		this(field.getType());
@@ -38,8 +45,8 @@ public class ParameterInfo extends Info {
 	public void setFieldName(String fieldName) {
 		this.fieldName = fieldName;
 	}
-	
-	
+
+
 	@Override
 	public String getName() {
 		// TODO Auto-generated method stub
@@ -54,4 +61,9 @@ public class ParameterInfo extends Info {
 		this.paramInfo = paramInfo;
 	}
 
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return this.name + ' ' + this.fieldName;
+	}
 }

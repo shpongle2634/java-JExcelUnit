@@ -7,55 +7,55 @@ import java.lang.reflect.Method;
 
 @SuppressWarnings("rawtypes")
 public class ClassInfo extends Info{
-	
+
 
 	Class clz=null;
-	
+
 	Constructor[] constructors;
 	Method[] methods;
 	Field[] fields;
-	
-	ParameterInfo[] fieldInfos;
-	MethodInfo[] methodInfos;
-	ConstructorInfo[] cosntructorInfos;
-	
+
+
 	public ClassInfo(Class clz){
 		this.clz=clz;
+		if(!clz.isPrimitive())
+			name= clz.getSimpleName();
+		else name= clz.getName();
+		
 		initialize();
 	}
 	// for Tree
-/*
- * 1.  메모리 이슈 // 재귀적으로 init을 하자보면 무한정 생산할 수 있는ㅁ 문제가 발생.
- *  => ClassAnalyzer을 싱글톤으로 제작하고, 메모리 관리를  이곳에서 하도록 하자 . Static HashSet 혹은 Map 을이용하여 레퍼런스 관계만 설정할 것. 
- * 2. ClassInfo 내에 Constructor & Method 를 Raw Type으로 가질 것인가. Info Type으로 가질 것인가. ???
- * 3. 
- * */
-	
+	/*
+	 * 1.  메모리 이슈 // 재귀적으로 init을 하자보면 무한정 생산할 수 있는ㅁ 문제가 발생.
+	 *  => ClassAnalyzer을 싱글톤으로 제작하고, 메모리 관리를  이곳에서 하도록 하자 . Static HashSet 혹은 Map 을이용하여 레퍼런스 관계만 설정할 것. 
+	 * 2. ClassInfo 내에 Constructor & Method 를 Raw Type으로 가질 것인가. Info Type으로 가질 것인가. ???
+	 * 3. 
+	 * */
+
 	// for infos
 	private void initialize(){
-		//Constructor Info Create
 		constructors= clz.getDeclaredConstructors();
-		cosntructorInfos = new ConstructorInfo[constructors.length];
-		for (int i =0; i<constructors.length; i++) {
-			cosntructorInfos[i] = new ConstructorInfo(constructors[i]);
-		}
-		
-		//Field Info Create
 		fields= clz.getDeclaredFields();
-		fieldInfos= new ParameterInfo[fields.length];
-		for(int i=0; i<fields.length; i++){
-			fieldInfos[i] =new ParameterInfo(fields[i]);
-		}
-		
-		//Method Info Create
 		methods = clz.getDeclaredMethods();
-		methodInfos= new MethodInfo[methods.length];
-		for(int i=0; i<methods.length; i++){
-			methodInfos[i]=  new MethodInfo(methods[i]);
+
+		if(!PrimitiveChecker.isPrimitive(clz)){
+			//Constructor Info Create
+			for (int i =0; i<constructors.length; i++) {
+				addChildren(new ConstructorInfo(constructors[i]));
+			}
+
+			//Field Info Create
+			for(int i=0; i<fields.length; i++){
+				addChildren(new ParameterInfo(fields[i]));
+			}
+			//Method Info Create
+			for(int i=0; i<methods.length; i++){
+				addChildren(new MethodInfo(methods[i]));
+			}
 		}
-		
+
 	}
-	
+
 	public Constructor[] getConstructors() {
 		return constructors;
 	}
@@ -74,7 +74,7 @@ public class ClassInfo extends Info{
 	public void setFields(Field[] fields) {
 		this.fields = fields;
 	}
-	
+
 	public Class getClz() {
 		return clz;
 	}
@@ -82,29 +82,11 @@ public class ClassInfo extends Info{
 	public void setClz(Class clz) {
 		this.clz = clz;
 	}
-
-	public ParameterInfo[] getFieldInfos() {
-		return fieldInfos;
-	}
-
-	public void setFieldInfos(ParameterInfo[] fieldInfos) {
-		this.fieldInfos = fieldInfos;
-	}
-
-	public MethodInfo[] getMethodInfos() {
-		return methodInfos;
-	}
-
-	public void setMethodInfos(MethodInfo[] methodInfos) {
-		this.methodInfos = methodInfos;
-	}
-
-	public ConstructorInfo[] getCosntructorInfos() {
-		return cosntructorInfos;
-	}
-
-	public void setCosntructorInfos(ConstructorInfo[] cosntructorInfos) {
-		this.cosntructorInfos = cosntructorInfos;
+	
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return this.name+ " : Class";
 	}
 
 }

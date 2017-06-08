@@ -7,7 +7,6 @@ import java.util.Map;
 public class MethodInfo extends Info{
 
 	private Method method;
-	private ParameterInfo[] parameters, sequences;
 	private ClassInfo returnClass;
 	
 	public MethodInfo(Method method){
@@ -27,10 +26,9 @@ public class MethodInfo extends Info{
 		 }
 		 
 		//Parameter ¼³Á¤
-		parameters = new ParameterInfo[method.getParameterCount()];
 		Parameter[] params= method.getParameters();
-		for(int i=0; i< parameters.length; i++)
-			parameters[i] = new ParameterInfo(params[i]);
+		for(int i=0; i< params.length; i++)
+			addChildren(new ParameterInfo(params[i]));
 		
 		//not implemented yet. about sequences;
 	}
@@ -51,21 +49,6 @@ public class MethodInfo extends Info{
 	public void setName(String name) {
 		this.name = name;
 	}
-	public ParameterInfo[] getParameters() {
-		return parameters;
-	}
-	
-	public ParameterInfo[] getSequences() {
-		return sequences;
-	}
-
-	public void setSequences(ParameterInfo[] sequences) {
-		this.sequences = sequences;
-	}
-
-	public void setParameters(ParameterInfo[] parameters) {
-		this.parameters = parameters;
-	}
 
 	public ClassInfo getReturnClass() {
 		return returnClass;
@@ -74,5 +57,10 @@ public class MethodInfo extends Info{
 		this.returnClass = returnClass;
 	}
 
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return returnClass.getName() +' '+this.name+ " : Method ";
+	}
 	
 }

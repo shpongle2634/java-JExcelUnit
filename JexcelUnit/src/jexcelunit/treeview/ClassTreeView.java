@@ -1,8 +1,7 @@
 package jexcelunit.treeview;
 
-import java.util.ArrayList;
+import java.util.Collection;
 
-import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
@@ -28,6 +27,10 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.DrillDownAdapter;
 import org.eclipse.ui.part.ViewPart;
 
+import jexcelunit.classmodule.ClassInfo;
+import jexcelunit.classmodule.Info;
+import jexcelunit.classmodule.PrimitiveChecker;
+
 
 /**
  * This sample class demonstrates how to plug-in a new
@@ -48,7 +51,7 @@ import org.eclipse.ui.part.ViewPart;
  */
 
 public class ClassTreeView extends ViewPart {
-	
+
 	/**
 	 * The ID of the view as specified by the extension.
 	 */
@@ -59,112 +62,52 @@ public class ClassTreeView extends ViewPart {
 	private Action action1;
 	private Action action2;
 	private Action doubleClickAction;
-	private Action dragndropAction; 
-	
-	
-	/*Class Info로  패턴쓰자. 컴포지트 패턴 쓸것.*/
-	class TreeObject implements IAdaptable {
-		private String name;
-		private TreeParent parent;
-		
-		public TreeObject(String name) {
-			this.name = name;
-		}
-		public String getName() {
-			return name;
-		}
-		public void setParent(TreeParent parent) {
-			this.parent = parent;
-		}
-		public TreeParent getParent() {
-			return parent;
-		}
-		public String toString() {
-			return getName();
-		}
-		public <T> T getAdapter(Class<T> key) {
-			return null;
-		}
-	}
+//	private Action dragndropAction; 
 
-	class TreeParent extends TreeObject {
-		private ArrayList children;
-		public TreeParent(String name) {
-			super(name);
-			children = new ArrayList();
-		}
-		public void addChild(TreeObject child) {
-			children.add(child);
-			child.setParent(this);
-		}
-		public void removeChild(TreeObject child) {
-			children.remove(child);
-			child.setParent(null);
-		}
-		public TreeObject [] getChildren() {
-			return (TreeObject [])children.toArray(new TreeObject[children.size()]);
-		}
-		public boolean hasChildren() {
-			return children.size()>0;
-		}
-	}
+
 
 	//Tree Object initializing 하고 
 	class ViewContentProvider implements ITreeContentProvider {
-		private TreeParent invisibleRoot;
-
+		private Info invisibleRoot;
+		public ViewContentProvider(Collection<ClassInfo> classInfos){
+			invisibleRoot = new Info() {};
+			for (ClassInfo classInfo : classInfos) {
+					if(!PrimitiveChecker.isPrimitive(classInfo.getClz()))
+						invisibleRoot.addChildren(classInfo);				
+			}
+		}
 		public Object[] getElements(Object parent) {
 			if (parent.equals(getViewSite())) {
-				if (invisibleRoot==null) initialize();
 				return getChildren(invisibleRoot);
 			}
 			return getChildren(parent);
 		}
 		public Object getParent(Object child) {
-			if (child instanceof TreeObject) {
-				return ((TreeObject)child).getParent();
+			if (child instanceof Info) {
+				return ((Info)child).getParent();
 			}
 			return null;
 		}
-		public Object [] getChildren(Object parent) {
-			if (parent instanceof TreeParent) {
-				return ((TreeParent)parent).getChildren();
+		public Object[] getChildren(Object parent) {
+			if (parent instanceof Info) {
+				return ((Info)parent).getChildren().toArray();
 			}
 			return new Object[0];
 		}
 		public boolean hasChildren(Object parent) {
-			if (parent instanceof TreeParent)
-				return ((TreeParent)parent).hasChildren();
+			if (parent instanceof Info)
+				return ((Info)parent).hasChildren();
 			return false;
 		}
-/*
- * 여기서 트리구조 셋업. 상속구조를 만들것.
- * 1. Class 와  Field.
- * 2. Method 와 파라미터
- * 3. Constructor 와 파라미터.
- * OutLine 처럼 트리뷰를 만들고, 드래그앤 드롭으로 테스트 ㄱㄱ할 수 있도록 만들면 좋지 않을까 ???
- * 
- */
-		private void initialize() {
-			TreeObject to1 = new TreeObject("Leaf 1");
-			TreeObject to2 = new TreeObject("Leaf 2");
-			TreeObject to3 = new TreeObject("Leaf 3");
-			TreeParent p1 = new TreeParent("Parent 1");
-			p1.addChild(to1);
-			p1.addChild(to2);
-			p1.addChild(to3);
-			
-			TreeObject to4 = new TreeObject("Leaf 4");
-			TreeParent p2 = new TreeParent("Parent 2");
-			p2.addChild(to4);
-			
-			TreeParent root = new TreeParent("Root");
-			root.addChild(p1);
-			root.addChild(p2);
-			
-			invisibleRoot = new TreeParent("");
-			invisibleRoot.addChild(root);
-		}
+		/*
+		 * 여기서 트리구조 셋업. 상속구조를 만들것.
+		 * 1. Class 와  Field.
+		 * 2. Method 와 파라미터
+		 * 3. Constructor 와 파라미터.
+		 * OutLine 처럼 트리뷰를 만들고, 드래그앤 드롭으로 테스트 ㄱㄱ할 수 있도록 만들면 좋지 않을까 ???
+		 * 
+		 */
+
 	}
 
 	class ViewLabelProvider extends LabelProvider {
@@ -174,18 +117,23 @@ public class ClassTreeView extends ViewPart {
 		}
 		public Image getImage(Object obj) {
 			String imageKey = ISharedImages.IMG_OBJ_ELEMENT;
-			if (obj instanceof TreeParent)
-			   imageKey = ISharedImages.IMG_OBJ_FOLDER;
+			if (obj instanceof Info)
+				imageKey = ISharedImages.IMG_OBJ_FOLDER;
 			return PlatformUI.getWorkbench().getSharedImages().getImage(imageKey);
 		}
 	}
 
-/**
+	/**
 	 * The constructor.
 	 */
 	public ClassTreeView() {
 	}
 
+	public void updateView(Collection<ClassInfo> classinfos){
+		viewer.setContentProvider(new ViewContentProvider(classinfos));
+		viewer.setInput(getViewSite());
+		viewer.setLabelProvider(new ViewLabelProvider());
+	}
 	/**
 	 * This is a callback that will allow us
 	 * to create the viewer and initialize it.
@@ -193,10 +141,10 @@ public class ClassTreeView extends ViewPart {
 	public void createPartControl(Composite parent) {
 		viewer = new TreeViewer(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
 		drillDownAdapter = new DrillDownAdapter(viewer);
-		
-	viewer.setContentProvider(new ViewContentProvider());
-	viewer.setInput(getViewSite());
-	viewer.setLabelProvider(new ViewLabelProvider());
+
+//		viewer.setContentProvider(new ViewContentProvider());
+//		viewer.setInput(getViewSite());
+//		viewer.setLabelProvider(new ViewLabelProvider());
 
 		// Create the help context id for the viewer's control
 		PlatformUI.getWorkbench().getHelpSystem().setHelp(viewer.getControl(), "CutomUI.viewer");
@@ -240,7 +188,7 @@ public class ClassTreeView extends ViewPart {
 		// Other plug-ins can contribute there actions here
 		manager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 	}
-	
+
 	private void fillLocalToolBar(IToolBarManager manager) {
 		manager.add(action1);
 		manager.add(action2);
@@ -257,8 +205,8 @@ public class ClassTreeView extends ViewPart {
 		action1.setText("Action 1");
 		action1.setToolTipText("Action 1 tooltip");
 		action1.setImageDescriptor(PlatformUI.getWorkbench().getSharedImages().
-			getImageDescriptor(ISharedImages.IMG_OBJS_INFO_TSK));
-		
+				getImageDescriptor(ISharedImages.IMG_OBJS_INFO_TSK));
+
 		action2 = new Action() {
 			public void run() {
 				showMessage("Action 2 executed");
@@ -285,15 +233,15 @@ public class ClassTreeView extends ViewPart {
 			}
 		});
 	}
-	
+
 	//드래그앤 드롭 리스너 만들것.
-	
-	
+
+
 	private void showMessage(String message) {
 		MessageDialog.openInformation(
-			viewer.getControl().getShell(),
-			"Sample View",
-			message);
+				viewer.getControl().getShell(),
+				"Sample View",
+				message);
 	}
 
 	/**

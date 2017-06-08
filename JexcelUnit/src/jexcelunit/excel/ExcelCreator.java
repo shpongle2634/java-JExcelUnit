@@ -282,7 +282,7 @@ public class ExcelCreator{
 	 * 9. Extension Point  수정 : 버튼 + new. => 새 파일 Wizard 마법사로 슈트 클래스와 xlsx 파일 모두를 생성하게 만들자. DONE
 	 *  9-1. src, targetproject 모두 위저드에서 선택받도록. => 4, 8 동시해결  DONE
 	 * */
-	public void createXlsx() throws IOException{
+	public boolean createXlsx() throws IOException{
 		//Check ".xlxs" file is exist.
 		existingExcel=getExistingExcel();
 
@@ -388,6 +388,7 @@ public class ExcelCreator{
 			workbook.write(fileoutputstream);
 
 			System.out.println("Created");
+			return true;
 		}catch(Exception e){
 			e.printStackTrace();
 		}finally{
@@ -400,6 +401,7 @@ public class ExcelCreator{
 				fileoutputstream.close();
 			if(inputstream !=null) inputstream.close();
 		}
+		return false;
 	}
 
 

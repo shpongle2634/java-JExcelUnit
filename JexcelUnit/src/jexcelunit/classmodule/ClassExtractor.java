@@ -62,6 +62,28 @@ public class ClassExtractor {
 		ops.replace("org.eclipse.jdt.core.compiler.codegen.methodParameters", JavaCore.GENERATE);
 		test.setOptions(ops);
 		project = test.getProject();
+		
+//		JavaCore.createCompilationUnitFrom();
+//		IPackageFragment[] packages=  test.getPackageFragments();
+//		for (IPackageFragment iPackageFragment : packages) {
+//			System.out.println(iPackageFragment.getParent().getElementName());
+//			if(iPackageFragment.getParent().getElementName().equals("src")){
+//				ICompilationUnit[] cUnits = iPackageFragment.getCompilationUnits();
+//				for (ICompilationUnit iUnit : cUnits) {
+//					System.out.println(iUnit.getElementName()); //class
+//				}
+//			}
+//			else break;
+//		}
+		
+//		complier.getTask(out, fileManager, diagnosticListener, options, classes, compilationUnits)
+		//여기서 Compile 해야함. 
+		//src 컴파일한 결과 가져오기
+		
+//		IJavaElement[] elems=  test.getChildren();
+//		for (IJavaElement iJavaElement : elems) {
+//			System.out.println(iJavaElement.getElementName() + " " + iJavaElement.getElementType());
+//		}
 		project.build(IncrementalProjectBuilder.FULL_BUILD, new NullProgressMonitor());
 
 		//클래스 로딩을 위해 패키지명 추출
