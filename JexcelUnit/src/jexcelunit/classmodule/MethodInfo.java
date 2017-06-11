@@ -8,33 +8,29 @@ public class MethodInfo extends Info{
 
 	private Method method;
 	private ClassInfo returnClass;
-	
+
 	public MethodInfo(Method method){
 		//Method 및  Name 설정
 		this.method= method;
 		name= method.getName();
-		
+
 		//Method Return Type 설정
 		Map<String, ClassInfo> classInfoMap = ClassInfoMap.INSTANCE.getInstance();
 		Class<?> returnType= method.getReturnType();
-		 if(classInfoMap.containsKey(returnType.getSimpleName())){
-			 returnClass= classInfoMap.get(returnType.getSimpleName());
-		 }
-		 else {
-			 returnClass= new ClassInfo(returnType);
-			 classInfoMap.put(returnClass.getName(), returnClass);
-		 }
-		 
+		if((returnClass=PrimitiveChecker.checkClassInfos(returnType)) ==null){
+			returnClass= new ClassInfo(returnType);
+			classInfoMap.put(returnClass.getName(), returnClass);
+		}
 		//Parameter 설정
 		Parameter[] params= method.getParameters();
 		for(int i=0; i< params.length; i++)
 			addChildren(new ParameterInfo(params[i]));
-		
+
 		//not implemented yet. about sequences;
 	}
 
-	
-	
+
+
 	public Method getMethod() {
 		return method;
 	}
@@ -42,7 +38,7 @@ public class MethodInfo extends Info{
 	public void setMethod(Method method) {
 		this.method = method;
 	}
-	
+
 	public String getName() {
 		return name;
 	}
@@ -60,7 +56,17 @@ public class MethodInfo extends Info{
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub
-		return returnClass.getName() +' '+this.name+ " : Method ";
+		String params="(";
+		if(children.size()>0){
+			for (int i =0; i<children.size(); i++) {
+				params+= children.get(i).toString();
+				if(i!=children.size()-1)
+					params+=", ";
+			}
+		}
+		params+=")";
+
+		return returnClass.getName() +' '+this.name+params+" : Method ";
 	}
-	
+
 }

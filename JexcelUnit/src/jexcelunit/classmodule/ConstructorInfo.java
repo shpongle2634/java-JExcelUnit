@@ -10,7 +10,7 @@ public class ConstructorInfo extends Info{
 	public ConstructorInfo(Constructor constructor){
 		//Constructor and Name.
 		this.constructor = constructor;
-		name = constructor.getName();
+		name = constructor.getDeclaringClass().getSimpleName();
 
 		//Parameter ¼³Á¤
 		Parameter[] params= constructor.getParameters();
@@ -30,6 +30,16 @@ public class ConstructorInfo extends Info{
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub
-		return this.name + " : Constructor";
+		String params="(";
+		if(children.size()>0){
+			for (int i =0; i<children.size(); i++) {
+				params+=children.get(i).toString();
+				if(i!=children.size()-1)
+					params+=", ";
+			}
+		}
+		params+=')';
+		
+		return this.name + params+ " : Constructor";
 	}
 }

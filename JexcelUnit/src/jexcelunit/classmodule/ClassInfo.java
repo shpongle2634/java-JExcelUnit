@@ -21,7 +21,7 @@ public class ClassInfo extends Info{
 		if(!clz.isPrimitive())
 			name= clz.getSimpleName();
 		else name= clz.getName();
-		
+		ClassInfoMap.INSTANCE.getInstance().put(name, this);
 		initialize();
 	}
 	// for Tree
@@ -38,15 +38,14 @@ public class ClassInfo extends Info{
 		fields= clz.getDeclaredFields();
 		methods = clz.getDeclaredMethods();
 
-		if(!PrimitiveChecker.isPrimitive(clz)){
-			//Constructor Info Create
-			for (int i =0; i<constructors.length; i++) {
-				addChildren(new ConstructorInfo(constructors[i]));
-			}
-
+		if(!PrimitiveChecker.isPrimitive(clz) && !clz.isSynthetic() && !clz.isAnonymousClass()){
 			//Field Info Create
 			for(int i=0; i<fields.length; i++){
 				addChildren(new ParameterInfo(fields[i]));
+			}
+			//Constructor Info Create
+			for (int i =0; i<constructors.length; i++) {
+				addChildren(new ConstructorInfo(constructors[i]));
 			}
 			//Method Info Create
 			for(int i=0; i<methods.length; i++){
@@ -82,7 +81,7 @@ public class ClassInfo extends Info{
 	public void setClz(Class clz) {
 		this.clz = clz;
 	}
-	
+
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub

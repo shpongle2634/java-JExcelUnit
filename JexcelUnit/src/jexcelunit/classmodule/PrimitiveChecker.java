@@ -19,6 +19,7 @@ public class PrimitiveChecker {
 		newInstancable.add(Float.class);
 		newInstancable.add(Long.class);
 		newInstancable.add(Byte.class);
+		newInstancable.add(Object.class);
 	}
 
 	// Check whether ClassInfoMap has this class or not, if have it then return or return null; 
@@ -75,6 +76,5 @@ public class PrimitiveChecker {
 		else if(newInstancable.contains(type))
 			flag=true;
 		return flag; 
-
 	}
 }

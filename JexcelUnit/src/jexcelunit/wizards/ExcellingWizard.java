@@ -121,7 +121,6 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 						msg += cinfo.getName() +", ";	
 					}
 				}
-				
 				System.out.println( msg);
 			}
 			ClassTreeView treeview = (ClassTreeView)PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().showView(ClassTreeView.ID);
