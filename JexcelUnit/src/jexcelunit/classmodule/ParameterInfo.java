@@ -6,6 +6,7 @@ import java.lang.reflect.Parameter;
 public class ParameterInfo extends Info {
 
 	private String fieldName;
+	private String type;
 	private ClassInfo paramInfo;
 	@SuppressWarnings("rawtypes")
 	public ParameterInfo(Class clz) {
@@ -19,9 +20,9 @@ public class ParameterInfo extends Info {
 		else{ 
 			paramInfo= new ClassInfo(clz);
 			if(PrimitiveChecker.isPrimitive(clz))
-				ClassInfoMap.INSTANCE.getInstance().put(clz.getName(), paramInfo);
-			else 
-				ClassInfoMap.INSTANCE.getInstance().put(clz.getSimpleName(), paramInfo);
+				ClassInfoMap.INSTANCE.getInfos().put(clz.getName(), paramInfo);
+			else if(ClassInfoMap.INSTANCE.getClassList().contains(clz))
+				ClassInfoMap.INSTANCE.getInfos().put(clz.getSimpleName(), paramInfo);
 		}
 		
 		this.name = paramInfo.getName();
@@ -31,11 +32,13 @@ public class ParameterInfo extends Info {
 	public ParameterInfo(Parameter parameter){
 		this(parameter.getType());
 		fieldName= parameter.getName();
+		type= "Parameter";
 
 	}
 	public ParameterInfo(Field field){
 		this(field.getType());
 		fieldName= field.getName();
+		type= "Field";
 	}
 
 	public String getFieldName() {
@@ -50,7 +53,7 @@ public class ParameterInfo extends Info {
 	@Override
 	public String getName() {
 		// TODO Auto-generated method stub
-		return this.fieldName;
+		return this.getParamInfo().getName()+' '+this.fieldName;
 	}
 
 	public ClassInfo getParamInfo() {
@@ -64,6 +67,6 @@ public class ParameterInfo extends Info {
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub
-		return this.name + ' ' + this.fieldName;
+		return this.name + ' ' + this.fieldName + " : "+ type;
 	}
 }

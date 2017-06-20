@@ -26,9 +26,9 @@ public class PrimitiveChecker {
 	@SuppressWarnings("rawtypes")
 	public static ClassInfo checkClassInfos(Class clz){
 		ClassInfo result= null;
-		result= ClassInfoMap.INSTANCE.getInstance().get(clz.getSimpleName());
+		result= ClassInfoMap.INSTANCE.getInfos().get(clz.getSimpleName());
 		if(result ==null)
-			result = ClassInfoMap.INSTANCE.getInstance().get(clz.getName());
+			result = ClassInfoMap.INSTANCE.getInfos().get(clz.getName());
 		return result;
 	}
 
@@ -66,7 +66,12 @@ public class PrimitiveChecker {
 		return null;
 	}
 
-
+/*
+ *  의도치 않은 ClassInfo 로딩을 막아야하는것이 키포인트.
+ *  방법은 몇가지 생각해본거.
+ * 
+ * 3. 
+ * */
 
 	@SuppressWarnings("rawtypes")
 	public static boolean isPrimitive(Class type){
@@ -76,5 +81,12 @@ public class PrimitiveChecker {
 		else if(newInstancable.contains(type))
 			flag=true;
 		return flag; 
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public static boolean isUserClass(Class type){
+		boolean flag = false;
+		
+		return flag;
 	}
 }

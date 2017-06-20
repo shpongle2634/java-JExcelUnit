@@ -2,7 +2,6 @@ package jexcelunit.classmodule;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.util.Map;
 
 public class MethodInfo extends Info{
 
@@ -15,11 +14,10 @@ public class MethodInfo extends Info{
 		name= method.getName();
 
 		//Method Return Type 설정
-		Map<String, ClassInfo> classInfoMap = ClassInfoMap.INSTANCE.getInstance();
+//		Map<String, ClassInfo> classInfoMap = ClassInfoMap.INSTANCE.getInfos();
 		Class<?> returnType= method.getReturnType();
 		if((returnClass=PrimitiveChecker.checkClassInfos(returnType)) ==null){
 			returnClass= new ClassInfo(returnType);
-			classInfoMap.put(returnClass.getName(), returnClass);
 		}
 		//Parameter 설정
 		Parameter[] params= method.getParameters();
@@ -28,7 +26,6 @@ public class MethodInfo extends Info{
 
 		//not implemented yet. about sequences;
 	}
-
 
 
 	public Method getMethod() {
@@ -59,7 +56,7 @@ public class MethodInfo extends Info{
 		String params="(";
 		if(children.size()>0){
 			for (int i =0; i<children.size(); i++) {
-				params+= children.get(i).toString();
+				params+= children.get(i).getName();
 				if(i!=children.size()-1)
 					params+=", ";
 			}

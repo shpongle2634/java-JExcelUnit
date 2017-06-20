@@ -21,8 +21,11 @@ public class ClassInfo extends Info{
 		if(!clz.isPrimitive())
 			name= clz.getSimpleName();
 		else name= clz.getName();
-		ClassInfoMap.INSTANCE.getInstance().put(name, this);
-		initialize();
+		if(ClassInfoMap.INSTANCE.getClassList().contains(clz) || PrimitiveChecker.isPrimitive(clz))
+		{
+			ClassInfoMap.INSTANCE.getInfos().put(name, this);
+			initialize();
+		}
 	}
 	// for Tree
 	/*

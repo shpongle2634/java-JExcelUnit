@@ -33,7 +33,7 @@ public class ConstructorInfo extends Info{
 		String params="(";
 		if(children.size()>0){
 			for (int i =0; i<children.size(); i++) {
-				params+=children.get(i).toString();
+				params+=children.get(i).getName();
 				if(i!=children.size()-1)
 					params+=", ";
 			}

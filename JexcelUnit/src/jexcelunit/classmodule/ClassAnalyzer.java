@@ -27,11 +27,11 @@ public class ClassAnalyzer {
 		if(classes ==null){
 			return null;
 		}
-		HashMap<String, ClassInfo> map=ClassInfoMap.INSTANCE.getInstance();
+		HashMap<String, ClassInfo> map=ClassInfoMap.INSTANCE.getInfos();
 		if(!map.isEmpty())
 			map.clear();
 		for(Class clz :classes){
-			if(! map.containsKey(clz.getSimpleName()) && !PrimitiveChecker.isPrimitive(clz)){
+			if(!map.containsKey(clz.getSimpleName()) && !PrimitiveChecker.isPrimitive(clz)){
 				new ClassInfo(clz);
 			}
 		}

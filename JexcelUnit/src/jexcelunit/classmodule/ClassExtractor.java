@@ -54,7 +54,7 @@ public class ClassExtractor {
 	public ArrayList<Class> getClasses(IProject project,String encoding) throws Exception 	{
 		String rootPath= project.getLocation().toString();
 		String binPath= rootPath+"/bin";
-		ArrayList<Class> classList= new ArrayList<Class>();
+		ArrayList<Class> classList= ClassInfoMap.INSTANCE.getClassList();
 
 		//빌드시, 파라미터 이름 포함해서 컴파일하도록 IJavaProject 생성.
 		IJavaProject test= JavaCore.create(project);
