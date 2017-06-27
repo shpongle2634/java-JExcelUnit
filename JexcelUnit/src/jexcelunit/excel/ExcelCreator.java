@@ -54,10 +54,7 @@ import jexcelunit.classmodule.ClassInfo;
  * */
 @SuppressWarnings("rawtypes")
 public class ExcelCreator{
-	private final int CONSTRUCTOR = 0;
-	private final int METHOD = 1;
-	public final String[] TESTDATASET = {"TestName" ,"TestClass","ConsParam", "TestMethod", "MetParam", "Expected", "Result", "Success"};
-
+	public final Attribute[] TESTDATASET = Attribute.values();
 
 	private int consCount=0;
 	private int metsCount=0;
@@ -74,10 +71,16 @@ public class ExcelCreator{
 		this.containerName= containerName;
 		this.classinfos= classinfos;
 
-		consCount=getMaxParamCount(CONSTRUCTOR,classinfos);
-		metsCount=getMaxParamCount(METHOD,classinfos);
+		consCount=getMaxParamCount(Attribute.TestClass,classinfos);
+		metsCount=getMaxParamCount(Attribute.TestMethod,classinfos);
 	}
 
+	
+	/*
+	 * 1. 모든 NamedName을 삭제.
+	 * 2. HiddenSheet 삭제.
+	 * 
+	 * */
 	public void initWorkSheets(XSSFWorkbook workbook){
 		//Init All names. 
 		List<XSSFName> names= workbook.getAllNames();
@@ -93,6 +96,7 @@ public class ExcelCreator{
 			}else break;
 		}
 
+		
 		String[] rmvSheet= new String[workbook.getNumberOfSheets()];
 		int rm_Sheetindex=0;
 
@@ -319,39 +323,39 @@ public class ExcelCreator{
 					//				if( workbook.getSheetAt(sheet_index).getSheetName().equals("TestSuite 1")){
 					xssfSheet=workbook.getSheetAt(sheet_index);
 					makeSetTestModeRow(xssfSheet, 0); //Selection Test Mode Row
-					row=xssfSheet.getRow(1);//info
+					row=xssfSheet.getRow(1);//Field Row.
 					if(row==null)row = xssfSheet.createRow(1);
 
 					int cellvalindex=0;
-					int totalCellCount= TESTDATASET.length + consCount + metsCount-2;
-
-
+					int totalCellCount= Attribute.values().length + consCount + metsCount-2;
+					
+					
 					for(int i =0; i<totalCellCount; i++){
-						String val=TESTDATASET[cellvalindex]; //Column List.
-						if(val.equals("ConsParam")){					
+						Attribute val=TESTDATASET[cellvalindex]; //Column List.
+						if(val.equals(Attribute.ConsParam)){					
 							//Set Param Validation Type
 							for(int k=0; k<consCount; k++){
 								cell=row.createCell(i+k);
 								xssfSheet.setColumnWidth(i+k, 2700);
-								cell.setCellValue(val+(k+1));
+								cell.setCellValue(val.toString()+(k+1));
 								cell.setCellStyle(cs);
 							}
 							i+=consCount-1;
 							cellvalindex++;
 						}
-						else if(val.equals("TestMethod")){
+						else if(val.equals(Attribute.TestMethod)){
 							xssfSheet.setColumnWidth(i, 3000);
 							setValidation("INDIRECT(LEFT($B3,FIND(\"(\",$B3)-1))", xssfSheet, i);
 							cell=row.createCell(i);
-							cell.setCellValue(val);
+							cell.setCellValue(val.toString());
 							cellvalindex++;
 						}
-						else if(val.equals("MetParam")){
+						else if(val.equals(Attribute.MetParam)){
 
 							for(int k=0; k<metsCount; k++){
 								cell=row.createCell(i+k);
 								xssfSheet.setColumnWidth(i+k, 2700);
-								cell.setCellValue(val+(k+1));
+								cell.setCellValue(val.toString()+(k+1));
 								cell.setCellStyle(cs);
 							}
 							i+=metsCount-1;
@@ -360,7 +364,7 @@ public class ExcelCreator{
 						else{
 							xssfSheet.setColumnWidth(i, 3000);
 							cell=row.createCell(i);
-							cell.setCellValue(val);
+							cell.setCellValue(val.toString());
 							cellvalindex++;
 						}
 						//set Cell Style.
@@ -614,19 +618,19 @@ public class ExcelCreator{
 		if(r==0)return new Character((char) (a+26)).toString();
 		return cellIndex(q)+(char)(a+r);
 	}
-	private int getMaxParamCount(int option,HashMap<String, ClassInfo> classinfos){
+	private int getMaxParamCount(Attribute testclass,HashMap<String, ClassInfo> classinfos){
 		int max= 0;
 		Set<String> keys= classinfos.keySet();
 		for(String key : keys){
 			ClassInfo ci = classinfos.get(key);
 
-			if(option == CONSTRUCTOR){
+			if(testclass == Attribute.TestClass){
 				for(Constructor con : ci.getConstructors()){
 					if( max < con.getParameterCount())
 						max = con.getParameterCount();
 				}	
 			}
-			else if(option == METHOD){
+			else if(testclass == Attribute.TestMethod){
 				for(Method met : ci.getMethods()){
 					if( max < met.getParameterCount())
 						max = met.getParameterCount();

@@ -26,8 +26,7 @@ import jexcelunit.classmodule.PrimitiveChecker;
  * */
 @SuppressWarnings("rawtypes")
 public class ExcelReader {
-	public final int TESTNAME=0, TESTCLASS=1, CONSTPARAM=2, METHOD=3, METHODPARAM=4, EXPECTED=5, RESULT=6, SUCCESS=7;
-	public final String[] TESTDATASET = {"TestName" ,"TestClass","ConsParam", "TestMethod", "MetParam", "Expected", "Result", "Success"};
+	public final Attribute[] TESTDATASET = Attribute.values();
 
 	private HashMap<String,String> classFullNames = new HashMap<>();
 	private DataFormatter formatter=new DataFormatter();
@@ -100,7 +99,7 @@ public class ExcelReader {
 						infocell= secondRow.getCell(i);
 
 						for(int j =0; j < TESTDATASET.length; j++){
-							if(infocell.getStringCellValue().contains(TESTDATASET[j])){						
+							if(infocell.getStringCellValue().contains(TESTDATASET[j].toString())){						
 								//remember index
 								voOption[i]=j;
 								break;
@@ -119,7 +118,7 @@ public class ExcelReader {
 								XSSFCell currentCell = currentRow.getCell(j);	
 								if(currentCell !=null){
 									//Set vo Values.
-									setVOvalue(vo,voOption[j],workbook,currentCell);
+									setVOvalue(vo,TESTDATASET[voOption[j]],workbook,currentCell);
 								}
 							}
 						}
@@ -141,15 +140,15 @@ public class ExcelReader {
 	} 
 
 	//Set Vo values depend on first Row
-	private void setVOvalue(TestcaseVO vo , int OPTION,XSSFWorkbook workbook, XSSFCell currentCell){
+	private void setVOvalue(TestcaseVO vo , Attribute OPTION, XSSFWorkbook workbook, XSSFCell currentCell){
 		//change values to String
 
 
 		switch(OPTION){
-		case TESTNAME: //테스트 이름
+		case TestName: //테스트 이름
 			vo.setTestname(formatter.formatCellValue(currentCell));
 			break;
-		case TESTCLASS: //Set Class and Set Constructor
+		case TestClass: //Set Class and Set Constructor
 			String fullcons= formatter.formatCellValue(currentCell);//셀값 원본.
 			String clzname =fullcons.substring(0, fullcons.indexOf('(')); //Class name만 분리
 
@@ -191,7 +190,7 @@ public class ExcelReader {
 				e.printStackTrace();
 			}
 			break;
-		case CONSTPARAM:
+		case ConsParam:
 
 			//Extract Parameter Type and convert Object or Mock Object;
 			String con_paramString= formatter.formatCellValue(currentCell);//String value
@@ -212,7 +211,7 @@ public class ExcelReader {
 					e.printStackTrace();
 				}
 			break;
-		case METHOD://Set Method and Parameter Types
+		case TestMethod://Set Method and Parameter Types
 			String fullmet= formatter.formatCellValue(currentCell);
 			String metName =fullmet.substring(fullmet.indexOf(' ')+1, fullmet.indexOf('(')); //Method name 추출
 
@@ -248,7 +247,7 @@ public class ExcelReader {
 			}
 
 			break;
-		case METHODPARAM: //Extract parameter and convert Object
+		case MetParam: //Extract parameter and convert Object
 
 			String met_paramString= formatter.formatCellValue(currentCell);//String value
 			Class[] met_paramTypes= null;
@@ -268,7 +267,7 @@ public class ExcelReader {
 				e.printStackTrace();
 			}
 			break;
-		case EXPECTED:
+		case Expected:
 			String expectString= formatter.formatCellValue(currentCell);//String value
 			Class returnType = vo.getMet().getReturnType();			
 			if(!returnType.equals(void.class) || returnType !=null){
@@ -276,9 +275,9 @@ public class ExcelReader {
 				vo.setExpect(expect);	
 			}
 			break;
-		case RESULT:
+		case Result:
 			break;
-		case SUCCESS:
+		case Success:
 			break;
 		}
 	}

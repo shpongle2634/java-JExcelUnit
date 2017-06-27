@@ -152,6 +152,7 @@ public class ClassTreeView extends ViewPart {
 		makeActions();
 		hookContextMenu();
 		hookDoubleClickAction();
+		hookDragAndDropAction();
 		contributeToActionBars();
 	}
 
@@ -199,11 +200,12 @@ public class ClassTreeView extends ViewPart {
 	private void makeActions() {
 		action1 = new Action() {
 			public void run() {
+				//테스트 케이스 작성 뷰어를 만들어줌.
 				showMessage("Action 1 executed");
 			}
 		};
-		action1.setText("Action 1");
-		action1.setToolTipText("Action 1 tooltip");
+		action1.setText("Create a New Test Case");
+		action1.setToolTipText("Make a new Test Case with this.");
 		action1.setImageDescriptor(PlatformUI.getWorkbench().getSharedImages().
 				getImageDescriptor(ISharedImages.IMG_OBJS_INFO_TSK));
 
@@ -212,14 +214,24 @@ public class ClassTreeView extends ViewPart {
 				showMessage("Action 2 executed");
 			}
 		};
-		action2.setText("Action 2");
-		action2.setToolTipText("Action 2 tooltip");
+		action2.setText("Create a New Mock Object");
+		action2.setToolTipText("Make This Class to Mock Object.");
 		action2.setImageDescriptor(PlatformUI.getWorkbench().getSharedImages().
 				getImageDescriptor(ISharedImages.IMG_OBJS_INFO_TSK));
 		doubleClickAction = new Action() {
 			public void run() {
 				ISelection selection = viewer.getSelection();
-				Object obj = ((IStructuredSelection)selection).getFirstElement();
+				Info obj = (Info)((IStructuredSelection)selection).getFirstElement();
+				//obj 를 가지고 새 테스트 케이스 생성 뷰어로 전환
+				
+				/*
+				 * TODO
+				 * 1. Create TestCase. 
+				 * 2. Mock 셋팅. Mock 이름, Field 값 설정, 스크립트...
+				 * 	=> 결국 모크객체 셋업이 필요할텐데... 이부분을 어케하지 
+				 * 3. 
+				 * 4. 
+				 * */
 				showMessage("Double-click detected on "+obj.toString());
 			}
 		};
@@ -235,6 +247,11 @@ public class ClassTreeView extends ViewPart {
 	}
 
 	//드래그앤 드롭 리스너 만들것.
+	private void hookDragAndDropAction(){
+		
+		
+		
+	}
 
 
 	private void showMessage(String message) {

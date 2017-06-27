@@ -10,6 +10,7 @@ import java.util.HashMap;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -28,6 +29,7 @@ import jexcelunit.classmodule.ClassAnalyzer;
 import jexcelunit.classmodule.ClassExtractor;
 import jexcelunit.classmodule.ClassInfo;
 import jexcelunit.classmodule.Info;
+import jexcelunit.excel.ExcelCreator;
 import jexcelunit.treeview.ClassTreeView;
 
 /**
@@ -123,15 +125,18 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 				}
 				System.out.println( msg);
 			}
+			
+			// Consisting TreeView
 			ClassTreeView treeview = (ClassTreeView)PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().showView(ClassTreeView.ID);
 			treeview.updateView(classinfos.values());
 			treeview.setFocus();
-			// Excelling Part 
 			
-//			ExcelCreator exceller= new ExcelCreator(fileName, rootpath+containerName, classinfos);
-//			boolean success = exceller.createXlsx();
-//			if(success && runnerName!=null && !runnerName.equals(""))
-//				makeJExcelUnitRunner(rootpath,containerName, fileName, srcPath, runnerName);
+			
+			// Excelling Part 
+			ExcelCreator exceller= new ExcelCreator(fileName, rootpath+containerName, classinfos);
+			boolean success = exceller.createXlsx();
+			if(success && runnerName!=null && !runnerName.equals(""))
+				makeJExcelUnitRunner(rootpath,containerName, fileName, srcPath, runnerName);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -204,5 +209,9 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 	 */
 	public void init(IWorkbench workbench, IStructuredSelection selection) {
 		this.selection = selection;
+		//Selection 얻어오기
+		if(this.selection == null){
+			
+		}
 	}
 }
