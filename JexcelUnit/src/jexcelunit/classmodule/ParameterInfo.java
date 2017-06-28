@@ -19,12 +19,7 @@ public class ParameterInfo extends Info {
 		}
 		else{ 
 			paramInfo= new ClassInfo(clz);
-			if(PrimitiveChecker.isPrimitive(clz))
-				ClassInfoMap.INSTANCE.getInfos().put(clz.getName(), paramInfo);
-			else if(ClassInfoMap.INSTANCE.getClassList().contains(clz))
-				ClassInfoMap.INSTANCE.getInfos().put(clz.getSimpleName(), paramInfo);
 		}
-		
 		this.name = paramInfo.getName();
 	}
 

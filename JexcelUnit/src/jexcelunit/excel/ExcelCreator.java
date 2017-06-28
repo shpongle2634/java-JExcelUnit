@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -75,7 +76,7 @@ public class ExcelCreator{
 		metsCount=getMaxParamCount(Attribute.TestMethod,classinfos);
 	}
 
-	
+
 	/*
 	 * 1. 모든 NamedName을 삭제.
 	 * 2. HiddenSheet 삭제.
@@ -96,20 +97,20 @@ public class ExcelCreator{
 			}else break;
 		}
 
-		
+
 		String[] rmvSheet= new String[workbook.getNumberOfSheets()];
 		int rm_Sheetindex=0;
 
 		for(int sheet_index=0;sheet_index<workbook.getNumberOfSheets();sheet_index++){
-			if(workbook.isSheetHidden(sheet_index)||workbook.isSheetVeryHidden(sheet_index)){//Init hidden Sheets
+			if(workbook.isSheetHidden(sheet_index)||workbook.isSheetVeryHidden(sheet_index)||workbook.getSheetName(sheet_index).contains("Mock")){//Init hidden Sheets
 				rmvSheet[rm_Sheetindex++]= workbook.getSheetName(sheet_index); //Save Delete Sheet's name
 			}else {
-				//				workbook.getSheetName(sheet_index).contains("Mock Sheet");
+
 				XSSFSheet sheet = workbook.getSheetAt(sheet_index);
 				XSSFRow firstRow = sheet.getRow(1);
 
 				//init DataValidations.
-				unsetValidation(sheet);
+				unsetAllValidation(sheet);
 
 				if(firstRow != null){
 					//counting Constructor param Number and Method param Number.
@@ -291,7 +292,7 @@ public class ExcelCreator{
 		existingExcel=getExistingExcel();
 
 		//Create or Update
-		XSSFSheet xssfSheet = null;
+		XSSFSheet xssfSheet = null, mockSheet=null;
 		XSSFRow row =null;
 		XSSFCell cell =null;
 		FileInputStream inputstream=null;
@@ -303,10 +304,15 @@ public class ExcelCreator{
 				//Update.
 			}else{
 				workbook=new XSSFWorkbook();
+				mockSheet= workbook.createSheet("Mock Sheet");
 				xssfSheet= workbook.createSheet("TestSuite 1");	
 			}
 			//make hidden sheet
 			hiddensheet(workbook,classinfos);
+
+
+			//make Mock Sheet
+
 
 			XSSFCellStyle cs=workbook.createCellStyle();
 			cs.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
@@ -328,8 +334,8 @@ public class ExcelCreator{
 
 					int cellvalindex=0;
 					int totalCellCount= Attribute.values().length + consCount + metsCount-2;
-					
-					
+
+
 					for(int i =0; i<totalCellCount; i++){
 						Attribute val=TESTDATASET[cellvalindex]; //Column List.
 						if(val.equals(Attribute.ConsParam)){					
@@ -408,6 +414,40 @@ public class ExcelCreator{
 		return false;
 	}
 
+	//Create Mock Sheet Page
+	private void makeMockSheet(XSSFWorkbook workbook){
+		/*
+		 * 모크 이슈
+		 * 1. 모크가 사용자 정의 객체인경우
+		 * 	1.1 모크 생성자
+		 * 	1.2 필드
+		 * 		1.2.1필드가 사용자 정의 객체 -> 다른 모크로 사용하도록
+		 * 	1.3 세터
+		 * 	1.4 함수
+		 * 2. 모크가 Primitive 타입 => 그럼 바로입력해야지.
+		 * 3. 모크가 사용자정의 객체도아닌 JDBC 같은 객체인경우. **
+		 * 4. 배열
+		 * 5. 컬렉션
+		 * */
+
+
+
+	}
+
+	private String makeNameString(Class clz){
+		//Check Class Name, and convert Array. Or Collection.
+		String className=clz.getSimpleName();
+		if(className == null|| className.length()==0)
+		{
+			className= clz.getName().substring(clz.getName().lastIndexOf("."), clz.getName().length());
+		}
+		if(className.contains("["))
+			className=className.substring(0, className.indexOf('['))+"Array";
+		else if(className.contains("<"))
+			className=className.substring(0, className.indexOf('<'))+"T";
+
+		return className;
+	}
 
 	// Create Hidden sheet for DataValidation List.
 	private void hiddensheet(XSSFWorkbook workbook, HashMap<String,ClassInfo> classinfos){
@@ -444,67 +484,69 @@ public class ExcelCreator{
 				XSSFCell met_par_cell=null;
 				int i =1;
 				for(Method met : mets){
-					
-					//클래스 -메소드 부분
-					XSSFRow clz_met_row= class_method_sheet.getRow(i);
+					if(!met.isSynthetic()){
+						//클래스 -메소드 부분
+						XSSFRow clz_met_row= class_method_sheet.getRow(i);
 
-					if(clz_met_row == null) clz_met_row= class_method_sheet.createRow(i);
-					Parameter[] params= met.getParameters();
+						if(clz_met_row == null) clz_met_row= class_method_sheet.createRow(i);
+						Parameter[] params= met.getParameters();
 
-					//Search method Params
-					String methodStr =met.getReturnType().getSimpleName()+" "+met.getName() + "(";
-					String methodNamedStr="MET"+clz.getSimpleName()+met.getReturnType().getSimpleName()+met.getName();
-					Parameter param= null;
-					for(int param_index=0; param_index<params.length; param_index++){
+						//Search method Params
+						String methodStr =met.getReturnType().getSimpleName()+" "+met.getName() + "(";
 
-						param= params[param_index];
-						String paramType= param.getType().getSimpleName();
-						String paramStr = paramType+ " " + param.getName();
-						methodStr+=paramStr;
-						if(param_index!=params.length-1)
-							methodStr+=',';
+						String methodNamedStr="MET";
+						methodNamedStr+=makeNameString(clz);
+						methodNamedStr+=makeNameString(met.getReturnType());
+						methodNamedStr+=met.getName();
 
-						//METHOD-PARAM SET
-						if(param.getType().isArray())
-							methodNamedStr+=paramType.substring(0, paramType.indexOf('['))+"Array";
-						else if(paramType.contains("<"))
-							methodNamedStr+=paramType.substring(0, paramType.indexOf('<'))+"T";
-						else
-							methodNamedStr+= paramType;
+						Parameter param= null;
+						for(int param_index=0; param_index<params.length; param_index++){
 
-						XSSFRow met_par_row= method_param_sheet.getRow(param_index+1); //2번째 줄에서부터 생성할것.
-						if(met_par_row == null) met_par_row= method_param_sheet.createRow(param_index+1);
-						XSSFCell paramTypeCell = met_par_row.createCell(mets_total); //파라미터 타입 리스트 생성.
-						paramTypeCell.setCellValue(paramType);
+							param= params[param_index];
+							String paramType=param.getType().toString();
 
+							String paramStr = paramType+ " " + param.getName();
+							methodStr+=paramStr;
+							if(param_index!=params.length-1)
+								methodStr+=',';
+
+							//METHOD-PARAM SET
+							methodNamedStr+= makeNameString(param.getType());
+
+							XSSFRow met_par_row= method_param_sheet.getRow(param_index+1); //2번째 줄에서부터 생성할것.
+							if(met_par_row == null) met_par_row= method_param_sheet.createRow(param_index+1);
+							XSSFCell paramTypeCell = met_par_row.createCell(mets_total); //파라미터 타입 리스트 생성.
+							paramTypeCell.setCellValue(paramType);	
+
+						}
+						methodStr+=')';
+						System.out.println(methodStr);
+
+						//ClassMethod sheet
+						clz_met_cell= clz_met_row.createCell(clz_met_col_index);
+						clz_met_cell.setCellValue(methodStr);
+
+						//MethodParam Sheet
+						met_par_cell = met_par_firstrow.createCell(mets_total);
+						met_par_cell.setCellValue(methodStr);
+						if(params.length>0){
+							//Method Parameter List Name.
+							XSSFName namedCell= workbook.createName();
+							namedCell.setNameName(methodNamedStr);
+							String cell=cellIndex(mets_total);
+							String formula= "MethodParamhidden!$"+cell+"$2:$"+cell+"$" + (params.length+1);
+							namedCell.setRefersToFormula(formula);
+						}
+						i++; 
+						mets_total++;
 					}
-					methodStr+=')';
-					System.out.println(methodStr);
-
-					//ClassMethod sheet
-					clz_met_cell= clz_met_row.createCell(clz_met_col_index);
-					clz_met_cell.setCellValue(methodStr);
-
-					//MethodParam Sheet
-					met_par_cell = met_par_firstrow.createCell(mets_total);
-					met_par_cell.setCellValue(methodStr);
-
-					if(params.length>0){
-						//Method Parameter List Name.
-						XSSFName namedCell= workbook.createName();
-						namedCell.setNameName(methodNamedStr);
-						String cell=cellIndex(mets_total);
-						String formula= "MethodParamhidden!$"+cell+"$2:$"+cell+"$" + (params.length+1);
-						namedCell.setRefersToFormula(formula);
-					}
-					i++; 
-					mets_total++;
 				}//Method loop End
 
 				//Set Class-Method Data ReferenceList
 				String currentCol=cellIndex(clz_met_col_index+1);
 				String formula= "ClassMethodhidden!$"+currentCol+"$2:$"+currentCol+"$" + (mets.length+1);
 				setNamedName(workbook, info.getName(), formula);
+
 			}
 
 			//생성자 리스트 및 생성자 파라미터
@@ -566,13 +608,13 @@ public class ExcelCreator{
 		System.out.println("total : " + cons_total);
 
 		//Set hidden Sheet if true=  hidden.
-		int consParam=workbook.getSheetIndex("ConstructorParamhidden");
-		int metParam= workbook.getSheetIndex("MethodParamhidden");
-		int clzMet=workbook.getSheetIndex("ClassMethodhidden");
+		int consParamSheet=workbook.getSheetIndex("ConstructorParamhidden");
+		int metParamSheet= workbook.getSheetIndex("MethodParamhidden");
+		int clzMetSheet=workbook.getSheetIndex("ClassMethodhidden");
 
-		if(!workbook.isSheetHidden(consParam)) workbook.setSheetHidden(consParam, true);
-		if(!workbook.isSheetHidden(metParam)) workbook.setSheetHidden(metParam, true);
-		if(!workbook.isSheetHidden(clzMet)) workbook.setSheetHidden(clzMet, true);
+		if(!workbook.isSheetHidden(consParamSheet)) workbook.setSheetHidden(consParamSheet, true);
+		if(!workbook.isSheetHidden(metParamSheet)) workbook.setSheetHidden(metParamSheet, true);
+		if(!workbook.isSheetHidden(clzMetSheet)) workbook.setSheetHidden(clzMetSheet, true);
 	}
 
 	private void setNamedName(XSSFWorkbook workbook, String name, String formula){
@@ -581,7 +623,7 @@ public class ExcelCreator{
 		namedcell.setRefersToFormula(formula);
 	}
 
-	private void unsetValidation(XSSFSheet xssfSheet){
+	private void unsetAllValidation(XSSFSheet xssfSheet){
 		CTWorksheet ctsheet = xssfSheet.getCTWorksheet();
 		if(ctsheet.isSetDataValidations()){
 			ctsheet.unsetDataValidations();

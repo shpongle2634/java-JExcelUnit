@@ -18,9 +18,9 @@ public class ClassInfo extends Info{
 
 	public ClassInfo(Class clz){
 		this.clz=clz;
-		if(!clz.isPrimitive())
-			name= clz.getSimpleName();
-		else name= clz.getName();
+		name= clz.getSimpleName();
+		if(name ==null ||name.equals(""))
+			name= clz.getName();
 		if(ClassInfoMap.INSTANCE.getClassList().contains(clz) || PrimitiveChecker.isPrimitive(clz))
 		{
 			ClassInfoMap.INSTANCE.getInfos().put(name, this);
