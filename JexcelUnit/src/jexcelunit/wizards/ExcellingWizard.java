@@ -10,7 +10,6 @@ import java.util.HashMap;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -98,7 +97,7 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 					throws CoreException {
 		// create a sample file
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		
+
 		IResource resource = root.findMember(new Path(containerName));
 		if (!resource.exists() || !(resource instanceof IContainer)) {
 			throwCoreException("Container \"" + containerName + "\" does not exist.");
@@ -109,12 +108,12 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 			IProject project=resource.getProject();
 			ArrayList<Class> classlist= new ClassExtractor().getClasses(project, encoding);
 			ClassAnalyzer analyzer = new ClassAnalyzer(classlist);
-			
-			
+
+
 			HashMap<String, ClassInfo> classinfos=analyzer.getTestInfos();
-			
+
 			//TODO : build callStack Tree 
-			
+
 			for (ClassInfo class1 :  classinfos.values()) {
 				String msg="";
 				msg += class1.getName();
@@ -125,13 +124,13 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 				}
 				System.out.println( msg);
 			}
-			
+
 			// Consisting TreeView
 			ClassTreeView treeview = (ClassTreeView)PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().showView(ClassTreeView.ID);
 			treeview.updateView(classinfos.values());
 			treeview.setFocus();
-			
-			
+
+
 			// Excelling Part 
 			ExcelCreator exceller= new ExcelCreator(fileName, rootpath+containerName, classinfos);
 			boolean success = exceller.createXlsx();
@@ -211,7 +210,7 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 		this.selection = selection;
 		//Selection 얻어오기
 		if(this.selection == null){
-			
+
 		}
 	}
 }
