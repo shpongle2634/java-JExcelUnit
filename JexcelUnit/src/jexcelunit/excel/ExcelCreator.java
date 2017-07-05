@@ -490,35 +490,51 @@ public class ExcelCreator{
 		cell.setCellComment(comment);
 		cell =null;
 
+		//Make Index Row
+		XSSFRow IndexRow = createRowIfNotExist(mockSheet, 1);
+		XSSFCell indexCell = createCellIfNotExist(IndexRow, 0);
+		indexCell.setCellStyle(cs);
+		for(int i=1; i<= 10; i++){
+			indexCell = createCellIfNotExist(IndexRow, i);
+			indexCell.setCellValue(i);
+			indexCell.setCellStyle(cs);
+		}
+		
 		//Make Fields
-		XSSFRow categoryRow = createRowIfNotExist(mockSheet, 2);
-		cell = createCellIfNotExist(categoryRow, 0);
+		int rowIndex= 2, colIndex=0;
+		XSSFRow categoryRow = createRowIfNotExist(mockSheet, rowIndex++);
+		cell = createCellIfNotExist(categoryRow, colIndex);
 		cell.setCellValue("MockName");
-		mockSheet.setColumnWidth(0, 2700);
+		mockSheet.setColumnWidth(0, 3500);
 		cell.setCellStyle(cs);
 
-		cell = createCellIfNotExist(categoryRow, 1);
+		categoryRow = createRowIfNotExist(mockSheet, rowIndex++);
+		cell = createCellIfNotExist(categoryRow, colIndex);
 		cell.setCellValue("MockClass");	
-		mockSheet.setColumnWidth(1, 2700);
 		cell.setCellStyle(cs);
-
-		for(int colIndex =2; colIndex<consCount+2; colIndex++){
+		
+		//Set validation
+		
+		
+		int max=rowIndex + consCount;
+		for(int i = 1; rowIndex < max;i++){
+			categoryRow= createRowIfNotExist(mockSheet, rowIndex++);
 			cell = createCellIfNotExist(categoryRow, colIndex);
-			cell.setCellValue("ConsParam"+colIndex);
-			mockSheet.setColumnWidth(colIndex, 2700);
+			cell.setCellValue("ConsParam"+i);
 			cell.setCellStyle(cs);
 		}
 		cell= null;
 		
 		//Field & Value
-		int index= consCount+2, count=1;
-		
-		for(int i =index; i< index+(fieldsCount*2); i+=2){
-			cell = createCellIfNotExist(categoryRow, i);
-			cell.setCellValue("Field"+count);
+		max= rowIndex+(fieldsCount*2);
+		for(int i =1; rowIndex< max; i++){
+			categoryRow= createRowIfNotExist(mockSheet, rowIndex++);
+			cell = createCellIfNotExist(categoryRow, colIndex);
+			cell.setCellValue("Field"+i);
 			cell.setCellStyle(cs);
-			cell = createCellIfNotExist(categoryRow, i+1);
-			cell.setCellValue("Value"+count++);
+			categoryRow= createRowIfNotExist(mockSheet, rowIndex++);
+			cell = createCellIfNotExist(categoryRow, colIndex);
+			cell.setCellValue("Value"+i);
 			cell.setCellStyle(cs);
 		}
 
@@ -737,7 +753,7 @@ public class ExcelCreator{
 
 	private void setNamedName(XSSFWorkbook workbook, String name, String formula){
 		XSSFName namedcell =workbook.createName();
-		namedcell.setNameName(name); //Nameing이 중요.
+		namedcell.setNameName(name); //Naming이 중요.
 		namedcell.setRefersToFormula(formula);
 	}
 
@@ -749,7 +765,7 @@ public class ExcelCreator{
 		}
 	}
 
-	//클래스 이름 제약
+	// 해당 열 데이터 유효성 
 	private void setValidation(String namedcell, XSSFSheet xssfSheet ,int col){
 		DataValidation dataValidation = null;
 		DataValidationConstraint constraint = null;
