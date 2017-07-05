@@ -379,7 +379,7 @@ public class ExcelCreator{
 						}
 						else if(val.equals(Attribute.TestMethod)){
 							xssfSheet.setColumnWidth(i, 3000);
-							setValidation("INDIRECT(LEFT($B3,FIND(\"(\",$B3)-1))", xssfSheet, i);
+							setValidation("INDIRECT(LEFT($B3,FIND(\"(\",$B3)-1))", xssfSheet,new CellRangeAddressList(2, 500, i, i));
 							cell=createCellIfNotExist(row, i);
 							cell.setCellValue(val.toString());
 							cellvalindex++;
@@ -407,7 +407,7 @@ public class ExcelCreator{
 						}
 
 					}
-					setValidation("Class", xssfSheet, 1);
+					setValidation("Class", xssfSheet, new CellRangeAddressList(2, 500, 1, 1));
 					char colIndex=(char)('A'+totalCellCount-1);
 
 					XSSFSheetConditionalFormatting cf=xssfSheet.getSheetConditionalFormatting();
@@ -514,7 +514,7 @@ public class ExcelCreator{
 		cell.setCellStyle(cs);
 		
 		//Set validation
-		
+		setValidation("Class", mockSheet, new CellRangeAddressList(rowIndex-1,rowIndex-1,1,500));
 		
 		int max=rowIndex + consCount;
 		for(int i = 1; rowIndex < max;i++){
@@ -531,6 +531,10 @@ public class ExcelCreator{
 			categoryRow= createRowIfNotExist(mockSheet, rowIndex++);
 			cell = createCellIfNotExist(categoryRow, colIndex);
 			cell.setCellValue("Field"+i);
+			//=INDIRECT(CONCATENATE("FID",LEFT($B4,FIND("(",$B4)-1)))
+			String validationStr ="=INDIRECT(CONCATENATE(\"FID\",LEFT(INDIRECT(ADDRESS(4,COLUMN())),FIND(\"(\",INDIRECT(ADDRESS(4,COLUMN())))-1)))";
+			setValidation(validationStr, mockSheet, new CellRangeAddressList(rowIndex-1,rowIndex-1,1,500));
+			
 			cell.setCellStyle(cs);
 			categoryRow= createRowIfNotExist(mockSheet, rowIndex++);
 			cell = createCellIfNotExist(categoryRow, colIndex);
@@ -766,16 +770,14 @@ public class ExcelCreator{
 	}
 
 	// 해당 열 데이터 유효성 
-	private void setValidation(String namedcell, XSSFSheet xssfSheet ,int col){
+	private void setValidation(String namedCell, XSSFSheet xssfSheet,CellRangeAddressList addresslist){
 		DataValidation dataValidation = null;
 		DataValidationConstraint constraint = null;
 		DataValidationHelper validationHelper = null;
 		validationHelper = new XSSFDataValidationHelper(xssfSheet);
 
-		constraint= validationHelper.createFormulaListConstraint(namedcell);
-		CellRangeAddressList addresslist =null;
+		constraint= validationHelper.createFormulaListConstraint(namedCell);
 		if(constraint !=null){
-			addresslist = new CellRangeAddressList(2,500,col,col);
 			dataValidation= validationHelper.createValidation(constraint, addresslist);
 			dataValidation.setSuppressDropDownArrow(true);
 			dataValidation.setShowErrorBox(true);
