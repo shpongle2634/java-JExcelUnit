@@ -11,7 +11,9 @@ import java.util.Iterator;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFFormulaEvaluator;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -32,7 +34,7 @@ public class ExcelReader {
 	private DataFormatter formatter=new DataFormatter();
 	private FileInputStream inputstream=null;
 	private ArrayList<String> testModes= new ArrayList<String>();
-
+	private FormulaEvaluator formularEvaluator;
 	public ExcelReader(){
 
 	}
@@ -65,7 +67,7 @@ public class ExcelReader {
 		ArrayList<ArrayList<TestcaseVO>> caselists= new ArrayList<ArrayList<TestcaseVO>>();
 		XSSFWorkbook workbook = null;
 		workbook=getWorkbook(filePath);
-
+		formularEvaluator = new XSSFFormulaEvaluator(workbook);
 		if(workbook!=null){
 			//Read ClassName. and main Tain Map<Simple Name,Full Name>
 			XSSFSheet clzhidden= workbook.getSheet("ClassMethodhidden");
@@ -76,7 +78,7 @@ public class ExcelReader {
 			//Read sheet
 			for(int sheet_index=0;sheet_index<workbook.getNumberOfSheets();sheet_index++){
 
-				if(!workbook.isSheetHidden(sheet_index)){
+				if(!workbook.isSheetHidden(sheet_index) && !workbook.getSheetName(sheet_index).contains("Mock")){
 					ArrayList<TestcaseVO> caselist=new ArrayList<TestcaseVO>();
 					XSSFSheet xssfsheet = null;
 					xssfsheet=workbook.getSheetAt(sheet_index);
@@ -84,11 +86,11 @@ public class ExcelReader {
 					//Read First Line and Check Test Mode.
 					XSSFRow firstRow = xssfsheet.getRow(0);
 					XSSFCell testModeCell= firstRow.getCell(1);
-					if(testModeCell==null) testModes.add("Scenario");
-					else{
-						String testMode= formatter.formatCellValue(testModeCell);
+					String testMode= formatter.formatCellValue(testModeCell);
+					if(testMode.equals("") || testMode==null)
+						testModes.add("Scenario");
+					else
 						testModes.add(testMode);
-					}
 
 					//Read Second line and set vo info.
 					XSSFRow secondRow = xssfsheet.getRow(1);
@@ -99,8 +101,10 @@ public class ExcelReader {
 						infocell= secondRow.getCell(i);
 
 						for(int j =0; j < TESTDATASET.length; j++){
-							if(infocell.getStringCellValue().contains(TESTDATASET[j].toString())){						
+							if(infocell != null)
+							if(infocell.getRichStringCellValue().getString().contains(TESTDATASET[j].toString())){						
 								//remember index
+								
 								voOption[i]=j;
 								break;
 							}	
@@ -268,7 +272,8 @@ public class ExcelReader {
 			}
 			break;
 		case Expected:
-			String expectString= formatter.formatCellValue(currentCell);//String value
+			String expectString= formatter.formatCellValue(currentCell,formularEvaluator);//String value
+			System.out.println(expectString);
 			Class returnType = vo.getMet().getReturnType();			
 			if(!returnType.equals(void.class) || returnType !=null){
 				Object expect= PrimitiveChecker.convertObject(returnType, expectString);

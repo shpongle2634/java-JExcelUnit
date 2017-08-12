@@ -2,6 +2,9 @@ package jexcelunit.testinvoker;
 
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -27,6 +30,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import jexcelunit.classmodule.PrimitiveChecker;
 import jexcelunit.excel.ExcelReader;
 import jexcelunit.excel.ExcelResultSaver;
 import jexcelunit.excel.TestcaseVO;
@@ -179,19 +183,6 @@ public class TestInvoker {
 			}
 	}
 
-	private Class unWrapping(Class wrapper){
-		switch(wrapper.getTypeName().charAt(10)){
-		case 'S': return wrapper.getTypeName().contains("Short")?short.class:String.class;							
-		case 'B': return wrapper.getTypeName().contains("Byte")?Byte.class:boolean.class;
-		case 'C':return char.class;
-		case 'I':return int.class;
-		case 'L':return long.class;
-		case 'D':return double.class;
-		case 'F':return float.class;
-		case 'V':return void.class;
-		default : return wrapper;
-		}
-	}
 
 
 	@Before
@@ -239,8 +230,8 @@ public class TestInvoker {
 	private Object[] getMock(Class[] types, Object[] params){
 		for(int i= 0; i<types.length; i++){
 			Class paramClass=params[i].getClass();
-			if(isNeedUnBoxing(paramClass))
-				paramClass= unWrapping(paramClass);
+			if(PrimitiveChecker.isPrimitiveOrWrapper(paramClass))
+				paramClass= PrimitiveChecker.unWrapping(paramClass);
 
 			if(!types[i].equals(paramClass)){ // 래핑 처리 후에도 타입이 같지 않은 경우. 1. primitive 타입과 wrapper 타입의 차이.	
 				Object mockObject=mock.get(params[i]);
@@ -275,16 +266,38 @@ public class TestInvoker {
 	}
 
 
-	private boolean isNeedUnBoxing(Class target){
-
-		if(target.isPrimitive() || (target.getSuperclass()==Number.class)||
-				(target==String.class) ||(target==Character.class)
-				||(target==Boolean.class)){ //원시값 테스트
-
-			return true;
+	private void assertion(Object testResult, Object expectedResult, Class resultType) throws IllegalArgumentException, IllegalAccessException, AssertionError{
+		if(PrimitiveChecker.isPrimitiveOrWrapper(testResult.getClass())){ //원시값 테스트
+			System.out.println( "Assert 결과  (예상값/테스트결과): " +expectedResult+" " +testResult); //예상결과와 실제결과 출력
+			//toString 오버라이딩을 통해 객체 상태를 하는 습관을 가진다면, 이곳에 인풋 객체의 상태를 출력가능하다.
+			switch(PrimitiveChecker.getFloatingType(testResult.getClass())){
+			case 1:
+				assertThat(new Double(Float.toString((float)testResult)),
+						is(closeTo(new Double(Float.toString((float)expectedResult)), 0.00001)));
+				break;
+			case 0:
+				assertThat((double)testResult,is(closeTo((double)expectedResult, 0.00001)));
+				break;
+			default:
+				assertThat(testResult,is(expectedResult));
+			}
+				
+				
 		}
-		else
-			return false;
+		else{//결과가 원시객체가 아닌 임의 객체인경우
+			Field[] flz =resultType.getDeclaredFields();
+
+			for(Field f: flz){
+				if (!f.isSynthetic()){
+					f.setAccessible(true);
+					Class memberclz=f.getType();
+					System.out.println(memberclz.getSimpleName()+ " "+f.getName());
+					try {
+						auto_Assert(testResult, f, memberclz);
+					} catch (IllegalArgumentException | IllegalAccessException e) {handleException(e);}
+				}
+			}
+		}
 	}
 
 	/**********************************************************************
@@ -298,21 +311,36 @@ public class TestInvoker {
 	 * @throws IllegalArgumentException 
 	 ********************************************************************** */
 	private void auto_Assert(Object testresult, Field f,Class memberclz ) throws IllegalArgumentException, IllegalAccessException, AssertionError{
-		//		try{
-		if(isNeedUnBoxing(memberclz) ){
+		
+		if(PrimitiveChecker.isPrimitiveOrWrapper(memberclz) ){
 			System.out.println( "Assert 결과  (예상값/테스트결과): "+f.get(expectedResult)+ " "+f.get(testresult));
-			assertThat(f.get(testresult),is(f.get(expectedResult)));
+			switch(PrimitiveChecker.getFloatingType(f.get(testresult).getClass())){
+			case 1:
+				assertThat(new Double(Float.toString((float)f.get(testresult))),
+						is(closeTo(new Double(Float.toString((float)f.get(expectedResult))), 0.00001)));
+				break;
+			case 0:
+				assertThat((double)f.get(testresult),is(closeTo((double)f.get(expectedResult), 0.00001)));
+				break;
+			default:
+				assertThat(f.get(testresult),is(equalTo(f.get(expectedResult))));
+			}
 		}
 		else if(memberclz.isArray()){//배열원소 비교
-			if(Array.getLength(f.get(testresult)) == Array.getLength(f.get(expectedResult))){
-				for(int i= 0; i<Array.getLength(f.get(testresult)); i++){
-					if(Array.get(f.get(testresult), i)!=null &&Array.get(f.get(expectedResult), i)!=null){
-						System.out.println( "Assert 결과  (예상값/테스트결과): "+Array.get(f.get(expectedResult), i)+ " "+Array.get(f.get(testresult), i));
-						assertThat(Array.get(f.get(testresult), i), is(Array.get(f.get(expectedResult), i)));
+			if(memberclz.getComponentType().isPrimitive()) //primitive타입인경우 assertArrayEquals
+				assertArrayEquals((Object[])f.get(testresult), (Object[])f.get(expectedResult));
+			else{//일반 객체인경우
+				if(Array.getLength(f.get(testresult)) == Array.getLength(f.get(expectedResult))){
+					for(int i= 0; i<Array.getLength(f.get(testresult)); i++){
+						if(Array.get(f.get(testresult), i)!=null &&Array.get(f.get(expectedResult), i)!=null){
+							System.out.println( "Assert 결과  (예상값/테스트결과): "+Array.get(f.get(expectedResult), i)+ " "+Array.get(f.get(testresult), i));
+							assertion(Array.get(f.get(testresult), i),Array.get(f.get(expectedResult), i),f.getType());
+//							assertThat(Array.get(f.get(testresult), i), is(Array.get(f.get(expectedResult), i)));
+						}
 					}
 				}
 			}
-		}else if(Collection.class.isInstance(f.get(expectedResult))){
+		}else if(Collection.class.isInstance(f.get(expectedResult))){//컬렉션 원소 비교
 			Collection expect=(Collection) f.get(expectedResult);
 			Collection result=(Collection) f.get(testresult);
 			Iterator ex_it = expect.iterator();
@@ -376,25 +404,29 @@ public class TestInvoker {
 						}
 				}
 				//검증
-				if(isNeedUnBoxing(testResult.getClass())){ //원시값 테스트
-					System.out.println( "Assert 결과  (예상값/테스트결과): " +expectedResult+" " +testResult); //예상결과와 실제결과 출력
-					//toString 오버라이딩을 통해 객체 상태를 하는 습관을 가진다면, 이곳에 인풋 객체의 상태를 출력가능하다.
-					assertThat(testResult,is(expectedResult)); //테스팅 결과를 확인.
-				}
-				else{//결과가 원시객체가 아닌 임의 객체인경우
-					Field[] flz =type[0].getDeclaredFields();
-
-					for(Field f: flz){
-						if (!f.isSynthetic()){
-							f.setAccessible(true);
-							Class memberclz=f.getType();
-							System.out.println(memberclz.getSimpleName()+ " "+f.getName());
-							try {
-								auto_Assert(testResult, f, memberclz);
-							} catch (IllegalArgumentException | IllegalAccessException e) {handleException(e);}
-						}
-					}
-				}
+				assertion(testResult,expectedResult,type[0]);
+//				if(PrimitiveChecker.isPrimitiveOrWrapper(testResult.getClass())){ //원시값 테스트
+//					System.out.println( "Assert 결과  (예상값/테스트결과): " +expectedResult+" " +testResult); //예상결과와 실제결과 출력
+//					//toString 오버라이딩을 통해 객체 상태를 하는 습관을 가진다면, 이곳에 인풋 객체의 상태를 출력가능하다.
+//					if(PrimitiveChecker.isFloatingType(testResult.getClass()))
+//						assertThat((double)testResult,is(closeTo((double)expectedResult, 0.00001)));
+//					else 
+//						assertThat(testResult,is(expectedResult));
+//				}
+//				else{//결과가 원시객체가 아닌 임의 객체인경우
+//					Field[] flz =type[0].getDeclaredFields();
+//
+//					for(Field f: flz){
+//						if (!f.isSynthetic()){
+//							f.setAccessible(true);
+//							Class memberclz=f.getType();
+//							System.out.println(memberclz.getSimpleName()+ " "+f.getName());
+//							try {
+//								auto_Assert(testResult, f, memberclz);
+//							} catch (IllegalArgumentException | IllegalAccessException e) {handleException(e);}
+//						}
+//					}
+//				}
 			}
 
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {

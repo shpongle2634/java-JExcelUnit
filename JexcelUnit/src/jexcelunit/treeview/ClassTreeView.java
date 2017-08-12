@@ -72,7 +72,7 @@ public class ClassTreeView extends ViewPart {
 		public ViewContentProvider(Collection<ClassInfo> classInfos){
 			invisibleRoot = new Info() {};
 			for (ClassInfo classInfo : classInfos) {
-					if(!PrimitiveChecker.isPrimitive(classInfo.getClz()))
+					if(!PrimitiveChecker.isPrimitiveOrWrapper(classInfo.getClz()))
 						invisibleRoot.addChildren(classInfo);				
 			}
 		}

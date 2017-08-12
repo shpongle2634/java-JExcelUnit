@@ -1,29 +1,53 @@
 package jexcelunit.classmodule;
 
 import java.lang.reflect.InvocationTargetException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
 
+@SuppressWarnings("rawtypes")
 public class PrimitiveChecker {
 
-	@SuppressWarnings("rawtypes")
-	private static Set<Class> newInstancable= new HashSet<>();	
-
-	static {
-		newInstancable.add(String.class);
-		newInstancable.add(Short.class);
-		newInstancable.add(Double.class);
-		newInstancable.add(Integer.class);
-		newInstancable.add(Short.class);
-		newInstancable.add(Float.class);
-		newInstancable.add(Long.class);
-		newInstancable.add(Byte.class);
-		newInstancable.add(Object.class);
+	public static Class unWrapping(Class wrapper){
+		//Numeric
+		if(wrapper.equals(Short.class)) return short.class;
+		else if(wrapper.equals(Long.class)) return long.class;
+		else if(wrapper.equals(Integer.class)) return int.class;
+		else if(wrapper.equals(Byte.class)) return byte.class;
+		else if(wrapper.equals(Short.class)) return short.class;
+		//Floating Type
+		else if(wrapper.equals(Double.class)) return double.class;
+		else if(wrapper.equals(Float.class)) return float.class;
+		//BooleanType
+		else if(wrapper.equals(Boolean.class)) return boolean.class;
+		//etc
+		else if(wrapper.equals(Void.class)) return void.class;
+		else if(wrapper.equals(Character.class)) return char.class;
+		
+		
+		else return wrapper;
+		
 	}
-
+	
+	//Check this type is Wrapper class about primitive type.
+	public static boolean isWrapperClass(Class type){
+		if(type.equals(Short.class) || type.equals(Double.class)|| type.equals(Long.class)
+			|| type.equals(Byte.class)|| type.equals(Character.class)|| type.equals(String.class)
+			||type.equals(StringBuffer.class)|| type.equals(Float.class)|| type.equals(Object.class))
+			return true;
+		else return false;
+	}
+	
+	public static int getFloatingType(Class type){
+		if(type.equals(float.class) || type.equals(Float.class))
+			return 1;
+		else if(type.equals(double.class)|| type.equals(Double.class))
+			return 0;
+		else 
+			return -1;
+	}
+	
 	// Check whether ClassInfoMap has this class or not, if have it then return or return null; 
-	@SuppressWarnings("rawtypes")
 	public static ClassInfo checkClassInfos(Class clz){
 		ClassInfo result= null;
 		result= ClassInfoMap.INSTANCE.getInfos().get(clz.getSimpleName());
@@ -33,14 +57,18 @@ public class PrimitiveChecker {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static Object convertObject(@SuppressWarnings("rawtypes")Class targetType,String paramString){
+	public static Object convertObject(Class targetType,String paramString){
 		try {
 			Object paramObject=null;
-			if(newInstancable.contains(targetType))
+			
+			//wrapper
+			if(isWrapperClass(targetType))
 			{
 				paramObject=targetType.getConstructor(String.class).newInstance(paramString);
 				return paramObject;
 			}	
+			
+			//primitive
 			else if(targetType.equals(char.class))
 				return paramString.toCharArray()[0];
 			else if(targetType.equals(char[].class))
@@ -50,12 +78,16 @@ public class PrimitiveChecker {
 			else if(targetType.equals(float.class))	return (float)Float.parseFloat(paramString);
 			else if(targetType.equals(short.class))	return (short)Short.parseShort(paramString);
 			else if(targetType.equals(Date.class))	
-			{
-				return new Date(); //need To parse
+			{		
+				try {
+					return new SimpleDateFormat().parse(paramString);
+				} catch (ParseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} //need To parse
 			}	
 			else if(targetType.equals(boolean.class)) return (boolean)Boolean.parseBoolean(paramString);
 			else if(targetType.equals(byte.class)) return (byte)Byte.parseByte(paramString);
-
 			else //mock;
 				return paramString;	
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
@@ -73,17 +105,15 @@ public class PrimitiveChecker {
  * 3. 
  * */
 
-	@SuppressWarnings("rawtypes")
-	public static boolean isPrimitive(Class type){
+	public static boolean isPrimitiveOrWrapper(Class type){
 		boolean flag= false;
-		if(type.isPrimitive())
+		if(type.isPrimitive() || type.getSuperclass().equals(Number.class))
 			flag= true;
-		else if(newInstancable.contains(type))
+		else if(isWrapperClass(type))
 			flag=true;
 		return flag; 
 	}
 	
-	@SuppressWarnings("rawtypes")
 	public static boolean isUserClass(Class type){
 		boolean flag = false;
 		

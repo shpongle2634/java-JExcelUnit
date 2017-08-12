@@ -21,7 +21,7 @@ public class ClassInfo extends Info{
 		name= clz.getSimpleName();
 		if(name ==null ||name.equals(""))
 			name= clz.getName();
-		if(ClassInfoMap.INSTANCE.getClassList().contains(clz) || PrimitiveChecker.isPrimitive(clz))
+		if(ClassInfoMap.INSTANCE.getClassList().contains(clz) || PrimitiveChecker.isPrimitiveOrWrapper(clz))
 		{
 			ClassInfoMap.INSTANCE.getInfos().put(name, this);
 			initialize();
@@ -41,7 +41,7 @@ public class ClassInfo extends Info{
 		fields= clz.getDeclaredFields();
 		methods = clz.getDeclaredMethods();
 
-		if(!PrimitiveChecker.isPrimitive(clz) && !clz.isSynthetic() && !clz.isAnonymousClass()){
+		if(!PrimitiveChecker.isPrimitiveOrWrapper(clz) && !clz.isSynthetic() && !clz.isAnonymousClass()){
 			//Field Info Create
 			for(int i=0; i<fields.length; i++){
 				addChildren(new ParameterInfo(fields[i]));
