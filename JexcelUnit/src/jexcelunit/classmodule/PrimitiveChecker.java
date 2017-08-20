@@ -31,9 +31,19 @@ public class PrimitiveChecker {
 	
 	//Check this type is Wrapper class about primitive type.
 	public static boolean isWrapperClass(Class type){
-		if(type.equals(Short.class) || type.equals(Double.class)|| type.equals(Long.class)
-			|| type.equals(Byte.class)|| type.equals(Character.class)|| type.equals(String.class)
-			||type.equals(StringBuffer.class)|| type.equals(Float.class)|| type.equals(Object.class))
+		if(
+				type.equals(Short.class) 
+				|| type.equals(Double.class)
+				|| type.equals(Long.class)
+				|| type.equals(Byte.class)
+				|| type.equals(Float.class)
+				|| type.equals(Integer.class)
+				|| type.equals(Boolean.class)
+				|| type.equals(Character.class)
+				|| type.equals(String.class)
+				|| type.equals(StringBuffer.class)
+//				|| type.equals(Object.class)
+				)
 			return true;
 		else return false;
 	}

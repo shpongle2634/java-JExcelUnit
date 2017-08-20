@@ -44,6 +44,7 @@ import org.eclipse.ui.PlatformUI;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTWorksheet;
 
 import jexcelunit.classmodule.ClassInfo;
+import jexcelunit.classmodule.PrimitiveChecker;
 
 
 /*
@@ -691,46 +692,48 @@ public class ExcelCreator{
 
 
 			//생성자 리스트 및 생성자 파라미터
-			XSSFRow con_par_row=null;
-			Constructor[] conset= classInfo.getConstructors();
-			Constructor con =null;
-			for(int con_index=0; con_index< conset.length; con_index++){ 
-				con= conset[con_index];
+			if(!PrimitiveChecker.isPrimitiveOrWrapper(clz)){
+				XSSFRow con_par_row=null;
+				Constructor[] conset= classInfo.getConstructors();
+				Constructor con =null;
+				for(int con_index=0; con_index< conset.length; con_index++){ 
+					con= conset[con_index];
 
-				//다른이름이지만, 같은 유효성을 가리키는 이름 생성. INDIRECT를 위해서 생성함..
-				String consName=classInfo.getClz().getSimpleName()+"(";
-				String consParamNamed="CON"+classInfo.getClz().getSimpleName();
-				Parameter[] params= con.getParameters();
+					//다른이름이지만, 같은 유효성을 가리키는 이름 생성. INDIRECT를 위해서 생성함..
+					String consName=classInfo.getClz().getSimpleName()+"(";
+					String consParamNamed="CON"+classInfo.getClz().getSimpleName();
+					Parameter[] params= con.getParameters();
 
-				for(int param_index =0; param_index< params.length; param_index++ ){
-					//생성자 풀스트링 설정
-					Parameter param = params[param_index];
-					consName+=param.getType().getSimpleName()+" "+param.getName();
-					if(param_index != params.length-1) consName+=',';
+					for(int param_index =0; param_index< params.length; param_index++ ){
+						//생성자 풀스트링 설정
+						Parameter param = params[param_index];
+						consName+=param.getType().getSimpleName()+" "+param.getName();
+						if(param_index != params.length-1) consName+=',';
 
-					//생성자+파라미터 타입으로  네이밍스트링 만듬
-					consParamNamed+=makeNameString(param.getType());
+						//생성자+파라미터 타입으로  네이밍스트링 만듬
+						consParamNamed+=makeNameString(param.getType());
 
-					//파라미터 타입 셀생성
-					con_par_row=createRowIfNotExist(cons_param_sheet, param_index+1);
-					XSSFCell paramcell=createCellIfNotExist(con_par_row, cons_total);
-					paramcell.setCellValue(param.getType().getSimpleName());
-				}
-				consName+=')';
-				System.out.println(consName);
+						//파라미터 타입 셀생성
+						con_par_row=createRowIfNotExist(cons_param_sheet, param_index+1);
+						XSSFCell paramcell=createCellIfNotExist(con_par_row, cons_total);
+						paramcell.setCellValue(param.getType().getSimpleName());
+					}
+					consName+=')';
+					System.out.println(consName);
 
-				//생성자 셀 생성. .
-				XSSFCell consCell = createCellIfNotExist(cons_par_firstrow,cons_total);
-				consCell.setCellValue(consName);
+					//생성자 셀 생성. .
+					XSSFCell consCell = createCellIfNotExist(cons_par_firstrow,cons_total);
+					consCell.setCellValue(consName);
 
-				if(params.length>0){
-					//생성자 네임생성
-					String cell=cellIndex(cons_total+1);
-					String formula="ConstructorParamhidden!$"+cell+"$2:$"+cell+"$"+(params.length+1);
-					setNamedName(workbook, consParamNamed, formula);
-				}
-				cons_total++;
-			}//Constructor Loop End
+					if(params.length>0){
+						//생성자 네임생성
+						String cell=cellIndex(cons_total+1);
+						String formula="ConstructorParamhidden!$"+cell+"$2:$"+cell+"$"+(params.length+1);
+						setNamedName(workbook, consParamNamed, formula);
+					}
+					cons_total++;
+				}//Constructor Loop End
+			}
 
 			clz_met_col_index++;
 			clz_fld_col_index++;

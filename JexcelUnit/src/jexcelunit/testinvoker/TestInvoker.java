@@ -4,7 +4,6 @@ package jexcelunit.testinvoker;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -88,7 +87,6 @@ public class TestInvoker {
 	 * 2. 받아온  path는  다시 저장할때 사용.
 	 * 3. suite가 가진 row index를 또 저장해야하는가 .
 	 * 4. 그럴바에 suiteInfo 라는 맴버클래스를 둬서 관리하는게 나을려나.
-	 * 
 	 * */
 	public static Collection parmeterizingExcel(String filePath) throws InstantiationException{
 		ExcelReader reader = new ExcelReader();
@@ -281,8 +279,8 @@ public class TestInvoker {
 			default:
 				assertThat(testResult,is(expectedResult));
 			}
-				
-				
+
+
 		}
 		else{//결과가 원시객체가 아닌 임의 객체인경우
 			Field[] flz =resultType.getDeclaredFields();
@@ -311,15 +309,15 @@ public class TestInvoker {
 	 * @throws IllegalArgumentException 
 	 ********************************************************************** */
 	private void auto_Assert(Object testresult, Field f,Class memberclz ) throws IllegalArgumentException, IllegalAccessException, AssertionError{
-		
-		if(PrimitiveChecker.isPrimitiveOrWrapper(memberclz) ){
+
+		if(PrimitiveChecker.isPrimitiveOrWrapper(memberclz) ){ //일반 원소비교
 			System.out.println( "Assert 결과  (예상값/테스트결과): "+f.get(expectedResult)+ " "+f.get(testresult));
 			switch(PrimitiveChecker.getFloatingType(f.get(testresult).getClass())){
-			case 1:
+			case 1: //Float
 				assertThat(new Double(Float.toString((float)f.get(testresult))),
 						is(closeTo(new Double(Float.toString((float)f.get(expectedResult))), 0.00001)));
 				break;
-			case 0:
+			case 0://Double
 				assertThat((double)f.get(testresult),is(closeTo((double)f.get(expectedResult), 0.00001)));
 				break;
 			default:
@@ -327,19 +325,13 @@ public class TestInvoker {
 			}
 		}
 		else if(memberclz.isArray()){//배열원소 비교
-			if(memberclz.getComponentType().isPrimitive()) //primitive타입인경우 assertArrayEquals
-				assertArrayEquals((Object[])f.get(testresult), (Object[])f.get(expectedResult));
-			else{//일반 객체인경우
-				if(Array.getLength(f.get(testresult)) == Array.getLength(f.get(expectedResult))){
-					for(int i= 0; i<Array.getLength(f.get(testresult)); i++){
-						if(Array.get(f.get(testresult), i)!=null &&Array.get(f.get(expectedResult), i)!=null){
-							System.out.println( "Assert 결과  (예상값/테스트결과): "+Array.get(f.get(expectedResult), i)+ " "+Array.get(f.get(testresult), i));
-							assertion(Array.get(f.get(testresult), i),Array.get(f.get(expectedResult), i),f.getType());
-//							assertThat(Array.get(f.get(testresult), i), is(Array.get(f.get(expectedResult), i)));
-						}
+			if(Array.getLength(f.get(testresult)) == Array.getLength(f.get(expectedResult))){
+				for(int i= 0; i<Array.getLength(f.get(testresult)); i++){
+					if(Array.get(f.get(testresult), i)!=null &&Array.get(f.get(expectedResult), i)!=null){
+						assertion(Array.get(f.get(testresult), i),Array.get(f.get(expectedResult), i),f.getType());
 					}
 				}
-			}
+			}else fail("Array Length가 일치하지 않습니다.");
 		}else if(Collection.class.isInstance(f.get(expectedResult))){//컬렉션 원소 비교
 			Collection expect=(Collection) f.get(expectedResult);
 			Collection result=(Collection) f.get(testresult);
@@ -355,10 +347,8 @@ public class TestInvoker {
 		//재귀 필요.
 	}	
 
-
 	/* 이슈 
 	 *  모크객체인데 모크객체가 primitive 타입인경우 ? isMock 플래그를 두는게 좋은거같은데
-	 *  
 	 * */
 	@Test
 	public void testMethod() throws Throwable {
@@ -405,28 +395,6 @@ public class TestInvoker {
 				}
 				//검증
 				assertion(testResult,expectedResult,type[0]);
-//				if(PrimitiveChecker.isPrimitiveOrWrapper(testResult.getClass())){ //원시값 테스트
-//					System.out.println( "Assert 결과  (예상값/테스트결과): " +expectedResult+" " +testResult); //예상결과와 실제결과 출력
-//					//toString 오버라이딩을 통해 객체 상태를 하는 습관을 가진다면, 이곳에 인풋 객체의 상태를 출력가능하다.
-//					if(PrimitiveChecker.isFloatingType(testResult.getClass()))
-//						assertThat((double)testResult,is(closeTo((double)expectedResult, 0.00001)));
-//					else 
-//						assertThat(testResult,is(expectedResult));
-//				}
-//				else{//결과가 원시객체가 아닌 임의 객체인경우
-//					Field[] flz =type[0].getDeclaredFields();
-//
-//					for(Field f: flz){
-//						if (!f.isSynthetic()){
-//							f.setAccessible(true);
-//							Class memberclz=f.getType();
-//							System.out.println(memberclz.getSimpleName()+ " "+f.getName());
-//							try {
-//								auto_Assert(testResult, f, memberclz);
-//							} catch (IllegalArgumentException | IllegalAccessException e) {handleException(e);}
-//						}
-//					}
-//				}
 			}
 
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
@@ -470,7 +438,7 @@ public class TestInvoker {
 			Iterator sit= sheetNames.iterator();
 			for(int i=0; i<=sheetNum&&sit.hasNext(); i++){
 				String sheetname=(String)sit.next();
-//				System.out.println(sheetname);
+				//				System.out.println(sheetname);
 				save.writeResults(sheetname, rowSize[i], result[i], success[i]);
 			}
 			save.write();
