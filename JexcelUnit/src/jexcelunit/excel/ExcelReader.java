@@ -9,6 +9,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -36,8 +37,9 @@ public class ExcelReader {
 	private FileInputStream inputstream=null;
 	private ArrayList<String> testModes= new ArrayList<String>();
 	private FormulaEvaluator formularEvaluator;
-	public ExcelReader(){
-
+	private XSSFWorkbook workbook= null;
+	public ExcelReader(String filePath) throws IOException{
+		this.workbook = getWorkbook(filePath);
 	}
 
 	public XSSFWorkbook getWorkbook(String filePath) throws IOException{
@@ -63,14 +65,22 @@ public class ExcelReader {
 		return testModes;
 	}
 
+	private XSSFSheet getMockSheet(){
+		for(int sheet_index=0;sheet_index<workbook.getNumberOfSheets();sheet_index++){
+			XSSFSheet sheet= workbook.getSheetAt(sheet_index);
+			if(sheet!=null) {
+				if(sheet.getSheetName().toLowerCase().contains("mock")) {
+					return sheet;
+				}
+			}
+				
+		}
+		return null;
+	}
 
-	private void readMocks(XSSFWorkbook workbook, XSSFSheet mockSheet) throws Exception{
-		/*
-		 * 1. row(3) Name
-		 * 2. row(4) Class
-		 * 3. constructor
-		 * 4. Field and value 
-		 * */
+	public ArrayList<MockVO> readMocks() throws Exception{
+		XSSFSheet mockSheet =getMockSheet();
+		if(mockSheet == null) return null;
 		XSSFRow row = null;
 		XSSFCell cell = null;
 
@@ -79,7 +89,7 @@ public class ExcelReader {
 		cell = row.getCell(colIndex);
 		String cellString = cell.getStringCellValue();
 
-		while(cellString!=null || cellString==""){
+		while(!CheckingUtil.isNullOrEmpty(cellString)){
 			//Count ConsParam.
 			if(cellString.contains("ConsParam")){
 				maxConsParam++;
@@ -99,12 +109,18 @@ public class ExcelReader {
 		row = mockSheet.getRow(currentRow++);
 		cell = row.getCell(colIndex);
 		//mock 이름이 없을때 까지 순환.
-		while(cell.getStringCellValue() != "" || cell.getStringCellValue() !=null){
+		ArrayList<MockVO> mockList= new ArrayList<MockVO>();
+		MockVO mock=null;
+		while(!CheckingUtil.isNullOrEmpty(formatter.formatCellValue(cell))){
+			mock= new MockVO();
+			//1. mockName
 			String mockName = cell.getStringCellValue();
+
+			//2. Constructor
 			row=mockSheet.getRow(currentRow++);
 			cell = row.getCell(colIndex);
 			String fullcons= formatter.formatCellValue(cell);//셀값 원본.
-			if(fullcons !="" && fullcons!=null){
+			if(!CheckingUtil.isNullOrEmpty(fullcons)){
 				String clzname =fullcons.substring(0, fullcons.indexOf('(')); //Class name만 분리
 				String classFullname= classFullNames.get(clzname);//패키지이름을 포함한 클래스명.
 				try {
@@ -113,37 +129,63 @@ public class ExcelReader {
 
 					if(con ==null) throw new Exception("Can't not Found The Constructor of Mock Class");
 
+					//3. Constructor Parameters
 					Class[] paramTypes = con.getParameterTypes();
 
-					row= mockSheet.getRow(currentRow++);
+					row= mockSheet.getRow(currentRow); //First Param
 					cell= row.getCell(colIndex);
 					String paramString=null;
 					paramString= formatter.formatCellValue(cell);
 
 					if(paramTypes ==null && paramString !=null)
 						throw new Exception("Detected Wrong Constructor Parameter.\n at "+ mockSheet.getSheetName() + " Row :" + (currentRow) +" Col :" + colIndex+1);
-					//Constructor Parameter를 수집하고 실제 모크객체를 생성
+					//Constructor Parameter를 수집
 					ArrayList<Object> params= new ArrayList<Object>();
 					int offset= currentRow;
 					for(int paramIndex =offset; paramIndex<offset+maxConsParam; paramIndex++){
-						Object param=PrimitiveChecker.convertObject(paramTypes[paramIndex-offset], paramString);	
-						params.add(param);
 						row= mockSheet.getRow(currentRow++);
 						cell= row.getCell(colIndex);
 						paramString= formatter.formatCellValue(cell);
-//						if(paramString=="" || paramString ==null){
-//							throw new Exception("Constructor Parameter is Missing.");
-//						}
+						Object param=PrimitiveChecker.convertObject(paramTypes[paramIndex-offset], paramString);	
+						params.add(param);
+						//						if(paramString=="" || paramString ==null){
+						//							throw new Exception("Constructor Parameter is Missing.");
+						//						}
 					}
 
-					//Constructor and Constructor Parameter 다모음.
-					//VO 객체 조립하자.
-					//Field 조합하자.
-					offset = currentRow;
-					for(int fieldIndex = offset; fieldIndex < offset+(maxField*2); fieldIndex++){
-						
-					}
 					
+					//4. field and fieldValue
+					offset = currentRow;
+					String fieldName= null ,fieldValue=null;
+					Map<Field,Object> fieldSet = new HashMap<Field, Object>();// field - RealObject.
+					
+					for(int fieldIndex = offset; fieldIndex < offset+(maxField*2); fieldIndex++){						
+						row = mockSheet.getRow(currentRow++);
+						cell = row.getCell(colIndex);
+						fieldName= formatter.formatCellValue(cell);
+						row = mockSheet.getRow(currentRow++);
+						cell = row.getCell(colIndex);
+						fieldValue= formatter.formatCellValue(cell);
+
+						/* fieldName & fieldValue*/
+					
+						if(!CheckingUtil.isNullOrEmpty(fieldName)){
+							Field targetField = mockClass.getField(fieldName);
+							if(targetField==null) throw new Exception("Can't not found the field in Class of the Mock at " +mockSheet.getSheetName() + " Row : " + (currentRow-1)+ " Col : " + colIndex);
+							Object targetValue = PrimitiveChecker.convertObject(targetField.getType(), fieldValue);
+							fieldSet.put(targetField, targetValue);
+						}else if(!CheckingUtil.isNullOrEmpty(fieldValue) && CheckingUtil.isNullOrEmpty(fieldName))
+							throw new Exception("Wrong Input in This Mock at " +mockSheet.getSheetName() + " Row : " + (currentRow-1)+ " Col : " + colIndex);
+						else break;
+					}
+					mock.setMockName(mockName);
+					mock.setMockClass(mockClass);
+					mock.setConstructor(con);
+					if(params.size()>0)
+						mock.setConsParams(params);
+					if(fieldSet.size()>0)
+						mock.setFieldSet(fieldSet);
+					mockList.add(mock);
 
 				} catch (ClassNotFoundException e) {
 					// TODO Auto-generated catch block
@@ -151,16 +193,18 @@ public class ExcelReader {
 				}
 			}
 
-		}
+		}//end Main While loop
+		
+		if(mockList.size() >0) {
+			return mockList;
+		}else return null;
 	}
 
 	/*
 	 * Excel Reading Issue
 	 * */
-	public ArrayList<ArrayList<TestcaseVO>> readExcel(String filePath) throws IOException{
+	public ArrayList<ArrayList<TestcaseVO>> readExcel() throws IOException{
 		ArrayList<ArrayList<TestcaseVO>> caselists= new ArrayList<ArrayList<TestcaseVO>>();
-		XSSFWorkbook workbook = null;
-		workbook=getWorkbook(filePath);
 		formularEvaluator = new XSSFFormulaEvaluator(workbook);
 		if(workbook!=null){
 			//Read ClassName. and main Tain Map<Simple Name,Full Name>
@@ -385,6 +429,7 @@ public class ExcelReader {
 			break;
 		}
 	}
+
 
 
 }

@@ -264,16 +264,7 @@ public class ExcelCreator{
 	}
 
 
-	private XSSFRow createRowIfNotExist(XSSFSheet sheet, int rowIndex){
-		XSSFRow row = sheet.getRow(rowIndex);
-		if(row ==null) row= sheet.createRow(rowIndex);
-		return row;
-	}
-	private XSSFCell createCellIfNotExist(XSSFRow row, int cellIndex){
-		XSSFCell cell = row.getCell(cellIndex);
-		if(cell ==null) cell= row.createCell(cellIndex);
-		return cell;
-	}
+
 	private XSSFCellStyle getBorderStyle (XSSFCellStyle cs, short color){
 		cs.setFillForegroundColor(color);
 		cs.setFillPattern(FillPatternType.SOLID_FOREGROUND);
@@ -289,17 +280,17 @@ public class ExcelCreator{
 	 * 2. Unit Tests
 	 * */
 	private void makeSetTestModeRow(XSSFSheet sheet, int rowIndex){
-		XSSFRow row= createRowIfNotExist(sheet, rowIndex);
+		XSSFRow row= CheckingUtil.createRowIfNotExist(sheet, rowIndex);
 
 		XSSFCellStyle cs=getBorderStyle(workbook.createCellStyle(), IndexedColors.LIGHT_CORNFLOWER_BLUE.getIndex());
 
 		//Field Name;
-		XSSFCell cell = createCellIfNotExist(row, 0);
+		XSSFCell cell = CheckingUtil.createCellIfNotExist(row, 0);
 		cell.setCellValue("Test MODE");
 		cell.setCellStyle(cs);
 
 		//validation Name
-		cell= createCellIfNotExist(row, 1);;
+		cell= CheckingUtil.createCellIfNotExist(row, 1);;
 		DataValidationHelper dvh= new XSSFDataValidationHelper(sheet);
 		CellRangeAddressList addr= new CellRangeAddressList(row.getRowNum(),row.getRowNum(), 1, 1);
 		DataValidationConstraint dvConstraint=dvh.createExplicitListConstraint(new String[]{"Scenario", "Units"});
@@ -359,7 +350,7 @@ public class ExcelCreator{
 					//				if( workbook.getSheetAt(sheet_index).getSheetName().equals("TestSuite 1")){
 					xssfSheet=workbook.getSheetAt(sheetIndex);
 					makeSetTestModeRow(xssfSheet, 0); //Selection Test Mode Row
-					row=createRowIfNotExist(xssfSheet, 1);
+					row=CheckingUtil.createRowIfNotExist(xssfSheet, 1);
 
 					int cellvalindex=0;
 					int totalCellCount= Attribute.values().length + consCount + metsCount-2;
@@ -370,7 +361,7 @@ public class ExcelCreator{
 						if(val.equals(Attribute.ConsParam)){					
 							//Set Param Validation Type
 							for(int k=0; k<consCount; k++){
-								cell=createCellIfNotExist(row, i+k);
+								cell=CheckingUtil.createCellIfNotExist(row, i+k);
 								xssfSheet.setColumnWidth(i+k, 2700);
 								cell.setCellValue(val.toString()+(k+1));
 								cell.setCellStyle(cs);
@@ -381,14 +372,14 @@ public class ExcelCreator{
 						else if(val.equals(Attribute.TestMethod)){
 							xssfSheet.setColumnWidth(i, 3000);
 							setValidation("INDIRECT(LEFT($B3,FIND(\"(\",$B3)-1))", xssfSheet,new CellRangeAddressList(2, 500, i, i));
-							cell=createCellIfNotExist(row, i);
+							cell=CheckingUtil.createCellIfNotExist(row, i);
 							cell.setCellValue(val.toString());
 							cellvalindex++;
 						}
 						else if(val.equals(Attribute.MetParam)){
 
 							for(int k=0; k<metsCount; k++){
-								cell=createCellIfNotExist(row, i+k);
+								cell=CheckingUtil.createCellIfNotExist(row, i+k);
 								xssfSheet.setColumnWidth(i+k, 2700);
 								cell.setCellValue(val.toString()+(k+1));
 								cell.setCellStyle(cs);
@@ -398,7 +389,7 @@ public class ExcelCreator{
 						}
 						else{
 							xssfSheet.setColumnWidth(i, 3000);
-							cell=createCellIfNotExist(row, i);
+							cell=CheckingUtil.createCellIfNotExist(row, i);
 							cell.setCellValue(val.toString());
 							cellvalindex++;
 						}
@@ -464,17 +455,17 @@ public class ExcelCreator{
 		 * 4. 배열
 		 * 5. 컬렉션
 		 * */
-		XSSFRow firstRow = createRowIfNotExist(mockSheet, 0);
+		XSSFRow firstRow = CheckingUtil.createRowIfNotExist(mockSheet, 0);
 		XSSFCellStyle cs=getBorderStyle(workbook.createCellStyle(), IndexedColors.LIGHT_YELLOW.getIndex());
 
 
-		XSSFCell cell =createCellIfNotExist(firstRow, 0);
+		XSSFCell cell =CheckingUtil.createCellIfNotExist(firstRow, 0);
 		cell.setCellValue("MockList");
 		cell.setCellStyle(cs);
 
 		//Make Help Comment.
 		cell =null;
-		cell= createCellIfNotExist(firstRow,2);
+		cell= CheckingUtil.createCellIfNotExist(firstRow,2);
 		cell.setCellValue("Help");
 		cell.setCellStyle(cs);
 
@@ -492,25 +483,25 @@ public class ExcelCreator{
 		cell =null;
 
 		//Make Index Row
-		XSSFRow IndexRow = createRowIfNotExist(mockSheet, 1);
-		XSSFCell indexCell = createCellIfNotExist(IndexRow, 0);
+		XSSFRow IndexRow = CheckingUtil.createRowIfNotExist(mockSheet, 1);
+		XSSFCell indexCell = CheckingUtil.createCellIfNotExist(IndexRow, 0);
 		indexCell.setCellStyle(cs);
 		for(int i=1; i<= 10; i++){
-			indexCell = createCellIfNotExist(IndexRow, i);
+			indexCell = CheckingUtil.createCellIfNotExist(IndexRow, i);
 			indexCell.setCellValue(i);
 			indexCell.setCellStyle(cs);
 		}
 		
 		//Make Fields
 		int rowIndex= 2, colIndex=0;
-		XSSFRow categoryRow = createRowIfNotExist(mockSheet, rowIndex++);
-		cell = createCellIfNotExist(categoryRow, colIndex);
+		XSSFRow categoryRow = CheckingUtil.createRowIfNotExist(mockSheet, rowIndex++);
+		cell = CheckingUtil.createCellIfNotExist(categoryRow, colIndex);
 		cell.setCellValue("MockName");
 		mockSheet.setColumnWidth(0, 3500);
 		cell.setCellStyle(cs);
 
-		categoryRow = createRowIfNotExist(mockSheet, rowIndex++);
-		cell = createCellIfNotExist(categoryRow, colIndex);
+		categoryRow = CheckingUtil.createRowIfNotExist(mockSheet, rowIndex++);
+		cell = CheckingUtil.createCellIfNotExist(categoryRow, colIndex);
 		cell.setCellValue("MockClass");	
 		cell.setCellStyle(cs);
 		
@@ -519,8 +510,8 @@ public class ExcelCreator{
 		
 		int max=rowIndex + consCount;
 		for(int i = 1; rowIndex < max;i++){
-			categoryRow= createRowIfNotExist(mockSheet, rowIndex++);
-			cell = createCellIfNotExist(categoryRow, colIndex);
+			categoryRow= CheckingUtil.createRowIfNotExist(mockSheet, rowIndex++);
+			cell = CheckingUtil.createCellIfNotExist(categoryRow, colIndex);
 			cell.setCellValue("ConsParam"+i);
 			cell.setCellStyle(cs);
 		}
@@ -529,16 +520,16 @@ public class ExcelCreator{
 		//Field & Value
 		max= rowIndex+(fieldsCount*2);
 		for(int i =1; rowIndex< max; i++){
-			categoryRow= createRowIfNotExist(mockSheet, rowIndex++);
-			cell = createCellIfNotExist(categoryRow, colIndex);
+			categoryRow= CheckingUtil.createRowIfNotExist(mockSheet, rowIndex++);
+			cell = CheckingUtil.createCellIfNotExist(categoryRow, colIndex);
 			cell.setCellValue("Field"+i);
 			//=INDIRECT(CONCATENATE("FID",LEFT($B4,FIND("(",$B4)-1)))
 			String validationStr ="=INDIRECT(CONCATENATE(\"FID\",LEFT(INDIRECT(ADDRESS(4,COLUMN())),FIND(\"(\",INDIRECT(ADDRESS(4,COLUMN())))-1)))";
 			setValidation(validationStr, mockSheet, new CellRangeAddressList(rowIndex-1,rowIndex-1,1,500));
 			
 			cell.setCellStyle(cs);
-			categoryRow= createRowIfNotExist(mockSheet, rowIndex++);
-			cell = createCellIfNotExist(categoryRow, colIndex);
+			categoryRow= CheckingUtil.createRowIfNotExist(mockSheet, rowIndex++);
+			cell = CheckingUtil.createCellIfNotExist(categoryRow, colIndex);
 			cell.setCellValue("Value"+i);
 			cell.setCellStyle(cs);
 		}
@@ -602,8 +593,8 @@ public class ExcelCreator{
 				for(Field field : fields){
 
 					//make Field's Cell
-					XSSFRow clz_fld_row = createRowIfNotExist(class_field_sheet, fieldRow);
-					clz_fld_cell = createCellIfNotExist(clz_fld_row, clz_fld_col_index);
+					XSSFRow clz_fld_row = CheckingUtil.createRowIfNotExist(class_field_sheet, fieldRow);
+					clz_fld_cell = CheckingUtil.createCellIfNotExist(clz_fld_row, clz_fld_col_index);
 
 					String fieldStr =field.getType().getSimpleName()+' '+field.getName();
 					clz_fld_cell.setCellValue(fieldStr);
@@ -630,7 +621,7 @@ public class ExcelCreator{
 				for(Method met : mets){
 					if(!met.isSynthetic()){
 						//클래스 -메소드 부분
-						XSSFRow clz_met_row= createRowIfNotExist(class_method_sheet, methodRow);
+						XSSFRow clz_met_row=  CheckingUtil.createRowIfNotExist(class_method_sheet, methodRow);
 
 						Parameter[] params= met.getParameters();
 						//Search method Params
@@ -655,7 +646,7 @@ public class ExcelCreator{
 							//METHOD-PARAM SET
 							methodNamedStr+= paramType;
 
-							XSSFRow met_par_row= createRowIfNotExist(method_param_sheet,param_index+1); //2번째 줄에서부터 생성할것.
+							XSSFRow met_par_row= CheckingUtil.createRowIfNotExist(method_param_sheet,param_index+1); //2번째 줄에서부터 생성할것.
 							XSSFCell paramTypeCell = met_par_row.createCell(mets_total); //파라미터 타입 리스트 생성.
 							paramTypeCell.setCellValue(paramType);	
 
@@ -714,15 +705,15 @@ public class ExcelCreator{
 						consParamNamed+=makeNameString(param.getType());
 
 						//파라미터 타입 셀생성
-						con_par_row=createRowIfNotExist(cons_param_sheet, param_index+1);
-						XSSFCell paramcell=createCellIfNotExist(con_par_row, cons_total);
+						con_par_row=CheckingUtil.createRowIfNotExist(cons_param_sheet, param_index+1);
+						XSSFCell paramcell=CheckingUtil.createCellIfNotExist(con_par_row, cons_total);
 						paramcell.setCellValue(param.getType().getSimpleName());
 					}
 					consName+=')';
 					System.out.println(consName);
 
 					//생성자 셀 생성. .
-					XSSFCell consCell = createCellIfNotExist(cons_par_firstrow,cons_total);
+					XSSFCell consCell = CheckingUtil.createCellIfNotExist(cons_par_firstrow,cons_total);
 					consCell.setCellValue(consName);
 
 					if(params.length>0){

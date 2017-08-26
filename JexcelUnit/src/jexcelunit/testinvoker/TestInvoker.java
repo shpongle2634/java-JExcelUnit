@@ -32,6 +32,7 @@ import org.junit.runners.Parameterized;
 import jexcelunit.classmodule.PrimitiveChecker;
 import jexcelunit.excel.ExcelReader;
 import jexcelunit.excel.ExcelResultSaver;
+import jexcelunit.excel.MockVO;
 import jexcelunit.excel.TestcaseVO;
 
 /*****
@@ -89,7 +90,7 @@ public class TestInvoker {
 	 * 4. 그럴바에 suiteInfo 라는 맴버클래스를 둬서 관리하는게 나을려나.
 	 * */
 	public static Collection parmeterizingExcel(String filePath) throws InstantiationException{
-		ExcelReader reader = new ExcelReader();
+		
 		//메타데이터를 참조할 수 밖에없다.
 		//핸들러 레벨에서 타겟 프로젝트 정보를 생성할것.
 		file = new File(filePath);
@@ -98,7 +99,8 @@ public class TestInvoker {
 
 		if(file.exists()){
 			try {
-				testcases = reader.readExcel(filePath);
+				ExcelReader reader = new ExcelReader(filePath);
+				testcases = reader.readExcel();
 
 				if(testcases.size()>0){
 
@@ -149,7 +151,13 @@ public class TestInvoker {
 					}
 				}
 
-			} catch (IOException e) {
+				//setUp Mock Object
+				ArrayList<MockVO> mockList= reader.readMocks();
+				for(MockVO mock : mockList){
+					//make Mock and Put.
+					
+				}
+			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
