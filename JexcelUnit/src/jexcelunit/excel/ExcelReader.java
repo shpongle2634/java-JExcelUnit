@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -57,9 +58,102 @@ public class ExcelReader {
 			classFullNames.put(key, fullString);
 		}
 	}
+
 	public ArrayList<String> getTestSheetMode(){
 		return testModes;
 	}
+
+
+	private void readMocks(XSSFWorkbook workbook, XSSFSheet mockSheet) throws Exception{
+		/*
+		 * 1. row(3) Name
+		 * 2. row(4) Class
+		 * 3. constructor
+		 * 4. Field and value 
+		 * */
+		XSSFRow row = null;
+		XSSFCell cell = null;
+
+		int colIndex =0, maxRow =2 ,maxConsParam = 0, maxField = 0;
+		row = mockSheet.getRow(maxRow++);
+		cell = row.getCell(colIndex);
+		String cellString = cell.getStringCellValue();
+
+		while(cellString!=null || cellString==""){
+			//Count ConsParam.
+			if(cellString.contains("ConsParam")){
+				maxConsParam++;
+			}
+			//Count Field
+			if(cellString.contains("Field")){
+				maxField++;
+			}
+			row = mockSheet.getRow(maxRow++);
+			cell = row.getCell(colIndex);
+			cellString= cell.getStringCellValue();
+		}
+		colIndex++;
+
+		//Read Mock
+		int currentRow = 3;
+		row = mockSheet.getRow(currentRow++);
+		cell = row.getCell(colIndex);
+		//mock 이름이 없을때 까지 순환.
+		while(cell.getStringCellValue() != "" || cell.getStringCellValue() !=null){
+			String mockName = cell.getStringCellValue();
+			row=mockSheet.getRow(currentRow++);
+			cell = row.getCell(colIndex);
+			String fullcons= formatter.formatCellValue(cell);//셀값 원본.
+			if(fullcons !="" && fullcons!=null){
+				String clzname =fullcons.substring(0, fullcons.indexOf('(')); //Class name만 분리
+				String classFullname= classFullNames.get(clzname);//패키지이름을 포함한 클래스명.
+				try {
+					Class mockClass= Class.forName(classFullname);
+					Constructor con =findStringToConstructor(fullcons, mockClass);
+
+					if(con ==null) throw new Exception("Can't not Found The Constructor of Mock Class");
+
+					Class[] paramTypes = con.getParameterTypes();
+
+					row= mockSheet.getRow(currentRow++);
+					cell= row.getCell(colIndex);
+					String paramString=null;
+					paramString= formatter.formatCellValue(cell);
+
+					if(paramTypes ==null && paramString !=null)
+						throw new Exception("Detected Wrong Constructor Parameter.\n at "+ mockSheet.getSheetName() + " Row :" + (currentRow) +" Col :" + colIndex+1);
+					//Constructor Parameter를 수집하고 실제 모크객체를 생성
+					ArrayList<Object> params= new ArrayList<Object>();
+					int offset= currentRow;
+					for(int paramIndex =offset; paramIndex<offset+maxConsParam; paramIndex++){
+						Object param=PrimitiveChecker.convertObject(paramTypes[paramIndex-offset], paramString);	
+						params.add(param);
+						row= mockSheet.getRow(currentRow++);
+						cell= row.getCell(colIndex);
+						paramString= formatter.formatCellValue(cell);
+//						if(paramString=="" || paramString ==null){
+//							throw new Exception("Constructor Parameter is Missing.");
+//						}
+					}
+
+					//Constructor and Constructor Parameter 다모음.
+					//VO 객체 조립하자.
+					//Field 조합하자.
+					offset = currentRow;
+					for(int fieldIndex = offset; fieldIndex < offset+(maxField*2); fieldIndex++){
+						
+					}
+					
+
+				} catch (ClassNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+
+		}
+	}
+
 	/*
 	 * Excel Reading Issue
 	 * */
@@ -78,6 +172,8 @@ public class ExcelReader {
 			//Read sheet
 			for(int sheet_index=0;sheet_index<workbook.getNumberOfSheets();sheet_index++){
 
+
+				//테스트 시트를 읽어들이는 부분.
 				if(!workbook.isSheetHidden(sheet_index) && !workbook.getSheetName(sheet_index).contains("Mock")){
 					ArrayList<TestcaseVO> caselist=new ArrayList<TestcaseVO>();
 					XSSFSheet xssfsheet = null;
@@ -102,12 +198,12 @@ public class ExcelReader {
 
 						for(int j =0; j < TESTDATASET.length; j++){
 							if(infocell != null)
-							if(infocell.getRichStringCellValue().getString().contains(TESTDATASET[j].toString())){						
-								//remember index
-								
-								voOption[i]=j;
-								break;
-							}	
+								if(infocell.getRichStringCellValue().getString().contains(TESTDATASET[j].toString())){						
+									//remember index
+
+									voOption[i]=j;
+									break;
+								}	
 						}
 					}
 
@@ -143,6 +239,33 @@ public class ExcelReader {
 		return caselists;
 	} 
 
+	private Constructor findStringToConstructor(String cellString,Class targetClass){
+		//파라미터 분리.
+		String paramFullText =cellString.substring(cellString.indexOf('(')+1,cellString.indexOf(')'));
+		String[] paramsText=paramFullText.equals("")?new String[]{}:paramFullText.split(",");
+
+		Constructor[] cons =targetClass.getDeclaredConstructors();//생성자를 찾음.
+		for(Constructor con : cons){
+			boolean find=true;
+			Class[] params = con.getParameterTypes();//파라미터분리.
+			if(params.length==paramsText.length){
+				for(int index=0; index<paramsText.length; index++){
+					String paramType = paramsText[index].split(" ")[0];
+					if(!params[index].getSimpleName().equals(paramType))
+					{
+						find=false;//Wrong Constructor
+						break;
+					}	
+				}	
+			}else find=false;
+			if(find){ //생성자 찾음.
+				return con;
+			}
+		}
+		return null;
+	}
+
+
 	//Set Vo values depend on first Row
 	private void setVOvalue(TestcaseVO vo , Attribute OPTION, XSSFWorkbook workbook, XSSFCell currentCell){
 		//change values to String
@@ -155,40 +278,16 @@ public class ExcelReader {
 		case TestClass: //Set Class and Set Constructor
 			String fullcons= formatter.formatCellValue(currentCell);//셀값 원본.
 			String clzname =fullcons.substring(0, fullcons.indexOf('(')); //Class name만 분리
-
 			String classFullname= classFullNames.get(clzname);//패키지이름을 포함한 클래스명.
-
-			//파라미터 분리.
-			String paramFullText =fullcons.substring(fullcons.indexOf('(')+1,fullcons.indexOf(')'));
-			String[] paramsText=paramFullText.equals("")?new String[]{}:paramFullText.split(",");
 
 			try {
 				Class testClass= Class.forName(classFullname);
 				vo.setTestclass(testClass);
-
-				Constructor[] cons =testClass.getDeclaredConstructors();//생성자를 찾음.
-				for(Constructor con : cons){
-					boolean find=true;
-					Class[] params = con.getParameterTypes();//파라미터분리.
-					if(params.length==paramsText.length){
-						for(int index=0; index<paramsText.length; index++){
-							String paramType = paramsText[index].split(" ")[0];
-							if(!params[index].getSimpleName().equals(paramType))
-							{
-								find=false;//Wrong Constructor
-								break;
-							}	
-						}	
-					}else find=false;
-					if(find){ //생성자 찾음.
-						vo.setConstructor(con);
-						if(params!=null || params.length!=0)
-							vo.setCons_param(params);
-						break;
-					}
-				}
-
-
+				Constructor con = findStringToConstructor(fullcons, testClass);
+				vo.setConstructor(con);
+				Class[] params = con.getParameterTypes();
+				if(params!=null || params.length!=0)
+					vo.setCons_param(params);
 			} catch (ClassNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
