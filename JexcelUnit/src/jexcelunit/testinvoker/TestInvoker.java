@@ -155,6 +155,17 @@ public class TestInvoker {
 				ArrayList<MockVO> mockList= reader.readMocks();
 				for(MockVO mock : mockList){
 					//make Mock and Put.
+					System.out.println(mock.getMockName());
+					System.out.println(mock.getConstructor());
+					for(Object obj :mock.getConsParams()) {
+						System.out.println(obj);
+					}
+					Map<Field,Object> fieldSet = mock.getFieldSet();
+					if(fieldSet !=null) {
+						for(Field f : fieldSet.keySet()) {
+							System.out.println(f.getName() + " : " + fieldSet.get(f));
+						}
+					}
 					
 				}
 			} catch (Exception e) {

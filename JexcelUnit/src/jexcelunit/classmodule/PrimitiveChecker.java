@@ -3,6 +3,7 @@ package jexcelunit.classmodule;
 import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 @SuppressWarnings("rawtypes")
@@ -98,6 +99,17 @@ public class PrimitiveChecker {
 			}	
 			else if(targetType.equals(boolean.class)) return (boolean)Boolean.parseBoolean(paramString);
 			else if(targetType.equals(byte.class)) return (byte)Byte.parseByte(paramString);
+			
+			else if(targetType.isArray()) {
+				//if value is array.
+				String[] arrayItems = paramString.split(",");
+				
+				for(String item : arrayItems) {
+					item= item.trim();
+					
+				}
+				
+			}
 			else //mock;
 				return paramString;	
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
