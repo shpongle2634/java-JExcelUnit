@@ -73,7 +73,7 @@ public class ExcelReader {
 					return sheet;
 				}
 			}
-				
+
 		}
 		return null;
 	}
@@ -91,35 +91,50 @@ public class ExcelReader {
 
 		while(!CheckingUtil.isNullOrEmpty(cellString)){
 			//Count ConsParam.
-			if(cellString.contains("ConsParam")){
+			if(cellString.toLowerCase().contains("consparam")){
 				maxConsParam++;
 			}
 			//Count Field
-			if(cellString.contains("Field")){
+			if(cellString.toLowerCase().contains("field")){
 				maxField++;
 			}
 			row = mockSheet.getRow(maxRow++);
-			cell = row.getCell(colIndex);
-			cellString= cell.getStringCellValue();
+			if(row !=null){
+				cell = row.getCell(colIndex);
+				cellString= formatter.formatCellValue(cell);	
+			}else cellString= null;
 		}
 		colIndex++;
 
 		//Read Mock
-		int currentRow = 3;
-		row = mockSheet.getRow(currentRow++);
-		cell = row.getCell(colIndex);
+		row = mockSheet.getRow(2); //mock Name
+		if(row !=null){
+			cell = row.getCell(colIndex);
+			cellString= formatter.formatCellValue(cell);	
+		}
 		//mock 이름이 없을때 까지 순환.
 		ArrayList<MockVO> mockList= new ArrayList<MockVO>();
 		MockVO mock=null;
-		while(!CheckingUtil.isNullOrEmpty(formatter.formatCellValue(cell))){
+		while(!CheckingUtil.isNullOrEmpty(cellString)){ //Mock Name 이 있으면  루프 실행.
+			int currentRow = 2;
+			row = mockSheet.getRow(currentRow++);
+			if(row !=null){
+				cell = row.getCell(colIndex);
+				if(cell ==null) break;
+				cellString= formatter.formatCellValue(cell);
+				if (cellString == null) break;
+			}
+
 			mock= new MockVO();
 			//1. mockName
-			String mockName = cell.getStringCellValue();
+			String mockName = cellString;
 
 			//2. Constructor
 			row=mockSheet.getRow(currentRow++);
+			if(row ==null) break;
+
 			cell = row.getCell(colIndex);
-			String fullcons= formatter.formatCellValue(cell);//셀값 원본.
+			String fullcons= formatter.formatCellValue(cell);//생성자 원본.
 			if(!CheckingUtil.isNullOrEmpty(fullcons)){
 				String clzname =fullcons.substring(0, fullcons.indexOf('(')); //Class name만 분리
 				String classFullname= classFullNames.get(clzname);//패키지이름을 포함한 클래스명.
@@ -142,39 +157,56 @@ public class ExcelReader {
 					//Constructor Parameter를 수집
 					ArrayList<Object> params= new ArrayList<Object>();
 					int offset= currentRow;
-					for(int paramIndex =offset; paramIndex<offset+maxConsParam; paramIndex++){
+					for(int paramIndex =offset; paramIndex<offset+paramTypes.length; paramIndex++){
 						row= mockSheet.getRow(currentRow++);
 						cell= row.getCell(colIndex);
+						if(cell ==null) break;
 						paramString= formatter.formatCellValue(cell);
-						Object param=PrimitiveChecker.convertObject(paramTypes[paramIndex-offset], paramString);	
+						Object param =null;
+						if(!CheckingUtil.isNullOrEmpty(paramString)) 
+							param=PrimitiveChecker.convertObject(paramTypes[paramIndex-offset], paramString);	
 						params.add(param);
 						//						if(paramString=="" || paramString ==null){
 						//							throw new Exception("Constructor Parameter is Missing.");
 						//						}
 					}
+					currentRow = offset+maxConsParam; //Skip Empty Row.
 
-					
 					//4. field and fieldValue
 					offset = currentRow;
-					String fieldName= null ,fieldValue=null;
+					String fieldString= null ,fieldValue=null;
 					Map<Field,Object> fieldSet = new HashMap<Field, Object>();// field - RealObject.
-					
+
 					for(int fieldIndex = offset; fieldIndex < offset+(maxField*2); fieldIndex++){						
 						row = mockSheet.getRow(currentRow++);
 						cell = row.getCell(colIndex);
-						fieldName= formatter.formatCellValue(cell);
+						if(cell ==null) fieldString = null;
+						fieldString= formatter.formatCellValue(cell);
 						row = mockSheet.getRow(currentRow++);
 						cell = row.getCell(colIndex);
+						if(cell ==null) fieldValue= null;
 						fieldValue= formatter.formatCellValue(cell);
 
 						/* fieldName & fieldValue*/
-					
-						if(!CheckingUtil.isNullOrEmpty(fieldName)){
-							Field targetField = mockClass.getField(fieldName);
-							if(targetField==null) throw new Exception("Can't not found the field in Class of the Mock at " +mockSheet.getSheetName() + " Row : " + (currentRow-1)+ " Col : " + colIndex);
-							Object targetValue = PrimitiveChecker.convertObject(targetField.getType(), fieldValue);
-							fieldSet.put(targetField, targetValue);
-						}else if(!CheckingUtil.isNullOrEmpty(fieldValue) && CheckingUtil.isNullOrEmpty(fieldName))
+
+						if(!CheckingUtil.isNullOrEmpty(fieldString)){
+							String[] fieldName = fieldString.split(" ");
+							Field[] fields = mockClass.getDeclaredFields();
+							boolean found =false;
+							for(Field targetField : fields){
+								Class targetFieldClass= targetField.getType();
+								String targetFieldName= targetField.getName();
+								if(targetFieldClass.getName().contains(fieldName[0]) && targetFieldName.equals(fieldName[1]));
+								{
+									found =true;
+									Object targetValue = PrimitiveChecker.convertObject(targetField.getType(), fieldValue);
+									fieldSet.put(targetField, targetValue);
+									break;
+								}
+							}
+							if(!found) throw new Exception("Can't not found the field in Class of the Mock at " +mockSheet.getSheetName() + " Row : " + (currentRow-1)+ " Col : " + colIndex);
+
+						}else if(!CheckingUtil.isNullOrEmpty(fieldValue) && CheckingUtil.isNullOrEmpty(fieldString))
 							throw new Exception("Wrong Input in This Mock at " +mockSheet.getSheetName() + " Row : " + (currentRow-1)+ " Col : " + colIndex);
 						else break;
 					}
@@ -190,11 +222,13 @@ public class ExcelReader {
 				} catch (ClassNotFoundException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+				} catch (Exception e){
+					e.printStackTrace();
 				}
 			}
-
+			colIndex++;
 		}//end Main While loop
-		
+
 		if(mockList.size() >0) {
 			return mockList;
 		}else return null;
@@ -330,8 +364,8 @@ public class ExcelReader {
 				Constructor con = findStringToConstructor(fullcons, testClass);
 				vo.setConstructor(con);
 				Class[] params = con.getParameterTypes();
-				if(params!=null || params.length!=0)
-					vo.setCons_param(params);
+				if(params!=null)
+					if(params.length>0)vo.setCons_param(params);
 			} catch (ClassNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

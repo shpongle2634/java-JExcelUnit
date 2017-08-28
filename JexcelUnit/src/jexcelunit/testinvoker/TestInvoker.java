@@ -157,7 +157,9 @@ public class TestInvoker {
 					//make Mock and Put.
 					System.out.println(mock.getMockName());
 					System.out.println(mock.getConstructor());
-					for(Object obj :mock.getConsParams()) {
+					ArrayList<Object> consParams= mock.getConsParams();
+					if(consParams!=null)
+					for(Object obj :consParams) {
 						System.out.println(obj);
 					}
 					Map<Field,Object> fieldSet = mock.getFieldSet();
