@@ -153,22 +153,28 @@ public class TestInvoker {
 
 				//setUp Mock Object
 				ArrayList<MockVO> mockList= reader.readMocks();
-				for(MockVO mock : mockList){
+				for(MockVO mockItem : mockList){
 					//make Mock and Put.
-					System.out.println(mock.getMockName());
-					System.out.println(mock.getConstructor());
-					ArrayList<Object> consParams= mock.getConsParams();
-					if(consParams!=null)
-					for(Object obj :consParams) {
-						System.out.println(obj);
-					}
-					Map<Field,Object> fieldSet = mock.getFieldSet();
+					System.out.println(mockItem.getMockName());
+					System.out.println(mockItem.getConstructor());
+					ArrayList<Object> consParams= mockItem.getConsParams();
+//					if(consParams!=null)
+//					for(Object obj :consParams) {
+//						System.out.println(obj);
+//					}
+					
+					Object mockObject =  mockItem.getConstructor().newInstance(consParams.toArray());
+					if(mockObject ==null) throw new Exception("Cant not Make Mock Object "+ " \""+mockItem.getMockName()+"\"");
+//					Class mockClass= mockItem.getMockClass();
+					Map<Field,Object> fieldSet = mockItem.getFieldSet();
 					if(fieldSet !=null) {
 						for(Field f : fieldSet.keySet()) {
-							System.out.println(f.getName() + " : " + fieldSet.get(f));
+//							System.out.println(f.getName() + " : " + fieldSet.get(f));
+							f.setAccessible(true);
+							f.set(mockObject, fieldSet.get(f));
 						}
 					}
-					
+					mock.put(mockItem.getMockName(), mockObject);
 				}
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
