@@ -3,7 +3,10 @@ package jexcelunit.classmodule;
 import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.Map;
 
 @SuppressWarnings("rawtypes")
 public class PrimitiveChecker {
@@ -23,12 +26,12 @@ public class PrimitiveChecker {
 		//etc
 		else if(wrapper.equals(Void.class)) return void.class;
 		else if(wrapper.equals(Character.class)) return char.class;
-		
-		
+
+
 		else return wrapper;
-		
+
 	}
-	
+
 	//Check this type is Wrapper class about primitive type.
 	public static boolean isWrapperClass(Class type){
 		if(
@@ -42,12 +45,17 @@ public class PrimitiveChecker {
 				|| type.equals(Character.class)
 				|| type.equals(String.class)
 				|| type.equals(StringBuffer.class)
-//				|| type.equals(Object.class)
+				|| type.equals(Object.class)
 				)
 			return true;
+		else if(type.getSuperclass() !=null){
+			if(type.getSuperclass().equals(Number.class))
+				return true;
+			else return false;
+		}
 		else return false;
 	}
-	
+
 	public static int getFloatingType(Class type){
 		if(type.equals(float.class) || type.equals(Float.class))
 			return 1;
@@ -56,7 +64,7 @@ public class PrimitiveChecker {
 		else 
 			return -1;
 	}
-	
+
 	// Check whether ClassInfoMap has this class or not, if have it then return or return null; 
 	public static ClassInfo checkClassInfos(Class clz){
 		ClassInfo result= null;
@@ -70,14 +78,14 @@ public class PrimitiveChecker {
 	public static Object convertObject(Class targetType,String paramString){
 		try {
 			Object paramObject=null;
-			
+
 			//wrapper
 			if(isWrapperClass(targetType))
 			{
 				paramObject=targetType.getConstructor(String.class).newInstance(paramString);
 				return paramObject;
 			}	
-			
+
 			//primitive
 			else if(targetType.equals(char.class))
 				return paramString.toCharArray()[0];
@@ -98,16 +106,18 @@ public class PrimitiveChecker {
 			}	
 			else if(targetType.equals(boolean.class)) return (boolean)Boolean.parseBoolean(paramString);
 			else if(targetType.equals(byte.class)) return (byte)Byte.parseByte(paramString);
-			
+
 			else if(targetType.isArray()) {
 				//if value is array.
 				String[] arrayItems = paramString.split(",");
-				
-				for(String item : arrayItems) {
-					item= item.trim();
-					
+				Object item = null;
+				ArrayList list= new ArrayList();
+				for(String itemStr : arrayItems) {
+					itemStr= itemStr.trim();
+					item = PrimitiveChecker.convertObject(targetType.getComponentType(), itemStr);
+					list.add(item);
 				}
-				
+				return list.toArray();
 			}
 			else //mock;
 				return paramString;	
@@ -119,25 +129,33 @@ public class PrimitiveChecker {
 		return null;
 	}
 
-/*
- *  의도치 않은 ClassInfo 로딩을 막아야하는것이 키포인트.
- *  방법은 몇가지 생각해본거.
- * 
- * 3. 
- * */
+	/*
+	 *  의도치 않은 ClassInfo 로딩을 막아야하는것이 키포인트.
+	 *  방법은 몇가지 생각해본거.
+	 * 
+	 * 3. 
+	 * */
 
 	public static boolean isPrimitiveOrWrapper(Class type){
 		boolean flag= false;
-		if(type.isPrimitive() || type.getSuperclass().equals(Number.class))
+		if(type.isPrimitive())
 			flag= true;
 		else if(isWrapperClass(type))
 			flag=true;
 		return flag; 
 	}
-	
+
 	public static boolean isUserClass(Class type){
-		boolean flag = false;
-		
-		return flag;
+		return !isPrimitiveOrWrapper(type) && !type.isArray() && !isClassCollection(type) && !isReflectType(type);
+	}
+
+	public static boolean isClassCollection(Class c) {
+		return Collection.class.isAssignableFrom(c) || Map.class.isAssignableFrom(c);
+	}
+	public static boolean isCollection(Object ob) {
+		return ob instanceof Collection || ob instanceof Map;
+	}
+	public static boolean isReflectType(Class type){
+		return type.getName().toLowerCase().endsWith("reflect") || type.equals(Class.class);
 	}
 }

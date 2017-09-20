@@ -174,6 +174,8 @@ public class TestInvoker {
 							f.set(mockObject, fieldSet.get(f));
 						}
 					}
+					if(mock.get(mockItem.getMockName()) !=null) 
+						throw new Exception("Duplicate Mock Error : " +mockItem.getMockName());
 					mock.put(mockItem.getMockName(), mockObject);
 				}
 			} catch (Exception e) {

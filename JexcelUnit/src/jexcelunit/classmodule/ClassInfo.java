@@ -15,13 +15,12 @@ public class ClassInfo extends Info{
 	Method[] methods;
 	Field[] fields;
 
-
 	public ClassInfo(Class clz){
 		this.clz=clz;
 		name= clz.getSimpleName();
 		if(name ==null ||name.equals(""))
 			name= clz.getName();
-		if(ClassInfoMap.INSTANCE.getClassList().contains(clz) || PrimitiveChecker.isPrimitiveOrWrapper(clz))
+		if(ClassInfoMap.INSTANCE.getClassList().contains(clz) && PrimitiveChecker.isUserClass(clz))
 		{
 			ClassInfoMap.INSTANCE.getInfos().put(name, this);
 			initialize();
@@ -44,6 +43,7 @@ public class ClassInfo extends Info{
 		if(!PrimitiveChecker.isPrimitiveOrWrapper(clz) && !clz.isSynthetic() && !clz.isAnonymousClass()){
 			//Field Info Create
 			for(int i=0; i<fields.length; i++){
+				if(!clz.isAnonymousClass()&&!fields[i].getName().equals("this$0"))
 				addChildren(new ParameterInfo(fields[i]));
 			}
 			//Constructor Info Create

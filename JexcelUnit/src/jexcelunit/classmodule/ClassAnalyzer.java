@@ -31,7 +31,7 @@ public class ClassAnalyzer {
 		if(!map.isEmpty())
 			map.clear();
 		for(Class clz :classes){
-			if(!map.containsKey(clz.getSimpleName()) && !PrimitiveChecker.isPrimitiveOrWrapper(clz)){
+			if(!map.containsKey(clz.getSimpleName()) && PrimitiveChecker.isUserClass(clz)){
 				new ClassInfo(clz);
 			}
 		}

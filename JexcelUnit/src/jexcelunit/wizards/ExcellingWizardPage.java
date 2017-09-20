@@ -30,14 +30,15 @@ import org.eclipse.ui.dialogs.ContainerSelectionDialog;
  */
 
 public class ExcellingWizardPage extends WizardPage {
-	private Text containerText;
+	private Text containerName;
 	private Text srcText;
 	private Text fileText;
 	private Text runnerName;
-	private String rootpath;
 	private String encoding;
+	private String containerPath;
 
 	private ISelection selection;
+	private Text binText;
 
 	/**
 	 * Constructor for SampleNewWizardPage.
@@ -65,13 +66,15 @@ public class ExcellingWizardPage extends WizardPage {
 		Label label = new Label(container, SWT.NULL);
 		label.setText("&Xlsx Path:");
 
-		containerText = new Text(container, SWT.BORDER | SWT.SINGLE);
+		containerName = new Text(container, SWT.BORDER | SWT.SINGLE);
 		GridData gd = new GridData(GridData.FILL_HORIZONTAL);
-		containerText.setLayoutData(gd);
-		containerText.addModifyListener(new ModifyListener() {
+		containerName.setLayoutData(gd);
+		containerName.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
-				String src = containerText.getText()+"/src";
+				String src = getContainerName()+"/src";
+				String bin = getContainerName()+"/bin";
 				srcText.setText(src);
+				binText.setText(bin);
 				dialogChanged();
 			}
 		});
@@ -105,7 +108,29 @@ public class ExcellingWizardPage extends WizardPage {
 				handleSrcBrowse();
 			}
 		});
+		//bin path
+		label = new Label(container, SWT.NULL);
+		label.setText("&bin path:");
 
+		if(binText==null)
+			binText = new Text(container, SWT.BORDER | SWT.SINGLE);
+		gd = new GridData(GridData.FILL_HORIZONTAL);
+		binText.setLayoutData(gd);
+		binText.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				dialogChanged();
+			}
+		});
+
+		button = new Button(container, SWT.PUSH);
+		button.setText("Browse...");
+		button.addSelectionListener(new SelectionAdapter() {
+			public void widgetSelected(SelectionEvent e) {
+				handleBinBrowse();
+			}
+		});
+		
+		//excel File
 		label = new Label(container, SWT.NULL);
 		label.setText("&Excel name:");
 
@@ -158,8 +183,8 @@ public class ExcellingWizardPage extends WizardPage {
 					container = (IContainer) obj;
 				else
 					container = ((IResource) obj).getParent();
-				rootpath=((IResource) obj).getParent().getLocation().toString();
-				containerText.setText(container.getFullPath().toString());
+				containerName.setText(container.getName());
+				containerPath= container.getLocation().toString();
 				srcText.setText(container.getFullPath().toString()+"/src");
 				
 				try {
@@ -187,15 +212,16 @@ public class ExcellingWizardPage extends WizardPage {
 		if (dialog.open() == ContainerSelectionDialog.OK) {
 			Object[] result = dialog.getResult();
 			if (result.length == 1) {
-				String containerName= result[0].toString();
-				IProject prj =ResourcesPlugin.getWorkspace().getRoot().getProject(containerName);
+				String containerStr= result[0].toString();
+				IProject prj =ResourcesPlugin.getWorkspace().getRoot().getProject(containerStr);
 				try {
 					encoding= prj.getDefaultCharset();
 				} catch (CoreException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
-				}					
-				containerText.setText(containerName);
+				}
+				containerPath=prj.getLocation().toString();
+				containerName.setText(containerStr);
 			}
 
 		}
@@ -205,7 +231,7 @@ public class ExcellingWizardPage extends WizardPage {
 	private void handleSrcBrowse() {
 		ContainerSelectionDialog dialog = new ContainerSelectionDialog(
 				getShell(), ResourcesPlugin.getWorkspace().getRoot(), false,
-				"Select new Excel file container");
+				"Select Source container");
 		if (dialog.open() == ContainerSelectionDialog.OK) {
 			Object[] result = dialog.getResult();
 			if (result.length == 1) {
@@ -213,6 +239,18 @@ public class ExcellingWizardPage extends WizardPage {
 			}
 		}
 	}
+	private void handleBinBrowse() {
+		ContainerSelectionDialog dialog = new ContainerSelectionDialog(
+				getShell(), ResourcesPlugin.getWorkspace().getRoot(), false,
+				"Select Bin container");
+		if (dialog.open() == ContainerSelectionDialog.OK) {
+			Object[] result = dialog.getResult();
+			if (result.length == 1) {
+				binText.setText(((Path) result[0]).toString());
+			}
+		}
+	}
+	
 	/**
 	 * Ensures that both text fields are set.
 	 */
@@ -220,11 +258,13 @@ public class ExcellingWizardPage extends WizardPage {
 	private void dialogChanged() {
 		IResource container = ResourcesPlugin.getWorkspace().getRoot()
 				.findMember(new Path(getContainerName()));
-		if(container.getParent()!=null)
-			rootpath=container.getParent().getLocation().toString();
+		System.out.println(container.getLocation());
+		if(container.getLocation()!=null)
+			containerPath=container.getLocation().toString();
+			
 		String fileName = getFileName();
 
-		if (getContainerName().length() == 0) {
+		if (getContainerPath().length() == 0) {
 			updateStatus("File container must be specified");
 			return;
 		}
@@ -254,24 +294,30 @@ public class ExcellingWizardPage extends WizardPage {
 		setPageComplete(message == null);
 	}
 
-	public String getContainerName() {
-		return containerText.getText();
+	public String getContainerPath() {
+		return containerPath;
 	}
 
 	public String getFileName() {
 		return fileText.getText();
 	}
-	public String getRootPath(){
-		return rootpath;
+	public String getContainerName(){
+		return containerName.getText();
 	}
 
 	public String getSrcPath(){
 		if(srcText.getText()==null)
-			return containerText.getText()+"/src";
+			return getContainerName()+"/src";
 		else
 			return srcText.getText();
 	}
-
+	public String getBinPath(){
+		if(binText.getText()==null)
+			return getContainerName()+"/bin";
+		else
+			return binText.getText();
+	}
+	
 	public String getRunnerName(){
 		return runnerName.getText();
 	}

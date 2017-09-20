@@ -68,14 +68,14 @@ public class ExcelCreator{
 	private int metsCount=0;
 	private FileOutputStream fileoutputstream= null;
 	private XSSFWorkbook workbook = null;
-	private String fileName= null, containerName=null;
+	private String fileName= null, containerPath=null;
 	private HashMap<String, ClassInfo> classinfos=null;
 	private File existingExcel= null;
 
 
-	public ExcelCreator(String fileName,String containerName ,HashMap<String, ClassInfo> classinfos){
+	public ExcelCreator(String fileName,String containerPath ,HashMap<String, ClassInfo> classinfos){
 		this.fileName=fileName;
-		this.containerName= containerName;
+		this.containerPath= containerPath;
 		this.classinfos= classinfos;
 
 		consCount=getMaxParamCount(Attribute.TestClass,classinfos);
@@ -244,22 +244,23 @@ public class ExcelCreator{
 	 * */
 	private File getExistingExcel(){
 		boolean will_create=true;
-		File root = new File(containerName);
+		File root = new File(containerPath);
 		File xlsx= null;
 		File[] filelist=  root.listFiles();
-		for(File f: filelist){
-			//			System.out.println(f.getName());
-			if(f.getName().equals(fileName+".xlsx")){
-				IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-				will_create= MessageDialog.openQuestion(
-						window.getShell(),
-						"Do you want to Overwrite it? Yes :Overwrite No : Delete and Create it",
-						"WARNING : If you overwrite it, you can lose its data");
-				if(will_create)xlsx=f;
-				else f.delete();
-				break;
+		if(filelist !=null)
+			for(File f: filelist){
+				//			System.out.println(f.getName());
+				if(f.getName().equals(fileName+".xlsx")){
+					IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+					will_create= MessageDialog.openQuestion(
+							window.getShell(),
+							"Do you want to Overwrite it? Yes :Overwrite No : Delete and Create it",
+							"WARNING : If you overwrite it, you can lose its data");
+					if(will_create)xlsx=f;
+					else f.delete();
+					break;
+				}
 			}
-		}
 		return xlsx;
 	}
 
@@ -414,7 +415,7 @@ public class ExcelCreator{
 				}
 			}
 			//save xlsx
-			fileoutputstream=new FileOutputStream(containerName+"/"+ fileName+".xlsx");
+			fileoutputstream=new FileOutputStream(containerPath+"/"+ fileName+".xlsx");
 			workbook.write(fileoutputstream);
 
 			System.out.println("Created");
@@ -491,7 +492,7 @@ public class ExcelCreator{
 			indexCell.setCellValue(i);
 			indexCell.setCellStyle(cs);
 		}
-		
+
 		//Make Fields
 		int rowIndex= 2, colIndex=0;
 		XSSFRow categoryRow = CheckingUtil.createRowIfNotExist(mockSheet, rowIndex++);
@@ -504,10 +505,10 @@ public class ExcelCreator{
 		cell = CheckingUtil.createCellIfNotExist(categoryRow, colIndex);
 		cell.setCellValue("MockClass");	
 		cell.setCellStyle(cs);
-		
+
 		//Set validation
 		setValidation("Class", mockSheet, new CellRangeAddressList(rowIndex-1,rowIndex-1,1,500));
-		
+
 		int max=rowIndex + consCount;
 		for(int i = 1; rowIndex < max;i++){
 			categoryRow= CheckingUtil.createRowIfNotExist(mockSheet, rowIndex++);
@@ -516,7 +517,7 @@ public class ExcelCreator{
 			cell.setCellStyle(cs);
 		}
 		cell= null;
-		
+
 		//Field & Value
 		max= rowIndex+(fieldsCount*2);
 		for(int i =1; rowIndex< max; i++){
@@ -526,7 +527,7 @@ public class ExcelCreator{
 			//=INDIRECT(CONCATENATE("FID",LEFT($B4,FIND("(",$B4)-1)))
 			String validationStr ="=INDIRECT(CONCATENATE(\"FID\",LEFT(INDIRECT(ADDRESS(4,COLUMN())),FIND(\"(\",INDIRECT(ADDRESS(4,COLUMN())))-1)))";
 			setValidation(validationStr, mockSheet, new CellRangeAddressList(rowIndex-1,rowIndex-1,1,500));
-			
+
 			cell.setCellStyle(cs);
 			categoryRow= CheckingUtil.createRowIfNotExist(mockSheet, rowIndex++);
 			cell = CheckingUtil.createCellIfNotExist(categoryRow, colIndex);
@@ -605,13 +606,13 @@ public class ExcelCreator{
 				String formula= "ClassFieldhidden!$"+cell+"$2:$"+cell+"$" + (fields.length+1);
 				setNamedName(workbook, "FID"+makeNameString(clz), formula);
 
-				
+
 			}
 
 
 			//클래스 -메소드 설정
 			classNamecell=clz_met_firstrow.createCell(clz_met_col_index);
-			classNamecell.setCellValue(classInfo.getClz().getName());
+			classNamecell.setCellValue(clz.getName());
 			//Method loop 
 			Method[] mets = classInfo.getMethods();
 			if(mets.length >0){
@@ -620,6 +621,7 @@ public class ExcelCreator{
 				int methodRow =1;
 				for(Method met : mets){
 					if(!met.isSynthetic()){
+
 						//클래스 -메소드 부분
 						XSSFRow clz_met_row=  CheckingUtil.createRowIfNotExist(class_method_sheet, methodRow);
 
@@ -645,14 +647,13 @@ public class ExcelCreator{
 
 							//METHOD-PARAM SET
 							methodNamedStr+= paramType;
-
 							XSSFRow met_par_row= CheckingUtil.createRowIfNotExist(method_param_sheet,param_index+1); //2번째 줄에서부터 생성할것.
 							XSSFCell paramTypeCell = met_par_row.createCell(mets_total); //파라미터 타입 리스트 생성.
 							paramTypeCell.setCellValue(paramType);	
 
 						}
 						methodStr+=')';
-						System.out.println(methodStr);
+						//						System.out.println(methodStr);
 
 						//ClassMethod sheet
 						clz_met_cell= clz_met_row.createCell(clz_met_col_index);
@@ -666,7 +667,8 @@ public class ExcelCreator{
 							//Method Parameter List Name.
 							String cell=cellIndex(mets_total+1);
 							String formula= "MethodParamhidden!$"+cell+"$2:$"+cell+"$" + (params.length+1);
-							setNamedName(workbook, methodNamedStr, formula);
+							if(workbook.getName(methodNamedStr) !=null)
+								setNamedName(workbook, methodNamedStr, formula);
 						}
 
 						methodRow++; 
@@ -683,9 +685,9 @@ public class ExcelCreator{
 
 
 			//생성자 리스트 및 생성자 파라미터
-			if(!PrimitiveChecker.isPrimitiveOrWrapper(clz)){
+			if(PrimitiveChecker.isUserClass(clz)){
 				XSSFRow con_par_row=null;
-				Constructor[] conset= classInfo.getConstructors();
+				Constructor[] conset= clz.getDeclaredConstructors();
 				Constructor con =null;
 				for(int con_index=0; con_index< conset.length; con_index++){ 
 					con= conset[con_index];

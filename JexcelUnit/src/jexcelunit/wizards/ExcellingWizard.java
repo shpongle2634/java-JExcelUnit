@@ -69,15 +69,16 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 	 * using wizard as execution context.
 	 */
 	public boolean performFinish() {
-		final String containerName = page.getContainerName();
+		final String containerName =page.getContainerName();
+		final String containerPath = page.getContainerPath();
 		final String fileName = page.getFileName();
 		final String srcPath = page.getSrcPath();
-		final String rootPath = page.getRootPath();
+		final String binPath = page.getBinPath();
 		final String runnerName = page.getRunnerName();
 		final String encoding= page.getEncoding();
 
 		try {
-			doFinish(rootPath,containerName, fileName,srcPath,runnerName ,encoding);
+			doFinish(containerName, containerPath, fileName,srcPath,binPath,runnerName ,encoding);
 		} catch (CoreException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -93,20 +94,27 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 	 */
 
 	private void doFinish(
-			String rootpath,String containerName, String fileName, String srcPath, String runnerName,String encoding)
+			String containerName, String containerPath, String fileName, String srcPath,String binPath, String runnerName,String encoding)
 					throws CoreException {
+		//Path Config
+		if(!containerPath.contains(containerName)){
+			srcPath=srcPath.replace(containerName, containerPath);
+			binPath=binPath.replace(containerName, containerPath);
+		}
+
 		// create a sample file
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 
 		IResource resource = root.findMember(new Path(containerName));
 		if (!resource.exists() || !(resource instanceof IContainer)) {
-			throwCoreException("Container \"" + containerName + "\" does not exist.");
+			throwCoreException("Container \"" + containerName + "\" ("+ containerPath+")does not exist.");
 		}
 
 		// Making ExcelFile...
 		try {
 			IProject project=resource.getProject();
-			ArrayList<Class> classlist= new ClassExtractor().getClasses(project, encoding);
+			ClassExtractor extractor = new ClassExtractor();
+			ArrayList<Class> classlist= extractor.getClasses(project,binPath, encoding);
 			ClassAnalyzer analyzer = new ClassAnalyzer(classlist);
 
 
@@ -132,10 +140,14 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 
 
 			// Excelling Part 
-			ExcelCreator exceller= new ExcelCreator(fileName, rootpath+containerName, classinfos);
+			ExcelCreator exceller= new ExcelCreator(fileName, containerPath, classinfos);
 			boolean success = exceller.createXlsx();
-			if(success && runnerName!=null && !runnerName.equals(""))
-				makeJExcelUnitRunner(rootpath,containerName, fileName, srcPath, runnerName);
+			if(success && runnerName!=null && !runnerName.equals("")){
+
+
+				makeJExcelUnitRunner(containerPath, fileName, srcPath, runnerName);	
+			}
+			extractor.closeLoader();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -147,10 +159,10 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 
 	}
 
-	private void makeJExcelUnitRunner(String rootpath, String containerName, String fileName, String srcName, String runnerName){
+	private void makeJExcelUnitRunner(String containerPath, String fileName, String srcName, String runnerName){
 		//Make Suite Class.
 		PrintWriter pw = null; 
-		File runnerClass= new File( rootpath+srcName+"/"+runnerName+".java" );
+		File runnerClass= new File( srcName+"/"+runnerName+".java" );
 
 
 		//Issue Runner가 존재하면 새  러너를 만들것인지, 혹은 업데이트? 아님 그냥 경고만 ?
@@ -177,7 +189,7 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 								"\t}\n\n@SuppressWarnings(\"unchecked\")\n@Parameters( name = \"[{0}] Test NO.{index} : {1}\")",
 								"\tpublic static Collection<Object[][]> parameterized()  throws InstantiationException {",
 								"\t\tsetUp();",
-								"\t\treturn parmeterizingExcel(\""+rootpath+containerName+"/"+fileName+".xlsx\");",
+								"\t\treturn parmeterizingExcel(\""+containerPath+"/"+fileName+".xlsx\");",
 								"}\n",
 								"}"								
 				};
