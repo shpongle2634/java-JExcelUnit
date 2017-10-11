@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -177,11 +178,14 @@ public class ExcelReader {
 					String fieldString= null ,fieldValue=null;
 					Map<Field,Object> fieldSet = new HashMap<Field, Object>();// field - RealObject.
 
-					for(int fieldIndex = offset; fieldIndex < offset+(maxField*2); fieldIndex++){						
+					for(int fieldIndex = offset; fieldIndex < offset+(maxField*2); fieldIndex++){	
+						//Field Name
 						row = mockSheet.getRow(currentRow++);
 						cell = row.getCell(colIndex);
 						if(cell ==null) fieldString = null;
 						fieldString= formatter.formatCellValue(cell);
+						
+						//Field Value
 						row = mockSheet.getRow(currentRow++);
 						cell = row.getCell(colIndex);
 						if(cell ==null) fieldValue= null;
@@ -196,10 +200,21 @@ public class ExcelReader {
 							for(Field targetField : fields){
 								Class targetFieldClass= targetField.getType();
 								String targetFieldName= targetField.getName();
-								if(targetFieldClass.getName().contains(fieldName[0]) && targetFieldName.equals(fieldName[1]));
+								if(targetFieldClass.getName().contains(fieldName[0]) && targetFieldName.equals(fieldName[1]))
 								{
 									found =true;
-									Object targetValue = PrimitiveChecker.convertObject(targetField.getType(), fieldValue);
+									Object targetValue=null;
+									Class targetType=targetField.getType();
+									if(PrimitiveChecker.isClassCollection(targetField.getType())){
+										String genericType= targetField.getGenericType().toString();
+										if(genericType!=null){
+											String componentStr= genericType.substring(genericType.indexOf("<")+1, genericType.indexOf(">"));
+											Class componentType=Class.forName(componentStr);
+											targetValue=PrimitiveChecker.ConvertToCollection(targetType, fieldValue,componentType);	
+										}
+									}
+									if(targetValue==null)
+										targetValue= PrimitiveChecker.convertObject(targetType, fieldValue);
 									fieldSet.put(targetField, targetValue);
 									break;
 								}

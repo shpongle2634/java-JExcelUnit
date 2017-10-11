@@ -283,7 +283,7 @@ public class ExcelCreator{
 	private void makeSetTestModeRow(XSSFSheet sheet, int rowIndex){
 		XSSFRow row= CheckingUtil.createRowIfNotExist(sheet, rowIndex);
 
-		XSSFCellStyle cs=getBorderStyle(workbook.createCellStyle(), IndexedColors.LIGHT_CORNFLOWER_BLUE.getIndex());
+		XSSFCellStyle cs=getBorderStyle(workbook.createCellStyle(), IndexedColors.ROYAL_BLUE.getIndex());
 
 		//Field Name;
 		XSSFCell cell = CheckingUtil.createCellIfNotExist(row, 0);
@@ -343,7 +343,7 @@ public class ExcelCreator{
 
 
 
-			XSSFCellStyle cs=getBorderStyle(workbook.createCellStyle(), IndexedColors.LIGHT_YELLOW.getIndex());
+			XSSFCellStyle cs=getBorderStyle(workbook.createCellStyle(), IndexedColors.AQUA.getIndex());
 
 
 			for(int sheetIndex=0; sheetIndex<workbook.getNumberOfSheets(); sheetIndex++){
@@ -457,7 +457,7 @@ public class ExcelCreator{
 		 * 5. ÄÃ·º¼Ç
 		 * */
 		XSSFRow firstRow = CheckingUtil.createRowIfNotExist(mockSheet, 0);
-		XSSFCellStyle cs=getBorderStyle(workbook.createCellStyle(), IndexedColors.LIGHT_YELLOW.getIndex());
+		XSSFCellStyle cs=getBorderStyle(workbook.createCellStyle(), IndexedColors.SEA_GREEN.getIndex());
 
 
 		XSSFCell cell =CheckingUtil.createCellIfNotExist(firstRow, 0);

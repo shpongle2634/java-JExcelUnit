@@ -6,7 +6,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @SuppressWarnings("rawtypes")
 public class PrimitiveChecker {
@@ -128,6 +130,46 @@ public class PrimitiveChecker {
 		}
 		return null;
 	}
+	@SuppressWarnings("unchecked")
+	public static Object ConvertToCollection(Class targetType, String paramString, Class componentType){
+		try {
+			if(List.class.isAssignableFrom(targetType)){
+				
+				List list = (List) targetType.newInstance();
+				String[] arrayItems = paramString.split(",");
+				Object item = null;
+				for(String itemStr : arrayItems) {
+					itemStr= itemStr.trim();
+					item = PrimitiveChecker.convertObject(componentType, itemStr);
+					list.add(item);
+				}
+				return list;
+			}
+			//2. Set
+			else if(Set.class.isAssignableFrom(targetType)){
+				Set set =(Set) targetType.newInstance();
+				String[] arrayItems = paramString.split(",");
+				Object item = null;
+				for(String itemStr : arrayItems) {
+					itemStr= itemStr.trim();
+					item = PrimitiveChecker.convertObject(componentType, itemStr);
+					set.add(item);
+				}
+				return set;
+			}
+			//3. Map
+			else if(Map.class.isAssignableFrom(targetType)){
+				Map map=(Map) targetType.newInstance();
+				//TODO
+				return map;
+			}
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+				 | SecurityException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
 
 	/*
 	 *  의도치 않은 ClassInfo 로딩을 막아야하는것이 키포인트.
@@ -156,6 +198,6 @@ public class PrimitiveChecker {
 		return ob instanceof Collection || ob instanceof Map;
 	}
 	public static boolean isReflectType(Class type){
-		return type.getName().toLowerCase().endsWith("reflect") || type.equals(Class.class);
+		return type.getPackage().getName().toLowerCase().endsWith("reflect") || type.equals(Class.class);
 	}
 }

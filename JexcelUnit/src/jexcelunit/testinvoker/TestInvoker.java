@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.junit.AfterClass;
@@ -153,6 +154,7 @@ public class TestInvoker {
 
 				//setUp Mock Object
 				ArrayList<MockVO> mockList= reader.readMocks();
+				if(mockList!=null)
 				for(MockVO mockItem : mockList){
 					//make Mock and Put.
 					System.out.println(mockItem.getMockName());
@@ -163,28 +165,39 @@ public class TestInvoker {
 //						System.out.println(obj);
 //					}
 					
-					Object mockObject =  mockItem.getConstructor().newInstance(consParams.toArray());
+					Object mockObject =  consParams!=null ?mockItem.getConstructor().newInstance(consParams.toArray()):mockItem.getConstructor().newInstance();
 					if(mockObject ==null) throw new Exception("Cant not Make Mock Object "+ " \""+mockItem.getMockName()+"\"");
 //					Class mockClass= mockItem.getMockClass();
 					Map<Field,Object> fieldSet = mockItem.getFieldSet();
 					if(fieldSet !=null) {
+						int index=0;
+						Field[] fields = new Field[fieldSet.size()];
+						Class[] fieldTypes= new Class[fieldSet.size()];
+						Object[] values= new Object[fieldSet.size()];
+						
 						for(Field f : fieldSet.keySet()) {
-//							System.out.println(f.getName() + " : " + fieldSet.get(f));
+							fields[index] = f;
+							fieldTypes[index]= f.getType();
+							values[index++] =fieldSet.get(f);							
+						}
+						values=getMock(fieldTypes, values);
+						
+						index=0;
+						for(Field f:fields){
 							f.setAccessible(true);
-							f.set(mockObject, fieldSet.get(f));
+							f.set(mockObject, values[index++]);
 						}
 					}
 					if(mock.get(mockItem.getMockName()) !=null) 
 						throw new Exception("Duplicate Mock Error : " +mockItem.getMockName());
 					mock.put(mockItem.getMockName(), mockObject);
 				}
+				
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 		//읽어들인 리스트를 String, Class, Object[] Object, String Object로 바까야함.
-
 		return Arrays.asList(parameterized);
 	} 
 
@@ -254,7 +267,7 @@ public class TestInvoker {
 		}
 	}
 
-	private Object[] getMock(Class[] types, Object[] params){
+	private static Object[] getMock(Class[] types, Object[] params) throws Exception{
 		for(int i= 0; i<types.length; i++){
 			Class paramClass=params[i].getClass();
 			if(PrimitiveChecker.isPrimitiveOrWrapper(paramClass))
@@ -264,8 +277,11 @@ public class TestInvoker {
 				Object mockObject=mock.get(params[i]);
 				if( types[i].isInstance(mockObject) && mockObject!=null){
 					params[i]=mockObject;
-				}else
-					throw new AssertionError("Wrong Parameter Types");
+				}else{
+					fail();
+					throw new Exception("Wrong Parameter Types");
+				}
+					
 			}
 		}
 		return params;
