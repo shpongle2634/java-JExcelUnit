@@ -188,7 +188,7 @@ public class PrimitiveChecker {
 	}
 
 	public static boolean isUserClass(Class type){
-		return !isPrimitiveOrWrapper(type) && !type.isArray() && !isClassCollection(type) && !isReflectType(type);
+		return !isClassCollection(type) && !isJavaType(type) &&!isPrimitiveOrWrapper(type) && !type.isArray();
 	}
 
 	public static boolean isClassCollection(Class c) {
@@ -197,7 +197,11 @@ public class PrimitiveChecker {
 	public static boolean isCollection(Object ob) {
 		return ob instanceof Collection || ob instanceof Map;
 	}
-	public static boolean isReflectType(Class type){
-		return type.getPackage().getName().toLowerCase().endsWith("reflect") || type.equals(Class.class);
+	public static boolean isJavaType(Class type){
+		Package packageName = type.getPackage();
+		if(packageName !=null){
+			return packageName.getName().startsWith("java.");
+		}
+		else return false;
 	}
 }

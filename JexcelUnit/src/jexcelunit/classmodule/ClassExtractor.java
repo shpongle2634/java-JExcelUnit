@@ -65,6 +65,7 @@ public class ClassExtractor {
 
 		//빌드시, 파라미터 이름 포함해서 컴파일하도록 IJavaProject 생성.
 		IJavaProject test= JavaCore.create(project);
+
 		Map<String, String> ops = test.getOptions(true);
 		ops.replace("org.eclipse.jdt.core.compiler.codegen.methodParameters", JavaCore.GENERATE);
 		test.setOptions(ops);
@@ -116,29 +117,29 @@ public class ClassExtractor {
 		for (String string : classFiles) {
 			try{
 				Class userClass = loader.loadClass(string);
-				if(!TestInvoker.class.isAssignableFrom(userClass))
+				if(!TestInvoker.class.isAssignableFrom(userClass)){
 					classList.add(userClass);
+					Field[] fields = userClass.getDeclaredFields();
+					for(Field field : fields){
+						if(!classList.contains(field.getType()))
+							classList.add(field.getType());
+					}
+					Constructor[] constructors = userClass.getDeclaredConstructors();
+					Parameter[] params;
+					for(Constructor con: constructors){
+						params= con.getParameters();
+						for(Parameter param : params)
+							if(!classList.contains(param.getType()))
+								classList.add(param.getType());
+					}
 
-				Field[] fields = userClass.getDeclaredFields();
-				for(Field field : fields){
-					if(!classList.contains(field.getType()))
-						classList.add(field.getType());
-				}
-				Constructor[] constructors = userClass.getDeclaredConstructors();
-				Parameter[] params;
-				for(Constructor con: constructors){
-					params= con.getParameters();
-					for(Parameter param : params)
-						if(!classList.contains(param.getType()))
-							classList.add(param.getType());
-				}
-
-				Method[] methods = userClass.getDeclaredMethods();
-				for(Method met: methods){
-					params= met.getParameters();
-					for(Parameter param : params)
-						if(!classList.contains(param.getType()))
-							classList.add(param.getType());
+					Method[] methods = userClass.getDeclaredMethods();
+					for(Method met: methods){
+						params= met.getParameters();
+						for(Parameter param : params)
+							if(!classList.contains(param.getType()))
+								classList.add(param.getType());
+					}
 				}
 			}
 			catch(NoClassDefFoundError e){

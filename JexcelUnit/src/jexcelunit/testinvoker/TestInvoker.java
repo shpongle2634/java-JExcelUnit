@@ -21,9 +21,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
@@ -45,11 +46,14 @@ import jexcelunit.excel.TestcaseVO;
  * Major : 컴퓨터 공학 
  * Name : 서태훈 
  * (리플랙션을 사용하면 테스트메소드와 사용자 가 원하는 테스트 객체와 완전한 분리가 가능)
- * 
+ * sys
  **/
 @SuppressWarnings("rawtypes")
 @RunWith(Parameterized.class) //테스트 케이스를 이용할것이다.
 public class TestInvoker {
+	private static final Logger suiteLogger= LogManager.getLogger("SuiteLogger");
+	private static final Logger testLogger= LogManager.getLogger("TestLogger");
+
 	private static Map<Class, Object> classmap=new HashMap<Class, Object>(); //해쉬맵으로 테스트에 필요한 객체들을 하나씩만 유지한다.
 	private static ArrayList<Class> exceptionlist=new ArrayList<Class>();//사용자 정의 예외 클래스들을 담아두는 곳.
 	private static Map<String,String> sheets=new HashMap<String,String>();
@@ -60,7 +64,6 @@ public class TestInvoker {
 	private static File file=null;
 	private static int[] rowSize=null;
 	private static String currentSheet=null;
-
 	//테스트 케이스들을 확인할 method_params
 	private String sheet=null;
 	private String testname=null;
@@ -72,7 +75,7 @@ public class TestInvoker {
 	private Object expectedResult=null;
 
 	//테스트이름, 테스트할 클래스, 테스트파라미터,  테스트할 메소드이름, 파라미터들,예상결과를 JUnit이 읽어와 실행시키는 부분이다.
-	public TestInvoker(String sheet,String testname,Class targetclz,Constructor constructor,Object[] constructor_params,Method targetmethod,Object[] param1,Object expectedResult){
+	public TestInvoker(String sheet,String testname,Class targetclz,Constructor constructor,Object[] constructor_params,Method targetmethod,Object[] method_params,Object expectedResult){
 		this.sheet=sheet;
 		this.testname= (String)testname;
 		this.targetclz=targetclz;
@@ -80,7 +83,14 @@ public class TestInvoker {
 		this.constructor_params=constructor_params;
 		this.expectedResult=expectedResult;
 		this.targetmethod=targetmethod;
-		this.method_params=param1;
+		this.method_params=method_params;
+		testLogger.info(testnumber + " : " + this.testname);
+		testLogger.info("Test Target : " + this.constructor);
+		testLogger.info("ConstructorInput : " + Arrays.toString(this.constructor_params));
+		testLogger.info("Test Method : " + this.targetmethod);
+		testLogger.info("MethodInput : " + Arrays.toString(this.method_params));
+
+
 	}
 
 
@@ -91,7 +101,7 @@ public class TestInvoker {
 	 * 4. 그럴바에 suiteInfo 라는 맴버클래스를 둬서 관리하는게 나을려나.
 	 * */
 	public static Collection parmeterizingExcel(String filePath) throws InstantiationException{
-		
+
 		//메타데이터를 참조할 수 밖에없다.
 		//핸들러 레벨에서 타겟 프로젝트 정보를 생성할것.
 		file = new File(filePath);
@@ -155,45 +165,59 @@ public class TestInvoker {
 				//setUp Mock Object
 				ArrayList<MockVO> mockList= reader.readMocks();
 				if(mockList!=null)
-				for(MockVO mockItem : mockList){
-					//make Mock and Put.
-					System.out.println(mockItem.getMockName());
-					System.out.println(mockItem.getConstructor());
-					ArrayList<Object> consParams= mockItem.getConsParams();
-//					if(consParams!=null)
-//					for(Object obj :consParams) {
-//						System.out.println(obj);
-//					}
-					
-					Object mockObject =  consParams!=null ?mockItem.getConstructor().newInstance(consParams.toArray()):mockItem.getConstructor().newInstance();
-					if(mockObject ==null) throw new Exception("Cant not Make Mock Object "+ " \""+mockItem.getMockName()+"\"");
-//					Class mockClass= mockItem.getMockClass();
-					Map<Field,Object> fieldSet = mockItem.getFieldSet();
-					if(fieldSet !=null) {
-						int index=0;
-						Field[] fields = new Field[fieldSet.size()];
-						Class[] fieldTypes= new Class[fieldSet.size()];
-						Object[] values= new Object[fieldSet.size()];
-						
-						for(Field f : fieldSet.keySet()) {
-							fields[index] = f;
-							fieldTypes[index]= f.getType();
-							values[index++] =fieldSet.get(f);							
+					for(MockVO mockItem : mockList){
+
+						suiteLogger.info("Set the Mock : "+mockItem.getMockName());
+						suiteLogger.info("Class : "+mockItem.getConstructor());
+						ArrayList<Object> consParams= mockItem.getConsParams();
+						Object mockObject =null;
+						if(consParams!=null ){
+							Object [] params = consParams.toArray();
+							mockObject = mockItem.getConstructor().newInstance(params);
+							for(Object param : params){
+								suiteLogger.info("Constructor Param : "+param);	
+							}
 						}
-						values=getMock(fieldTypes, values);
-						
-						index=0;
-						for(Field f:fields){
-							f.setAccessible(true);
-							f.set(mockObject, values[index++]);
+						else {
+							mockObject = mockItem.getConstructor().newInstance();
 						}
+
+						if(mockObject ==null){
+							suiteLogger.fatal("Cant not Make Mock Object "+ " \""+mockItem.getMockName()+"\"");
+							throw new Exception("Cant not Make Mock Object "+ " \""+mockItem.getMockName()+"\"");
+						}
+
+						Map<Field,Object> fieldSet = mockItem.getFieldSet();
+						if(fieldSet !=null) {
+							int index=0;
+							Field[] fields = new Field[fieldSet.size()];
+							Class[] fieldTypes= new Class[fieldSet.size()];
+							Object[] values= new Object[fieldSet.size()];
+
+							for(Field f : fieldSet.keySet()) {
+								fields[index] = f;
+								fieldTypes[index]= f.getType();
+								values[index++] =fieldSet.get(f);							
+							}
+							values=getMock(fieldTypes, values);
+
+							index=0;
+							for(Field f:fields){
+								f.setAccessible(true);
+								f.set(mockObject, values[index]);
+								suiteLogger.info("Set Field " + f.getName() +" : " + values[index++]);
+							}
+						}
+						if(mock.get(mockItem.getMockName()) !=null){
+							suiteLogger.fatal("Duplicate Mock Name Error : " +mockItem.getMockName());
+							throw new Exception("Duplicate Mock Name Error : " +mockItem.getMockName());
+						}
+
+						mock.put(mockItem.getMockName(), mockObject);
 					}
-					if(mock.get(mockItem.getMockName()) !=null) 
-						throw new Exception("Duplicate Mock Error : " +mockItem.getMockName());
-					mock.put(mockItem.getMockName(), mockObject);
-				}
-				
+
 			} catch (Exception e) {
+				suiteLogger.fatal("Unknown Fatal Error in ParameterizingExcel");
 				e.printStackTrace();
 			}
 		}
@@ -224,25 +248,33 @@ public class TestInvoker {
 	}
 
 
-
+	//TODO : 시나리오 테스트 수정.
 	@Before
 	public void setObj(){
 		if(currentSheet !=sheet){ 
-			if(sheets.get(sheet).equals("Scenario")) //새로운 시나리오 테스트
-				classmap.clear();
 			rowIndex=0; //행 초기화
 			sheetNum++;
+
+			if(sheets.get(sheet).equals("Scenario")){ //새로운 시나리오 테스트
+				suiteLogger.info("Scenario Test Suite " + sheetNum);
+				classmap.clear();
+			}
+			else{
+				suiteLogger.info("Unit Test Mode");
+			} 
 		}
 
 		if(sheets.get(sheet).equals("Scenario")){
 			if(!classmap.containsKey(targetclz)&& targetmethod !=null){ //시나리오 테스트에서 실행할 객체가 없는경우
 				makeTestInstance();
+				testLogger.info("Target " + targetclz+ " is created.");
 			}	
 		}
 		else if(sheets.get(sheet).equals("Units")){
 			if(classmap.containsKey(targetclz))
 				classmap.remove(targetclz);
 			makeTestInstance();
+			testLogger.info("Target " + targetclz+ " is created.");
 		}
 
 	}
@@ -259,10 +291,10 @@ public class TestInvoker {
 
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
 				| InvocationTargetException e) {
-			// TODO Auto-generated catch block
+			suiteLogger.fatal("Reflection Error.");
 			handleException(e);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
+			suiteLogger.fatal("Unknown Fatal Error in ParameterizingExcel");
 			e.printStackTrace();
 		}
 	}
@@ -276,23 +308,22 @@ public class TestInvoker {
 			if(!types[i].equals(paramClass)){ // 래핑 처리 후에도 타입이 같지 않은 경우. 1. primitive 타입과 wrapper 타입의 차이.	
 				Object mockObject=mock.get(params[i]);
 				if( types[i].isInstance(mockObject) && mockObject!=null){
+					testLogger.info("The Mock named " + params[1] + " is set. ( " + mockObject + " )");
 					params[i]=mockObject;
 				}else{
 					fail();
 					throw new Exception("Wrong Parameter Types");
 				}
-					
+
 			}
 		}
 		return params;
 	} 
 
 	private void constructor_test(){
-		System.out.println( "\n"+(testnumber++) + " : "+testname +"\n 테스트 클래스 : " +targetclz.getSimpleName());//테스트 번호와 어떤객체로부터  테스트가 이루어지는지출력
 		try{
-			//
+			testLogger.info("Constructor Test (Test Method doesn't exist)");
 			constructor.setAccessible(true);
-
 			if(constructor_params.length==0)
 				assertNotNull(constructor.newInstance());
 			else{
@@ -311,35 +342,39 @@ public class TestInvoker {
 
 	private void assertion(Object testResult, Object expectedResult, Class resultType) throws IllegalArgumentException, IllegalAccessException, AssertionError{
 		if(PrimitiveChecker.isPrimitiveOrWrapper(testResult.getClass())){ //원시값 테스트
-			System.out.println( "Assert 결과  (예상값/테스트결과): " +expectedResult+" " +testResult); //예상결과와 실제결과 출력
-			//toString 오버라이딩을 통해 객체 상태를 하는 습관을 가진다면, 이곳에 인풋 객체의 상태를 출력가능하다.
+
 			switch(PrimitiveChecker.getFloatingType(testResult.getClass())){
 			case 1:
-				assertThat(new Double(Float.toString((float)testResult)),
-						is(closeTo(new Double(Float.toString((float)expectedResult)), 0.00001)));
+				Double result= new Double(Float.toString((float)testResult));
+				Double expect= new Double(Float.toString((float)expectedResult));
+				testLogger.info("FloatType Test Result/ Expect Result : "+ result + " / " + expect);
+				assertThat(result,
+						is(closeTo(expect, 0.00001)));
 				break;
 			case 0:
+				testLogger.info("DoubleType Test Result/ Expect Result : "+ testResult + " / " + expectedResult);
 				assertThat((double)testResult,is(closeTo((double)expectedResult, 0.00001)));
 				break;
 			default:
+				testLogger.info("Test Result/ Expect Result : "+ testResult + " / " + expectedResult);
 				assertThat(testResult,is(expectedResult));
 			}
 
 
 		}
 		else{//결과가 원시객체가 아닌 임의 객체인경우
+			testLogger.info(resultType+ " Result Asserting... ");
 			Field[] flz =resultType.getDeclaredFields();
-
-			for(Field f: flz){
-				if (!f.isSynthetic()){
-					f.setAccessible(true);
-					Class memberclz=f.getType();
-					System.out.println(memberclz.getSimpleName()+ " "+f.getName());
-					try {
-						auto_Assert(testResult, f, memberclz);
-					} catch (IllegalArgumentException | IllegalAccessException e) {handleException(e);}
+			if(flz!=null)
+				for(Field f: flz){
+					if (!f.isSynthetic()){
+						f.setAccessible(true);
+						Class memberclz=f.getType();
+						try {
+							auto_Assert(testResult, f, memberclz);
+						} catch (IllegalArgumentException | IllegalAccessException e) {handleException(e);}
+					}
 				}
-			}
 		}
 	}
 
@@ -356,7 +391,8 @@ public class TestInvoker {
 	private void auto_Assert(Object testresult, Field f,Class memberclz ) throws IllegalArgumentException, IllegalAccessException, AssertionError{
 
 		if(PrimitiveChecker.isPrimitiveOrWrapper(memberclz) ){ //일반 원소비교
-			System.out.println( "Assert 결과  (예상값/테스트결과): "+f.get(expectedResult)+ " "+f.get(testresult));
+			testLogger.info("Test Result/ Expect Result : "+ testresult + " / " + expectedResult);
+
 			switch(PrimitiveChecker.getFloatingType(f.get(testresult).getClass())){
 			case 1: //Float
 				assertThat(new Double(Float.toString((float)f.get(testresult))),
@@ -373,10 +409,16 @@ public class TestInvoker {
 			if(Array.getLength(f.get(testresult)) == Array.getLength(f.get(expectedResult))){
 				for(int i= 0; i<Array.getLength(f.get(testresult)); i++){
 					if(Array.get(f.get(testresult), i)!=null &&Array.get(f.get(expectedResult), i)!=null){
-						assertion(Array.get(f.get(testresult), i),Array.get(f.get(expectedResult), i),f.getType());
+						Object re =Array.get(f.get(testresult), i);
+						Object ex = Array.get(f.get(expectedResult), i);
+						testLogger.info("Array Test Result/ Expect Result : "+ re + " / " + ex);
+						assertion(re,ex,f.getType());
 					}
 				}
-			}else fail("Array Length가 일치하지 않습니다.");
+			}
+			else 
+				fail("Array Size doesn't match");
+
 		}else if(Collection.class.isInstance(f.get(expectedResult))){//컬렉션 원소 비교
 			Collection expect=(Collection) f.get(expectedResult);
 			Collection result=(Collection) f.get(testresult);
@@ -385,7 +427,7 @@ public class TestInvoker {
 			while(ex_it.hasNext() && re_it.hasNext()){
 				Object ex=ex_it.next();
 				Object re=re_it.next();
-				System.out.println( "Assert 결과  (예상값/테스트결과): "+ex +" "+ re);
+				testLogger.info("Collection Test Result/ Expect Result : "+ re + " / " + ex);
 				assertThat(re, is(ex));
 			}
 		}else fail("There's Custom Object Field.");
@@ -406,22 +448,21 @@ public class TestInvoker {
 		}
 
 		Object testResult=null;
-		System.out.println( "\n"+(testnumber++) + " : "+testname +"\n 테스트 클래스 : " +targetclz.getSimpleName());//테스트 번호와 어떤객체로부터  테스트가 이루어지는지출력
 
 		if(targetmethod!=null)
 			targetmethod.setAccessible(true);//private 메소드를 테스트하기 위해
 
-		System.out.println("테스트 메소드 : "+targetmethod.getName()); //메소드 이름출력
 		//Method param 모크객체 셋팅.
 		Class[] paramsTypes= targetmethod.getParameterTypes();
 		Object[] params= getMock(paramsTypes, method_params);
 		try {			
 
 			testResult=targetmethod.invoke(classmap.get(targetclz), params);
+			testLogger.info("Test Method "+ targetmethod + " is invoked Successfully.");
 
 			if(targetmethod.getReturnType()==null ||targetmethod.getReturnType().equals(void.class));
 			else{
-				Class[] type=null;Object[] returnObj=null;
+				Class[] type=null; Object[] returnObj=null;
 				if(testResult !=null){
 					//모크 셋업
 					type= new Class[1];
@@ -446,25 +487,26 @@ public class TestInvoker {
 			success[sheetNum][rowIndex-1]=false;
 			if(exceptionlist.contains(e.getClass())){
 				result[sheetNum][rowIndex-1]="Method Exception Occurred";
+				testLogger.fatal(result[sheetNum][rowIndex-1]);
 				StackTraceElement[] elem =new StackTraceElement[1];			
 				elem[0]=new StackTraceElement(targetclz.getName(), targetmethod.getName(), targetclz.getCanonicalName(),1);
 				e.setStackTrace(elem);
 				throw(e);
 			}
-			else {result[sheetNum][rowIndex-1]="InitError : Check Cell's data or Custom Exception";
-			// TODO Auto-generated catch block
-			Throwable fillstack=e.fillInStackTrace();
-			Throwable cause=null;
-			if(fillstack !=null){
-				cause= fillstack.getCause(); 
-				if(cause!=null) cause.printStackTrace();
-				fail();
-				throw(cause);
-			}//Method Exception.
+			else {
+				result[sheetNum][rowIndex-1]="InitError : Check Cell's data or Custom Exception";
+				testLogger.fatal(result[sheetNum][rowIndex-1]);
+				Throwable fillstack=e.fillInStackTrace();
+				Throwable cause=null;
+				if(fillstack !=null){
+					cause= fillstack.getCause(); 
+					if(cause!=null) cause.printStackTrace();
+					fail();
+					throw(cause);
+				}//Method Exception.
 			}
 		}catch(AssertionError e){
 			success[sheetNum][rowIndex-1]=false;
-			//정확한 라인 찾기 이슈..
 			StackTraceElement[] elem =new StackTraceElement[1];			
 			elem[0]=new StackTraceElement(targetclz.getName(), targetmethod.getName(), targetclz.getCanonicalName(),1);
 			e.setStackTrace(elem);
@@ -478,12 +520,13 @@ public class TestInvoker {
 	@AfterClass
 	public static void log(){
 		try {
+			
+			// ./logs/suite.log , testing.log , excel.log
 			ExcelResultSaver save=new ExcelResultSaver(file.getCanonicalPath());
 			Set<String> sheetNames=sheets.keySet();
 			Iterator sit= sheetNames.iterator();
 			for(int i=0; i<=sheetNum&&sit.hasNext(); i++){
 				String sheetname=(String)sit.next();
-				//				System.out.println(sheetname);
 				save.writeResults(sheetname, rowSize[i], result[i], success[i]);
 			}
 			save.write();

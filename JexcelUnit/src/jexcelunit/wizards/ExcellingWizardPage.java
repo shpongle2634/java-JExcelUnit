@@ -186,6 +186,7 @@ public class ExcellingWizardPage extends WizardPage {
 				containerName.setText(container.getName());
 				containerPath= container.getLocation().toString();
 				srcText.setText(container.getFullPath().toString()+"/src");
+				binText.setText(container.getFullPath().toString()+"/bin");
 				
 				try {
 					encoding= container.getDefaultCharset();
@@ -258,7 +259,6 @@ public class ExcellingWizardPage extends WizardPage {
 	private void dialogChanged() {
 		IResource container = ResourcesPlugin.getWorkspace().getRoot()
 				.findMember(new Path(getContainerName()));
-		System.out.println(container.getLocation());
 		if(container.getLocation()!=null)
 			containerPath=container.getLocation().toString();
 			

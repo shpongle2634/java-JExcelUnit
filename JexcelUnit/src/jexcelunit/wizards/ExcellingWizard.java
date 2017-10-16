@@ -27,7 +27,7 @@ import org.eclipse.ui.PlatformUI;
 import jexcelunit.classmodule.ClassAnalyzer;
 import jexcelunit.classmodule.ClassExtractor;
 import jexcelunit.classmodule.ClassInfo;
-import jexcelunit.classmodule.Info;
+import jexcelunit.classmodule.ClassInfoMap;
 import jexcelunit.excel.ExcelCreator;
 import jexcelunit.treeview.ClassTreeView;
 
@@ -96,11 +96,10 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 	private void doFinish(
 			String containerName, String containerPath, String fileName, String srcPath,String binPath, String runnerName,String encoding)
 					throws CoreException {
-		//Path Config
-		if(!containerPath.contains(containerName)){
-			srcPath=srcPath.replace(containerName, containerPath);
-			binPath=binPath.replace(containerName, containerPath);
-		}
+		//Path Config{
+		srcPath=srcPath.replace(containerName, containerPath);
+		binPath=binPath.replace(containerName, containerPath);
+
 
 		// create a sample file
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
@@ -119,19 +118,15 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 
 
 			HashMap<String, ClassInfo> classinfos=analyzer.getTestInfos();
-
-			//TODO : build callStack Tree 
-
-			for (ClassInfo class1 :  classinfos.values()) {
-				String msg="";
-				msg += class1.getName();
-				if(class1.hasChildren()){
-					for (Info cinfo : class1.getChildren()) {
-						msg += cinfo.getName() +", ";	
-					}
-				}
-				System.out.println( msg);
-			}
+			//			for (ClassInfo class1 :  classinfos.values()) {
+			//				String msg="";
+			//				msg += class1.getName();
+			//				if(class1.hasChildren()){
+			//					for (Info cinfo : class1.getChildren()) {
+			//						msg += cinfo.getName() +", ";	
+			//					}
+			//				}
+			//			}
 
 			// Consisting TreeView
 			ClassTreeView treeview = (ClassTreeView)PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().showView(ClassTreeView.ID);
@@ -143,8 +138,6 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 			ExcelCreator exceller= new ExcelCreator(fileName, containerPath, classinfos);
 			boolean success = exceller.createXlsx();
 			if(success && runnerName!=null && !runnerName.equals("")){
-
-
 				makeJExcelUnitRunner(containerPath, fileName, srcPath, runnerName);	
 			}
 			extractor.closeLoader();
@@ -155,6 +148,9 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 		catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}finally{
+			ClassInfoMap.INSTANCE.getClassList().clear();
+			ClassInfoMap.INSTANCE.getInfos().clear();
 		}
 
 	}
