@@ -23,8 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,9 +50,8 @@ import jexcelunit.excel.TestcaseVO;
 @SuppressWarnings("rawtypes")
 @RunWith(Parameterized.class) //테스트 케이스를 이용할것이다.
 public class TestInvoker {
-	private static final Logger suiteLogger= LogManager.getLogger("SuiteLogger");
-	private static final Logger testLogger= LogManager.getLogger("TestLogger");
-
+	private static final JExcelLogger logger= new JExcelLogger();
+	
 	private static Map<Class, Object> classmap=new HashMap<Class, Object>(); //해쉬맵으로 테스트에 필요한 객체들을 하나씩만 유지한다.
 	private static ArrayList<Class> exceptionlist=new ArrayList<Class>();//사용자 정의 예외 클래스들을 담아두는 곳.
 	private static Map<String,String> sheets=new HashMap<String,String>();
@@ -84,13 +82,11 @@ public class TestInvoker {
 		this.expectedResult=expectedResult;
 		this.targetmethod=targetmethod;
 		this.method_params=method_params;
-		testLogger.info(testnumber + " : " + this.testname);
-		testLogger.info("Test Target : " + this.constructor);
-		testLogger.info("ConstructorInput : " + Arrays.toString(this.constructor_params));
-		testLogger.info("Test Method : " + this.targetmethod);
-		testLogger.info("MethodInput : " + Arrays.toString(this.method_params));
-
-
+		logger.testLog((testnumber++) + " : " + this.testname);
+		logger.testLog("Test Target : " + this.constructor);
+		logger.testLog("ConstructorInput : " + Arrays.toString(this.constructor_params));
+		logger.testLog("Test Method : " + this.targetmethod);
+		logger.testLog("MethodInput : " + Arrays.toString(this.method_params));
 	}
 
 
@@ -101,7 +97,6 @@ public class TestInvoker {
 	 * 4. 그럴바에 suiteInfo 라는 맴버클래스를 둬서 관리하는게 나을려나.
 	 * */
 	public static Collection parmeterizingExcel(String filePath) throws InstantiationException{
-
 		//메타데이터를 참조할 수 밖에없다.
 		//핸들러 레벨에서 타겟 프로젝트 정보를 생성할것.
 		file = new File(filePath);
@@ -167,15 +162,15 @@ public class TestInvoker {
 				if(mockList!=null)
 					for(MockVO mockItem : mockList){
 
-						suiteLogger.info("Set the Mock : "+mockItem.getMockName());
-						suiteLogger.info("Class : "+mockItem.getConstructor());
+						logger.suiteLog("Set the Mock : "+mockItem.getMockName());
+						logger.suiteLog("Class : "+mockItem.getConstructor());
 						ArrayList<Object> consParams= mockItem.getConsParams();
 						Object mockObject =null;
 						if(consParams!=null ){
 							Object [] params = consParams.toArray();
 							mockObject = mockItem.getConstructor().newInstance(params);
 							for(Object param : params){
-								suiteLogger.info("Constructor Param : "+param);	
+								logger.suiteLog("Constructor Param : "+param);	
 							}
 						}
 						else {
@@ -183,7 +178,7 @@ public class TestInvoker {
 						}
 
 						if(mockObject ==null){
-							suiteLogger.fatal("Cant not Make Mock Object "+ " \""+mockItem.getMockName()+"\"");
+							logger.suiteFatal("Cant not Make Mock Object "+ " \""+mockItem.getMockName()+"\"");
 							throw new Exception("Cant not Make Mock Object "+ " \""+mockItem.getMockName()+"\"");
 						}
 
@@ -205,11 +200,11 @@ public class TestInvoker {
 							for(Field f:fields){
 								f.setAccessible(true);
 								f.set(mockObject, values[index]);
-								suiteLogger.info("Set Field " + f.getName() +" : " + values[index++]);
+								logger.suiteLog("Set Field " + f.getName() +" : " + values[index++]);
 							}
 						}
 						if(mock.get(mockItem.getMockName()) !=null){
-							suiteLogger.fatal("Duplicate Mock Name Error : " +mockItem.getMockName());
+							logger.suiteFatal("Duplicate Mock Name Error : " +mockItem.getMockName());
 							throw new Exception("Duplicate Mock Name Error : " +mockItem.getMockName());
 						}
 
@@ -217,7 +212,7 @@ public class TestInvoker {
 					}
 
 			} catch (Exception e) {
-				suiteLogger.fatal("Unknown Fatal Error in ParameterizingExcel");
+				logger.suiteFatal("Unknown Fatal Error in ParameterizingExcel");
 				e.printStackTrace();
 			}
 		}
@@ -256,25 +251,25 @@ public class TestInvoker {
 			sheetNum++;
 
 			if(sheets.get(sheet).equals("Scenario")){ //새로운 시나리오 테스트
-				suiteLogger.info("Scenario Test Suite " + sheetNum);
+				logger.suiteLog("Scenario Test Suite " + sheetNum);
 				classmap.clear();
 			}
 			else{
-				suiteLogger.info("Unit Test Mode");
+				logger.suiteLog("Unit Test Mode");
 			} 
 		}
 
 		if(sheets.get(sheet).equals("Scenario")){
 			if(!classmap.containsKey(targetclz)&& targetmethod !=null){ //시나리오 테스트에서 실행할 객체가 없는경우
 				makeTestInstance();
-				testLogger.info("Target " + targetclz+ " is created.");
+				logger.testLog("Target " + targetclz+ " is created.");
 			}	
 		}
 		else if(sheets.get(sheet).equals("Units")){
 			if(classmap.containsKey(targetclz))
 				classmap.remove(targetclz);
 			makeTestInstance();
-			testLogger.info("Target " + targetclz+ " is created.");
+			logger.testLog("Target " + targetclz+ " is created.");
 		}
 
 	}
@@ -291,10 +286,10 @@ public class TestInvoker {
 
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
 				| InvocationTargetException e) {
-			suiteLogger.fatal("Reflection Error.");
+			logger.suiteFatal("Reflection Error.");
 			handleException(e);
 		} catch (Exception e) {
-			suiteLogger.fatal("Unknown Fatal Error in ParameterizingExcel");
+			logger.suiteFatal("Unknown Fatal Error in ParameterizingExcel");
 			e.printStackTrace();
 		}
 	}
@@ -308,7 +303,7 @@ public class TestInvoker {
 			if(!types[i].equals(paramClass)){ // 래핑 처리 후에도 타입이 같지 않은 경우. 1. primitive 타입과 wrapper 타입의 차이.	
 				Object mockObject=mock.get(params[i]);
 				if( types[i].isInstance(mockObject) && mockObject!=null){
-					testLogger.info("The Mock named " + params[1] + " is set. ( " + mockObject + " )");
+					logger.testLog("The Mock named " + params[1] + " is set. ( " + mockObject + " )");
 					params[i]=mockObject;
 				}else{
 					fail();
@@ -322,7 +317,7 @@ public class TestInvoker {
 
 	private void constructor_test(){
 		try{
-			testLogger.info("Constructor Test (Test Method doesn't exist)");
+			logger.testLog("Constructor Test (Test Method doesn't exist)");
 			constructor.setAccessible(true);
 			if(constructor_params.length==0)
 				assertNotNull(constructor.newInstance());
@@ -347,23 +342,23 @@ public class TestInvoker {
 			case 1:
 				Double result= new Double(Float.toString((float)testResult));
 				Double expect= new Double(Float.toString((float)expectedResult));
-				testLogger.info("FloatType Test Result/ Expect Result : "+ result + " / " + expect);
+				logger.testLog("FloatType Test Result/ Expect Result : "+ result + " / " + expect);
 				assertThat(result,
 						is(closeTo(expect, 0.00001)));
 				break;
 			case 0:
-				testLogger.info("DoubleType Test Result/ Expect Result : "+ testResult + " / " + expectedResult);
+				logger.testLog("DoubleType Test Result/ Expect Result : "+ testResult + " / " + expectedResult);
 				assertThat((double)testResult,is(closeTo((double)expectedResult, 0.00001)));
 				break;
 			default:
-				testLogger.info("Test Result/ Expect Result : "+ testResult + " / " + expectedResult);
+				logger.testLog("Test Result/ Expect Result : "+ testResult + " / " + expectedResult);
 				assertThat(testResult,is(expectedResult));
 			}
 
 
 		}
 		else{//결과가 원시객체가 아닌 임의 객체인경우
-			testLogger.info(resultType+ " Result Asserting... ");
+			logger.testLog(resultType+ " Result Asserting... ");
 			Field[] flz =resultType.getDeclaredFields();
 			if(flz!=null)
 				for(Field f: flz){
@@ -391,7 +386,7 @@ public class TestInvoker {
 	private void auto_Assert(Object testresult, Field f,Class memberclz ) throws IllegalArgumentException, IllegalAccessException, AssertionError{
 
 		if(PrimitiveChecker.isPrimitiveOrWrapper(memberclz) ){ //일반 원소비교
-			testLogger.info("Test Result/ Expect Result : "+ testresult + " / " + expectedResult);
+			logger.testLog("Test Result/ Expect Result : "+ testresult + " / " + expectedResult);
 
 			switch(PrimitiveChecker.getFloatingType(f.get(testresult).getClass())){
 			case 1: //Float
@@ -411,7 +406,7 @@ public class TestInvoker {
 					if(Array.get(f.get(testresult), i)!=null &&Array.get(f.get(expectedResult), i)!=null){
 						Object re =Array.get(f.get(testresult), i);
 						Object ex = Array.get(f.get(expectedResult), i);
-						testLogger.info("Array Test Result/ Expect Result : "+ re + " / " + ex);
+						logger.testLog("Array Test Result/ Expect Result : "+ re + " / " + ex);
 						assertion(re,ex,f.getType());
 					}
 				}
@@ -427,7 +422,7 @@ public class TestInvoker {
 			while(ex_it.hasNext() && re_it.hasNext()){
 				Object ex=ex_it.next();
 				Object re=re_it.next();
-				testLogger.info("Collection Test Result/ Expect Result : "+ re + " / " + ex);
+				logger.testLog("Collection Test Result/ Expect Result : "+ re + " / " + ex);
 				assertThat(re, is(ex));
 			}
 		}else fail("There's Custom Object Field.");
@@ -458,7 +453,7 @@ public class TestInvoker {
 		try {			
 
 			testResult=targetmethod.invoke(classmap.get(targetclz), params);
-			testLogger.info("Test Method "+ targetmethod + " is invoked Successfully.");
+			logger.testLog("Test Method "+ targetmethod + " is invoked Successfully.");
 
 			if(targetmethod.getReturnType()==null ||targetmethod.getReturnType().equals(void.class));
 			else{
@@ -487,7 +482,7 @@ public class TestInvoker {
 			success[sheetNum][rowIndex-1]=false;
 			if(exceptionlist.contains(e.getClass())){
 				result[sheetNum][rowIndex-1]="Method Exception Occurred";
-				testLogger.fatal(result[sheetNum][rowIndex-1]);
+				logger.testFatal(result[sheetNum][rowIndex-1]);
 				StackTraceElement[] elem =new StackTraceElement[1];			
 				elem[0]=new StackTraceElement(targetclz.getName(), targetmethod.getName(), targetclz.getCanonicalName(),1);
 				e.setStackTrace(elem);
@@ -495,7 +490,7 @@ public class TestInvoker {
 			}
 			else {
 				result[sheetNum][rowIndex-1]="InitError : Check Cell's data or Custom Exception";
-				testLogger.fatal(result[sheetNum][rowIndex-1]);
+				logger.testFatal(result[sheetNum][rowIndex-1]);
 				Throwable fillstack=e.fillInStackTrace();
 				Throwable cause=null;
 				if(fillstack !=null){
@@ -516,11 +511,22 @@ public class TestInvoker {
 			fail();
 		}
 	}
+	@After
+	public void testLog(){
+		try {
+			ExcelResultSaver save=new ExcelResultSaver(file.getCanonicalPath());
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+	
 	//성공여부 및 결과 저장.
 	@AfterClass
 	public static void log(){
 		try {
-			
 			// ./logs/suite.log , testing.log , excel.log
 			ExcelResultSaver save=new ExcelResultSaver(file.getCanonicalPath());
 			Set<String> sheetNames=sheets.keySet();

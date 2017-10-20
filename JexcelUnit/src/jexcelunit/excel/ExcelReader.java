@@ -465,7 +465,6 @@ public class ExcelReader {
 			break;
 		case Expected:
 			String expectString= formatter.formatCellValue(currentCell,formularEvaluator);//String value
-			System.out.println(expectString);
 			Class returnType = vo.getMet().getReturnType();			
 			if(!returnType.equals(void.class) || returnType !=null){
 				Object expect= PrimitiveChecker.convertObject(returnType, expectString);

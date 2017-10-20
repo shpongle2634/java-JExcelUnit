@@ -4,12 +4,19 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.ClientAnchor;
+import org.apache.poi.ss.usermodel.Comment;
+import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.Drawing;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.RichTextString;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -47,7 +54,36 @@ public class ExcelResultSaver {
 		}
 		return -1;
 	}
-
+	
+	private List<String> getTestLog(){
+		List<String> list = new ArrayList<String>();
+		
+		return null;
+	}
+	
+	public void writeTestLog(String sheetName,int testIndex) throws IOException{
+		if(workbook==null) workbook = getWorkbook();
+		XSSFSheet sheet=workbook.getSheet(sheetName);
+		int resultIndex=findIndex(sheet.getRow(1), "Result");
+		int successIndex=resultIndex+1;
+		XSSFRow currentRow= sheet.getRow(testIndex);
+		XSSFCell cell = currentRow.getCell(successIndex);
+		
+		
+		CreationHelper helper= workbook.getCreationHelper();
+		Drawing drawing = sheet.createDrawingPatriarch();
+		ClientAnchor anchor = helper.createClientAnchor();
+		anchor.setCol1(cell.getColumnIndex());
+		anchor.setCol2(cell.getColumnIndex()+8);
+		anchor.setRow1(cell.getRowIndex());
+		anchor.setRow2(cell.getRowIndex()+1);
+		Comment comment= drawing.createCellComment(anchor);
+		RichTextString str = helper.createRichTextString("Hello, World!");
+		comment.setString(str);
+		cell.setCellComment(comment);
+		cell =null;
+	}
+	
 	public void writeResults(String sheetName, int totalRow, String[] result, boolean[] success) throws IOException{
 		if(workbook==null) workbook = getWorkbook();
 		XSSFSheet sheet=workbook.getSheet(sheetName);
@@ -80,17 +116,19 @@ public class ExcelResultSaver {
 
 	}
 	public void write() throws IOException{
-		if(file.exists())
+		if(file.exists()&& fileoutputstream !=null)
 			fileoutputstream=new FileOutputStream(file);
 		if(workbook!=null){
 			workbook.write(fileoutputstream);
-			workbook.close();
 		}
 	}
 
 	public void close() throws IOException{
 		if(inputstream !=null) inputstream.close();
 		if(fileoutputstream !=null) fileoutputstream.close();
+		if(workbook!=null){
+			workbook.close();
+		}
 	}
 
 }
