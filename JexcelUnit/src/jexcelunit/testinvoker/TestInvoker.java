@@ -15,6 +15,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -51,17 +52,19 @@ import jexcelunit.excel.TestcaseVO;
 @RunWith(Parameterized.class) //테스트 케이스를 이용할것이다.
 public class TestInvoker {
 	private static final JExcelLogger logger= new JExcelLogger();
-	
-	private static Map<Class, Object> classmap=new HashMap<Class, Object>(); //해쉬맵으로 테스트에 필요한 객체들을 하나씩만 유지한다.
-	private static ArrayList<Class> exceptionlist=new ArrayList<Class>();//사용자 정의 예외 클래스들을 담아두는 곳.
-	private static Map<String,String> sheets=new HashMap<String,String>();
-	protected static HashMap<String,Object> mock=new HashMap<String,Object>();//모크객체 모음
+
+	private static final Map<Class, Object> classmap=new HashMap<Class, Object>(); //해쉬맵으로 테스트에 필요한 객체들을 하나씩만 유지한다.
+	private static final ArrayList<Class> exceptionlist=new ArrayList<Class>();//사용자 정의 예외 클래스들을 담아두는 곳.
+	private static final Map<String,String> sheets=new HashMap<String,String>();
+	protected static final HashMap<String,Object> mock=new HashMap<String,Object>();//모크객체 모음
 	private static int sheetNum= -1,rowIndex=0,testnumber=0;
+	private static String jexcelPath, logPath;
+
 	private static boolean[][] success=null;
 	private static String[][] result=null;
-	private static File file=null;
 	private static int[] rowSize=null;
 	private static String currentSheet=null;
+
 	//테스트 케이스들을 확인할 method_params
 	private String sheet=null;
 	private String testname=null;
@@ -82,7 +85,22 @@ public class TestInvoker {
 		this.expectedResult=expectedResult;
 		this.targetmethod=targetmethod;
 		this.method_params=method_params;
-		logger.testLog((testnumber++) + " : " + this.testname);
+		
+		if(currentSheet !=sheet){ 
+			rowIndex=0; //행 초기화
+			sheetNum++;
+			currentSheet=sheet;
+			logger.testLog('['+currentSheet+"] Suite is Started");
+			if(sheets.get(sheet).equals("Scenario")){ //새로운 시나리오 테스트
+				logger.suiteLog("Scenario Test Suite " + sheetNum);
+				classmap.clear();
+			}
+			else{
+				logger.suiteLog("Unit Test Mode");
+			} 
+		}
+		
+		logger.testLog((testnumber++) + " [" + this.testname + "] Test is Started");
 		logger.testLog("Test Target : " + this.constructor);
 		logger.testLog("ConstructorInput : " + Arrays.toString(this.constructor_params));
 		logger.testLog("Test Method : " + this.targetmethod);
@@ -96,16 +114,18 @@ public class TestInvoker {
 	 * 3. suite가 가진 row index를 또 저장해야하는가 .
 	 * 4. 그럴바에 suiteInfo 라는 맴버클래스를 둬서 관리하는게 나을려나.
 	 * */
-	public static Collection parmeterizingExcel(String filePath) throws InstantiationException{
+	public static Collection parmeterizingExcel(String jexcelLocation,String logLocation) throws InstantiationException{
 		//메타데이터를 참조할 수 밖에없다.
 		//핸들러 레벨에서 타겟 프로젝트 정보를 생성할것.
-		file = new File(filePath);
+		jexcelPath=jexcelLocation;
+		logPath=logLocation;
+		File file = new File(jexcelLocation);
 		ArrayList<ArrayList<TestcaseVO>> testcases=null;
 		Object[][] parameterized= null;
 
 		if(file.exists()){
 			try {
-				ExcelReader reader = new ExcelReader(filePath);
+				ExcelReader reader = new ExcelReader(jexcelLocation);
 				testcases = reader.readExcel();
 
 				if(testcases.size()>0){
@@ -162,7 +182,6 @@ public class TestInvoker {
 				if(mockList!=null)
 					for(MockVO mockItem : mockList){
 
-						logger.suiteLog("Set the Mock : "+mockItem.getMockName());
 						logger.suiteLog("Class : "+mockItem.getConstructor());
 						ArrayList<Object> consParams= mockItem.getConsParams();
 						Object mockObject =null;
@@ -208,6 +227,7 @@ public class TestInvoker {
 							throw new Exception("Duplicate Mock Name Error : " +mockItem.getMockName());
 						}
 
+						logger.suiteLog("Set the Mock : "+mockItem.getMockName()+"\n");
 						mock.put(mockItem.getMockName(), mockObject);
 					}
 
@@ -246,52 +266,49 @@ public class TestInvoker {
 	//TODO : 시나리오 테스트 수정.
 	@Before
 	public void setObj(){
-		if(currentSheet !=sheet){ 
-			rowIndex=0; //행 초기화
-			sheetNum++;
-
-			if(sheets.get(sheet).equals("Scenario")){ //새로운 시나리오 테스트
-				logger.suiteLog("Scenario Test Suite " + sheetNum);
-				classmap.clear();
-			}
-			else{
-				logger.suiteLog("Unit Test Mode");
-			} 
-		}
 
 		if(sheets.get(sheet).equals("Scenario")){
 			if(!classmap.containsKey(targetclz)&& targetmethod !=null){ //시나리오 테스트에서 실행할 객체가 없는경우
-				makeTestInstance();
-				logger.testLog("Target " + targetclz+ " is created.");
+				if(makeTestInstance())
+					logger.testLog("Target " + targetclz+ " is created.");
+				else
+					logger.testFatal("Target Class is Abstract or Interface Type. : " + targetclz);
 			}	
 		}
 		else if(sheets.get(sheet).equals("Units")){
 			if(classmap.containsKey(targetclz))
 				classmap.remove(targetclz);
-			makeTestInstance();
-			logger.testLog("Target " + targetclz+ " is created.");
+			if(makeTestInstance())
+				logger.testLog("Target " + targetclz+ " is created.");
+			else
+				logger.testFatal("Target Class is Abstract or Interface Type. : " + targetclz);
 		}
 
+		rowIndex++;
 	}
-	private void makeTestInstance(){
+	private boolean makeTestInstance(){
 		constructor.setAccessible(true);
-		try {
-			if(constructor_params.length==0)
-				classmap.put(targetclz, constructor.newInstance());
-			else{
-				Class[] paramTypes=constructor.getParameterTypes();
-				Object[] params= getMock(paramTypes,constructor_params);
-				classmap.put(targetclz, constructor.newInstance(params));
+		if(!this.targetclz.isInterface()  && !Modifier.isAbstract( targetclz.getModifiers())){
+			try {
+				if(constructor_params.length==0)
+					classmap.put(targetclz, constructor.newInstance());
+				else{
+					Class[] paramTypes=constructor.getParameterTypes();
+					Object[] params= getMock(paramTypes,constructor_params);
+					classmap.put(targetclz, constructor.newInstance(params));
+				}
+				return true;
+			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+					| InvocationTargetException e) {
+				logger.suiteFatal("Reflection Error.");
+				handleException(e);
+			} catch (Exception e) {
+				logger.suiteFatal("Unknown Fatal Error in ParameterizingExcel");
+				e.printStackTrace();
 			}
-
-		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
-				| InvocationTargetException e) {
-			logger.suiteFatal("Reflection Error.");
-			handleException(e);
-		} catch (Exception e) {
-			logger.suiteFatal("Unknown Fatal Error in ParameterizingExcel");
-			e.printStackTrace();
-		}
+		}else
+			return false;
+		return false;
 	}
 
 	private static Object[] getMock(Class[] types, Object[] params) throws Exception{
@@ -434,9 +451,7 @@ public class TestInvoker {
 	 * */
 	@Test
 	public void testMethod() throws Throwable {
-		currentSheet=sheet;
-		rowIndex++;
-		//setObj();
+		
 		if(targetmethod==null){ //생성자 테스트인 경우.
 			constructor_test();
 			return;
@@ -512,31 +527,29 @@ public class TestInvoker {
 		}
 	}
 	@After
-	public void testLog(){
-		try {
-			ExcelResultSaver save=new ExcelResultSaver(file.getCanonicalPath());
-			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	public void checkEndSuite(){
+		logger.testLog("["+testname+"] Test is Finished\n");
 		
+		if(success[sheetNum].length==testnumber)
+			logger.testLog('['+currentSheet +"] Suite is Finished");
 	}
-	
 	//성공여부 및 결과 저장.
 	@AfterClass
-	public static void log(){
+	public static void saveResult(){
 		try {
 			// ./logs/suite.log , testing.log , excel.log
-			ExcelResultSaver save=new ExcelResultSaver(file.getCanonicalPath());
 			Set<String> sheetNames=sheets.keySet();
 			Iterator sit= sheetNames.iterator();
+			ExcelResultSaver save=new ExcelResultSaver(jexcelPath,logPath);
 			for(int i=0; i<=sheetNum&&sit.hasNext(); i++){
 				String sheetname=(String)sit.next();
 				save.writeResults(sheetname, rowSize[i], result[i], success[i]);
+				save.writeTestLog(sheetname, rowSize[i]);
 			}
+			
 			save.write();
 			save.close();
+			logger.stop();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

@@ -113,7 +113,7 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 		try {
 			IProject project=resource.getProject();
 			ClassExtractor extractor = new ClassExtractor();
-			ArrayList<Class> classlist= extractor.getClasses(project,binPath, encoding);
+			ArrayList<Class> classlist= extractor.getClasses(project,binPath, encoding,runnerName);
 			ClassAnalyzer analyzer = new ClassAnalyzer(classlist);
 
 
@@ -185,7 +185,7 @@ public class ExcellingWizard extends Wizard implements INewWizard {
 								"\t}\n\n@SuppressWarnings(\"unchecked\")\n@Parameters( name = \"[{0}] Test NO.{index} : {1}\")",
 								"\tpublic static Collection<Object[][]> parameterized()  throws InstantiationException {",
 								"\t\tsetUp();",
-								"\t\treturn parmeterizingExcel(\""+containerPath+"/"+fileName+".xlsx\");",
+								"\t\treturn parmeterizingExcel(\""+containerPath+"/"+fileName+".xlsx\" , \""+containerPath+"/log\""+");",
 								"}\n",
 								"}"								
 				};

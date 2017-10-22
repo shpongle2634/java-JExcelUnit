@@ -1,12 +1,16 @@
 package jexcelunit.excel;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.ClientAnchor;
@@ -26,18 +30,32 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 public class ExcelResultSaver {
 	FileInputStream inputstream;
 	FileOutputStream fileoutputstream;
-	String filePath,rootpath;
+	String jexcelPath, logPath;
 	XSSFWorkbook workbook;
-	File file;
-	public ExcelResultSaver(String filePath){
-		this.filePath=filePath;
-		this.file = new File(filePath);
+	File jexcelFile,logRoot;
+	FileReader fileReader;
+	BufferedReader bufferedReader;
+	Map<String,List<String>> testLogMap;
+
+	public ExcelResultSaver(String jexcelPath, String logPath){
+		this.logPath= logPath;
+		this.jexcelPath=jexcelPath;
+		this.jexcelFile = new File(jexcelPath);
+		this.logRoot= new File(logPath);
+		this.testLogMap= new HashMap<String,List<String>>();
+		try {
+			this.workbook=getWorkbook();
+			initTestLogs();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	public XSSFWorkbook getWorkbook() throws IOException{
 		//open Excel File.
-		if(file.exists()){
-			inputstream = new FileInputStream(file);
+		if(jexcelFile.exists()){
+			inputstream = new FileInputStream(jexcelFile);
 			return new XSSFWorkbook(inputstream);
 		}
 		return null;
@@ -54,36 +72,94 @@ public class ExcelResultSaver {
 		}
 		return -1;
 	}
-	
-	private List<String> getTestLog(){
-		List<String> list = new ArrayList<String>();
-		
-		return null;
+
+	private void initTestLogs() throws IOException{
+		File testLog = new File(logRoot+"/test.log");
+
+		if(testLog.exists()){
+			fileReader = new FileReader(testLog);
+			bufferedReader = new BufferedReader(fileReader);
+		}
+		getTestLogs();
+
+		fileReader.close();
+		bufferedReader.close();
 	}
-	
-	public void writeTestLog(String sheetName,int testIndex) throws IOException{
-		if(workbook==null) workbook = getWorkbook();
+
+	private void getTestLogs() throws IOException{
+
+		List<String> logs=null;
+		StringBuffer stringBuffer = new StringBuffer();
+		String line, sheetName=null;
+		//Until EOF
+		while ((line = bufferedReader.readLine()) != null) {
+			String flagString=null;
+			if(line.lastIndexOf(']')+2 <line.length()){
+				flagString = line.substring(line.lastIndexOf(']')+2, line.length());
+			}
+			else{
+				flagString = "";
+			}
+
+			//Start Sheet
+			if(flagString.equals("Suite is Started")){
+				logs=new ArrayList<>();
+				sheetName=line.substring(line.lastIndexOf('[')+1, line.lastIndexOf(']'));
+			}
+			//End Sheet
+			else if(flagString.equals("Suite is Finished")){
+				if(sheetName !=null && logs!=null){
+					testLogMap.put(sheetName,logs);
+					sheetName=null;
+				}
+			}
+			//Test Log
+			else {//gather Test Logs
+				if(line.length()>0){
+					stringBuffer.append(line);
+					stringBuffer.append("\n");	
+				}
+				//Test Case
+				if((flagString.equals("Test is Finished"))){
+					logs.add(stringBuffer.toString());
+					stringBuffer=new StringBuffer();
+				}			
+			}
+		}
+	}
+
+	public void writeTestLog(String sheetName,int rowSize) throws IOException{
+
 		XSSFSheet sheet=workbook.getSheet(sheetName);
-		int resultIndex=findIndex(sheet.getRow(1), "Result");
-		int successIndex=resultIndex+1;
-		XSSFRow currentRow= sheet.getRow(testIndex);
-		XSSFCell cell = currentRow.getCell(successIndex);
-		
-		
-		CreationHelper helper= workbook.getCreationHelper();
-		Drawing drawing = sheet.createDrawingPatriarch();
-		ClientAnchor anchor = helper.createClientAnchor();
-		anchor.setCol1(cell.getColumnIndex());
-		anchor.setCol2(cell.getColumnIndex()+8);
-		anchor.setRow1(cell.getRowIndex());
-		anchor.setRow2(cell.getRowIndex()+1);
-		Comment comment= drawing.createCellComment(anchor);
-		RichTextString str = helper.createRichTextString("Hello, World!");
-		comment.setString(str);
-		cell.setCellComment(comment);
-		cell =null;
+		int successIndex=findIndex(sheet.getRow(1), "Success");
+		List<String> sheetLogs= this.testLogMap.get(sheetName);
+		if(sheetLogs!=null){
+			XSSFRow currentRow; XSSFCell cell;
+			CreationHelper helper= workbook.getCreationHelper();
+			Drawing drawing = sheet.createDrawingPatriarch();
+
+			for(int row=2; row<rowSize+2; row++){
+				currentRow= sheet.getRow(row);
+				cell = currentRow.getCell(successIndex);
+
+				String log= sheetLogs.get(row-2);
+				//				System.out.println(log);
+
+				ClientAnchor anchor = helper.createClientAnchor();
+				anchor.setCol1(cell.getColumnIndex()-1);
+				anchor.setCol2(cell.getColumnIndex()-8);
+				anchor.setRow1(cell.getRowIndex());
+				anchor.setRow2(cell.getRowIndex()+8);
+				Comment comment= drawing.createCellComment(anchor);
+				RichTextString str = helper.createRichTextString(log);
+				comment.setString(str);
+				cell.setCellComment(comment);
+				cell =null;
+			}	
+		}
+
 	}
-	
+
 	public void writeResults(String sheetName, int totalRow, String[] result, boolean[] success) throws IOException{
 		if(workbook==null) workbook = getWorkbook();
 		XSSFSheet sheet=workbook.getSheet(sheetName);
@@ -91,6 +167,8 @@ public class ExcelResultSaver {
 		int successIndex=resultIndex+1;
 		XSSFRow currentRow= null;
 		XSSFCell resultCell, successCell;
+
+		int successCount=0,failCount=0;
 		
 		XSSFCellStyle successStyle=workbook.createCellStyle();
 		XSSFCellStyle failStyle=workbook.createCellStyle();
@@ -108,16 +186,23 @@ public class ExcelResultSaver {
 
 			successCell = currentRow.getCell(successIndex);
 			if(successCell==null) successCell=currentRow.createCell(successIndex);
-			successCell.setCellValue(success[i-caseIndex]?"SUCCESS":"FAIL");
-			
-			if(success[i-caseIndex])successCell.setCellStyle(successStyle);
-			else successCell.setCellStyle(failStyle);
+			if(success[i-caseIndex]){
+				successCell.setCellValue("SUCCESS");
+				successCell.setCellStyle(successStyle);
+				successCount++;
+			}else{
+				successCell.setCellValue("FAIL");	
+				successCell.setCellStyle(failStyle);
+				failCount++;
+			}
 		}
-
+		
+		//Save Total Statistics
+		
 	}
 	public void write() throws IOException{
-		if(file.exists()&& fileoutputstream !=null)
-			fileoutputstream=new FileOutputStream(file);
+		if(jexcelFile.exists()&& fileoutputstream ==null)
+			fileoutputstream=new FileOutputStream(jexcelFile);
 		if(workbook!=null){
 			workbook.write(fileoutputstream);
 		}

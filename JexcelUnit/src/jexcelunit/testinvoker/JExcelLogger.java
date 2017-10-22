@@ -16,7 +16,7 @@ import org.apache.logging.log4j.core.layout.PatternLayout;
 public class JExcelLogger {
 	private Logger suiteLogger;
 	private Logger testLogger;
-
+	LoggerContext ctx ;
 	public JExcelLogger() {
 		ConfigurationBuilder< BuiltConfiguration > builder = ConfigurationBuilderFactory.newConfigurationBuilder();
 
@@ -34,26 +34,27 @@ public class JExcelLogger {
 
 		//Test File Appender
 		appenderBuilder = builder.newAppender("TEST", "File")
-				.addAttribute("fileName", "log/test.log");
+				.addAttribute("fileName", "log/test.log").addAttribute("append", false);
 		appenderBuilder.add(layout);
 		builder.add(appenderBuilder);
 
 		//Suite File Appender
 		appenderBuilder = builder.newAppender("SUITE", "File").addAttribute("fileName",
-				"log/suite.log");
+				"log/suite.log").addAttribute("append", false);
 		appenderBuilder.add(layout);
 		builder.add(appenderBuilder);
 
 
 		// create the new logger
 		builder.add( builder.newLogger( "TestLogger", Level.TRACE)
-//				.add( builder.newAppenderRef( "Stdout" ))
+				.add( builder.newAppenderRef( "Stdout" ))
 				.add(builder.newAppenderRef("TEST")));
 		builder.add( builder.newLogger( "SuiteLogger", Level.TRACE)
-//				.add( builder.newAppenderRef( "Stdout" ))
+				.add( builder.newAppenderRef( "Stdout" ))
 				.add(builder.newAppenderRef("SUITE")));
 		builder.add(builder.newRootLogger(Level.TRACE));
-		LoggerContext ctx = Configurator.initialize(builder.build());
+		ctx = Configurator.initialize(builder.build());
+	
 
 		suiteLogger= ctx.getLogger("SuiteLogger");
 		testLogger = ctx.getLogger("TestLogger");
@@ -63,6 +64,9 @@ public class JExcelLogger {
 
 	public void testLog(String message){
 		testLogger.info(message);
+	}
+	public void testTrace(String message){
+		testLogger.trace(message);
 	}
 
 	public void suiteLog(String message){
@@ -74,5 +78,10 @@ public class JExcelLogger {
 	}
 	public void suiteFatal(String message){
 		suiteLogger.fatal(message);
+	}
+	
+
+	public void stop(){
+		ctx.stop();
 	}
 }

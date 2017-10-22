@@ -20,8 +20,6 @@ import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 
-import jexcelunit.testinvoker.TestInvoker;
-
 /*
  *  
  * TODO 위의 옵션들이 다 만들어지면 => 클래스 시각화 시작.
@@ -59,7 +57,7 @@ public class ClassExtractor {
 
 
 
-	public ArrayList<Class> getClasses(IProject project,String binPath,String encoding) throws Exception 	{
+	public ArrayList<Class> getClasses(IProject project,String binPath,String encoding, String runnerName) throws Exception 	{
 		//		String rootPath= project.getLocation().toString();
 		ArrayList<Class> classList= ClassInfoMap.INSTANCE.getClassList();
 
@@ -107,7 +105,7 @@ public class ClassExtractor {
 		for (IClasspathEntry classpathEntry : entries1) {
 			jar =classpathEntry.getPath().makeAbsolute().toFile().getCanonicalFile();
 			if(jar.toString().toLowerCase().contains(".jar")){
-				System.out.println(jar);
+//				System.out.println(jar);
 				urls.add(new URL("jar:"+jar.toURI().toURL()+"!/"));
 			}
 		}
@@ -117,7 +115,7 @@ public class ClassExtractor {
 		for (String string : classFiles) {
 			try{
 				Class userClass = loader.loadClass(string);
-				if(!TestInvoker.class.isAssignableFrom(userClass)){
+				if(!userClass.getName().contains(runnerName)){
 					classList.add(userClass);
 					Field[] fields = userClass.getDeclaredFields();
 					for(Field field : fields){
