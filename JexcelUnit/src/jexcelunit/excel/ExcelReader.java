@@ -454,9 +454,12 @@ public class ExcelReader {
 				if(met_paramTypes.length>0&&met_paramTypes !=null){
 					int met_param_index= vo.getMethodParams().size();
 					Class met_targetType=met_paramTypes[met_param_index]; //Current Param Type
-
-					Object metparam=PrimitiveChecker.convertObject(met_targetType,met_paramString);
-					vo.addMethodParam(metparam);		
+					if(met_targetType !=null && met_paramTypes[met_param_index] ==null){
+						vo.addMethodParam(null);
+					}else{
+						Object metparam=PrimitiveChecker.convertObject(met_targetType,met_paramString);
+						vo.addMethodParam(metparam);	
+					}
 				}
 			}catch(Exception e){
 				e.printStackTrace();

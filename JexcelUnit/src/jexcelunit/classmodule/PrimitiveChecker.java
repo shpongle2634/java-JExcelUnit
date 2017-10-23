@@ -121,6 +121,8 @@ public class PrimitiveChecker {
 				}
 				return list.toArray();
 			}
+			else if(paramString.toLowerCase().equals("null"))
+				return null;
 			else //mock;
 				return paramString;	
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException

@@ -141,7 +141,8 @@ public class ExcelResultSaver {
 			for(int row=2; row<rowSize+2; row++){
 				currentRow= sheet.getRow(row);
 				cell = currentRow.getCell(successIndex);
-
+				if(cell.getCellComment()!=null)
+					cell.removeCellComment();
 				String log= sheetLogs.get(row-2);
 				//				System.out.println(log);
 
@@ -169,7 +170,7 @@ public class ExcelResultSaver {
 		XSSFCell resultCell, successCell;
 
 		int successCount=0,failCount=0;
-		
+
 		XSSFCellStyle successStyle=workbook.createCellStyle();
 		XSSFCellStyle failStyle=workbook.createCellStyle();
 		successStyle.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
@@ -196,9 +197,9 @@ public class ExcelResultSaver {
 				failCount++;
 			}
 		}
-		
+
 		//Save Total Statistics
-		
+
 	}
 	public void write() throws IOException{
 		if(jexcelFile.exists()&& fileoutputstream ==null)

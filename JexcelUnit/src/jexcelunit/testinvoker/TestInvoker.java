@@ -85,7 +85,7 @@ public class TestInvoker {
 		this.expectedResult=expectedResult;
 		this.targetmethod=targetmethod;
 		this.method_params=method_params;
-		
+
 		if(currentSheet !=sheet){ 
 			rowIndex=0; //행 초기화
 			sheetNum++;
@@ -99,7 +99,7 @@ public class TestInvoker {
 				logger.suiteLog("Unit Test Mode");
 			} 
 		}
-		
+
 		logger.testLog((testnumber++) + " [" + this.testname + "] Test is Started");
 		logger.testLog("Test Target : " + this.constructor);
 		logger.testLog("ConstructorInput : " + Arrays.toString(this.constructor_params));
@@ -313,20 +313,25 @@ public class TestInvoker {
 
 	private static Object[] getMock(Class[] types, Object[] params) throws Exception{
 		for(int i= 0; i<types.length; i++){
-			Class paramClass=params[i].getClass();
-			if(PrimitiveChecker.isPrimitiveOrWrapper(paramClass))
-				paramClass= PrimitiveChecker.unWrapping(paramClass);
+			if(params[i]==null){
+				params[i]=null;
+			}
+			else{
+				Class paramClass=params[i].getClass();
+				if(PrimitiveChecker.isPrimitiveOrWrapper(paramClass))
+					paramClass= PrimitiveChecker.unWrapping(paramClass);
 
-			if(!types[i].equals(paramClass)){ // 래핑 처리 후에도 타입이 같지 않은 경우. 1. primitive 타입과 wrapper 타입의 차이.	
-				Object mockObject=mock.get(params[i]);
-				if( types[i].isInstance(mockObject) && mockObject!=null){
-					logger.testLog("The Mock named " + params[1] + " is set. ( " + mockObject + " )");
-					params[i]=mockObject;
-				}else{
-					fail();
-					throw new Exception("Wrong Parameter Types");
+				if(!types[i].equals(paramClass)){ // 래핑 처리 후에도 타입이 같지 않은 경우. 1. primitive 타입과 wrapper 타입의 차이.	
+					Object mockObject=mock.get(params[i]);
+					if( types[i].isInstance(mockObject) && mockObject!=null){
+						logger.testLog("The Mock named " + params[i] + " is set. ( " + mockObject + " )");
+						params[i]=mockObject;
+					}else{
+						fail();
+						throw new Exception("Wrong Parameter Types");
+					}
+
 				}
-
 			}
 		}
 		return params;
@@ -451,7 +456,7 @@ public class TestInvoker {
 	 * */
 	@Test
 	public void testMethod() throws Throwable {
-		
+
 		if(targetmethod==null){ //생성자 테스트인 경우.
 			constructor_test();
 			return;
@@ -473,12 +478,11 @@ public class TestInvoker {
 			if(targetmethod.getReturnType()==null ||targetmethod.getReturnType().equals(void.class));
 			else{
 				Class[] type=null; Object[] returnObj=null;
+				type= new Class[1];
+				type[0]=targetmethod.getReturnType();
 				if(testResult !=null){
-					//모크 셋업
-					type= new Class[1];
 					result[sheetNum][rowIndex-1]=testResult.toString();
-					type[0]= testResult.getClass();//실제 리턴타입
-				}				
+				}else result[sheetNum][rowIndex-1] = "null";
 
 				if(expectedResult !=null){
 					returnObj=new Object[1];
@@ -529,7 +533,7 @@ public class TestInvoker {
 	@After
 	public void checkEndSuite(){
 		logger.testLog("["+testname+"] Test is Finished\n");
-		
+
 		if(success[sheetNum].length==testnumber)
 			logger.testLog('['+currentSheet +"] Suite is Finished");
 	}
@@ -546,7 +550,7 @@ public class TestInvoker {
 				save.writeResults(sheetname, rowSize[i], result[i], success[i]);
 				save.writeTestLog(sheetname, rowSize[i]);
 			}
-			
+
 			save.write();
 			save.close();
 			logger.stop();
