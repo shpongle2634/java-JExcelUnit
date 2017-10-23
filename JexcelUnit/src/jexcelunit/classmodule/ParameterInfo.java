@@ -14,7 +14,7 @@ public class ParameterInfo extends Info {
 		
 		fieldName = "arg";
 		ClassInfo classInfo;
-		if((classInfo=PrimitiveChecker.checkClassInfos(clz)) !=null){
+		if((classInfo=checkClassInfos(clz)) !=null){
 			paramInfo= classInfo;
 		}
 		else{ 

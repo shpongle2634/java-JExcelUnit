@@ -16,7 +16,7 @@ public class MethodInfo extends Info{
 		//Method Return Type 설정
 //		Map<String, ClassInfo> classInfoMap = ClassInfoMap.INSTANCE.getInfos();
 		Class<?> returnType= method.getReturnType();
-		if((returnClass=PrimitiveChecker.checkClassInfos(returnType)) ==null){
+		if((returnClass=checkClassInfos(returnType)) ==null){
 			returnClass= new ClassInfo(returnType);
 		}
 		//Parameter 설정

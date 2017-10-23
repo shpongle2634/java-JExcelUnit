@@ -67,14 +67,6 @@ public class PrimitiveChecker {
 			return -1;
 	}
 
-	// Check whether ClassInfoMap has this class or not, if have it then return or return null; 
-	public static ClassInfo checkClassInfos(Class clz){
-		ClassInfo result= null;
-		result= ClassInfoMap.INSTANCE.getInfos().get(clz.getSimpleName());
-		if(result ==null)
-			result = ClassInfoMap.INSTANCE.getInfos().get(clz.getName());
-		return result;
-	}
 
 	@SuppressWarnings("unchecked")
 	public static Object convertObject(Class targetType,String paramString){

@@ -55,6 +55,14 @@ public abstract class Info implements IAdaptable {
 			return children.size()>0?true: false;
 		return false;
 	}
+	@SuppressWarnings("rawtypes")
+	public static ClassInfo checkClassInfos(Class clz){
+		ClassInfo result= null;
+		result= ClassInfoMap.INSTANCE.getInfos().get(clz.getSimpleName());
+		if(result ==null)
+			result = ClassInfoMap.INSTANCE.getInfos().get(clz.getName());
+		return result;
+	}
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub
