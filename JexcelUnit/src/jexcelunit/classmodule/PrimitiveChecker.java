@@ -6,6 +6,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -76,7 +78,7 @@ public class PrimitiveChecker {
 			//wrapper
 			if(isWrapperClass(targetType))
 			{
-				paramObject=targetType.getConstructor(String.class).newInstance(paramString);
+				paramObject=targetType.getConstructor(String.class).newInstance(paramString.trim());
 				return paramObject;
 			}	
 
@@ -113,6 +115,24 @@ public class PrimitiveChecker {
 				}
 				return list.toArray();
 			}
+			else if(isClassCollection(targetType)){
+				//TODO
+				//컴포넌트 타입을 알아내야함..
+				if(paramString.equals("emptyList")) return new ArrayList();
+				else if(paramString.equals("emptySet")) return new HashSet();
+				else if(paramString.equals("emptyMap")) return new HashMap();
+				else {
+					String[] arrayItems = paramString.split(",");
+					Object item = null;
+					ArrayList list= new ArrayList();
+					for(String itemStr : arrayItems) {
+						itemStr= itemStr.trim();
+						item = itemStr;
+						list.add(item);
+					}
+					return list;
+				}
+			}
 			else if(paramString.toLowerCase().equals("null"))
 				return null;
 			else //mock;
@@ -130,6 +150,7 @@ public class PrimitiveChecker {
 			if(List.class.isAssignableFrom(targetType)){
 				
 				List list = (List) targetType.newInstance();
+				if(paramString.equals("emptyList")) return list;
 				String[] arrayItems = paramString.split(",");
 				Object item = null;
 				for(String itemStr : arrayItems) {
@@ -142,6 +163,7 @@ public class PrimitiveChecker {
 			//2. Set
 			else if(Set.class.isAssignableFrom(targetType)){
 				Set set =(Set) targetType.newInstance();
+				if(paramString.equals("emptySet")) return set;
 				String[] arrayItems = paramString.split(",");
 				Object item = null;
 				for(String itemStr : arrayItems) {
@@ -154,6 +176,7 @@ public class PrimitiveChecker {
 			//3. Map
 			else if(Map.class.isAssignableFrom(targetType)){
 				Map map=(Map) targetType.newInstance();
+				if(paramString.equals("emptyMap")) return map;
 				//TODO
 				return map;
 			}

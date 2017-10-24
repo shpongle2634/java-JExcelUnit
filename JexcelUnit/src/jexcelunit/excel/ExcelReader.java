@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -59,6 +61,16 @@ public class ExcelReader {
 			String key= fullString.substring(fullString.lastIndexOf(".")+1, fullString.length());
 			classFullNames.put(key, fullString);
 		}
+		classFullNames.put("String", String.class.getName());
+		classFullNames.put("Integer", Integer.class.getName());
+		classFullNames.put("Short", Short.class.getName());
+		classFullNames.put("Float", Float.class.getName());
+		classFullNames.put("Double", Double.class.getName());
+		classFullNames.put("Date", Date.class.getName());
+		classFullNames.put("Long", Long.class.getName());
+		classFullNames.put("Number", Number.class.getName());
+		classFullNames.put("BigInteger", BigInteger.class.getName());
+
 	}
 
 	public ArrayList<String> getTestSheetMode(){
@@ -183,7 +195,7 @@ public class ExcelReader {
 						cell = row.getCell(colIndex);
 						if(cell ==null) fieldString = null;
 						fieldString= formatter.formatCellValue(cell);
-						
+
 						//Field Value
 						row = mockSheet.getRow(currentRow++);
 						cell = row.getCell(colIndex);
@@ -311,6 +323,12 @@ public class ExcelReader {
 								if(currentCell !=null){
 									//Set vo Values.
 									setVOvalue(vo,TESTDATASET[voOption[j]],workbook,currentCell);
+								}else{
+									if(j<voOption.length-1)//파라미터가 널값인경우를  대비.
+										if(currentCell==null && voOption[j]==voOption[j+1]){
+											currentRow.createCell(j);
+											setVOvalue(vo,TESTDATASET[voOption[j]],workbook,currentCell);
+										}
 								}
 							}
 						}
@@ -393,18 +411,22 @@ public class ExcelReader {
 			Class[] con_paramTypes= null;
 			con_paramTypes= vo.getCons_param();
 			try{
-				if(con_paramTypes==null && con_paramString !=null){
+				if(con_paramTypes==null && con_paramString !=""){
 					throw new Exception("Detected Wrong Constructor Parameter.\n at "+currentCell.getSheet().getSheetName()+"\n at "+(currentCell.getRowIndex()+1));
 				}
-
-				if(con_paramTypes.length>0&& con_paramTypes!=null){
+				
+				if(con_paramTypes!=null){
 					int index= vo.getConstructorParams().size();
-					Class con_targetType =con_paramTypes[index];
-					Object conparam=PrimitiveChecker.convertObject(con_targetType,con_paramString);
-					vo.addConstructorParam(conparam);
-				}}catch(Exception e){
-					e.printStackTrace();
+					if(index< con_paramTypes.length){
+						Class con_targetType =con_paramTypes[index];
+						Object conparam=PrimitiveChecker.convertObject(con_targetType,con_paramString);
+						vo.addConstructorParam(conparam);
+					}	
 				}
+				
+			}catch(Exception e){
+				e.printStackTrace();
+			}
 			break;
 		case TestMethod://Set Method and Parameter Types
 			String fullmet= formatter.formatCellValue(currentCell);
@@ -443,20 +465,19 @@ public class ExcelReader {
 
 			break;
 		case MetParam: //Extract parameter and convert Object
-
 			String met_paramString= formatter.formatCellValue(currentCell);//String value
 			Class[] met_paramTypes= null;
 			met_paramTypes=vo.getMet_param();
 			try{
-				if(met_paramTypes==null && met_paramString !=null){
+				//파라미터가 없는데 값이 있는경우
+				if(met_paramTypes==null && met_paramString !=""){
 					throw new Exception("Detected Wrong Method Parameter.\n at "+currentCell.getSheet().getSheetName()+"\n at "+(currentCell.getRowIndex()+1));
 				}
-				if(met_paramTypes.length>0&&met_paramTypes !=null){
+				//파라미터가 있는경우.
+				if(met_paramTypes !=null){
 					int met_param_index= vo.getMethodParams().size();
-					Class met_targetType=met_paramTypes[met_param_index]; //Current Param Type
-					if(met_targetType !=null && met_paramTypes[met_param_index] ==null){
-						vo.addMethodParam(null);
-					}else{
+					if(met_param_index < met_paramTypes.length){
+						Class met_targetType=met_paramTypes[met_param_index]; //Current Param Type
 						Object metparam=PrimitiveChecker.convertObject(met_targetType,met_paramString);
 						vo.addMethodParam(metparam);	
 					}

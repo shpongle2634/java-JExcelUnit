@@ -19,6 +19,8 @@ public class TestcaseVO {
 	private boolean success;
 	private ArrayList<Object> constructor_params =null;
 	private ArrayList<Object> method_params = null;
+	private int metIndex=0;
+	private int conIndex=0;
 	
 	
 	
@@ -39,14 +41,14 @@ public class TestcaseVO {
 	}
 	
 	public void addConstructorParam(Object data){
-		constructor_params.add(data);
+		constructor_params.add(conIndex++,data);
 	}
 	public ArrayList<Object> getConstructorParams(){
 		return constructor_params;
 	}
 	
 	public void addMethodParam(Object data){
-		method_params.add(data);
+		method_params.add(metIndex++, data);
 	}
 	public ArrayList<Object> getMethodParams(){
 		return method_params;

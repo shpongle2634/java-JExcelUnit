@@ -144,11 +144,11 @@ public class ExcelResultSaver {
 				if(cell.getCellComment()!=null)
 					cell.removeCellComment();
 				String log= sheetLogs.get(row-2);
-				//				System.out.println(log);
+								System.out.println(log);
 
 				ClientAnchor anchor = helper.createClientAnchor();
-				anchor.setCol1(cell.getColumnIndex()-1);
-				anchor.setCol2(cell.getColumnIndex()-8);
+				anchor.setCol1(cell.getColumnIndex()+1);
+				anchor.setCol2(cell.getColumnIndex()+10);
 				anchor.setRow1(cell.getRowIndex());
 				anchor.setRow2(cell.getRowIndex()+8);
 				Comment comment= drawing.createCellComment(anchor);

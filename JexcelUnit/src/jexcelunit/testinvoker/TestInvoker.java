@@ -3,7 +3,6 @@ package jexcelunit.testinvoker;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.closeTo;
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -21,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -313,14 +313,15 @@ public class TestInvoker {
 
 	private static Object[] getMock(Class[] types, Object[] params) throws Exception{
 		for(int i= 0; i<types.length; i++){
-			if(params[i]==null){
-				params[i]=null;
-			}
-			else{
+			if(params[i]!=null){
 				Class paramClass=params[i].getClass();
 				if(PrimitiveChecker.isPrimitiveOrWrapper(paramClass))
 					paramClass= PrimitiveChecker.unWrapping(paramClass);
-
+				if(types[i].equals(String.class) && paramClass.equals(String.class)){
+					Object mockObject= mock.get(params[i]);
+					if(mockObject !=null)
+						params[i]=mockObject;
+				}
 				if(!types[i].equals(paramClass)){ // 래핑 처리 후에도 타입이 같지 않은 경우. 1. primitive 타입과 wrapper 타입의 차이.	
 					Object mockObject=mock.get(params[i]);
 					if( types[i].isInstance(mockObject) && mockObject!=null){
@@ -330,13 +331,36 @@ public class TestInvoker {
 						fail();
 						throw new Exception("Wrong Parameter Types");
 					}
-
 				}
 			}
 		}
 		return params;
 	} 
 
+	private static Object getMock(Class types, Object params) throws Exception{
+			if(params!=null){
+				Class paramClass=params.getClass();
+				if(PrimitiveChecker.isPrimitiveOrWrapper(paramClass))
+					paramClass= PrimitiveChecker.unWrapping(paramClass);
+				if(types.equals(String.class) && paramClass.equals(String.class)){
+					Object mockObject= mock.get(params);
+					if(mockObject !=null)
+						params=mockObject;
+				}
+				if(!types.equals(paramClass)){ // 래핑 처리 후에도 타입이 같지 않은 경우. 1. primitive 타입과 wrapper 타입의 차이.	
+					Object mockObject=mock.get(params);
+					if( types.isInstance(mockObject) && mockObject!=null){
+						logger.testLog("The Mock named " + params + " is set. ( " + mockObject + " )");
+						params=mockObject;
+					}else{
+						fail();
+						throw new Exception("Wrong Parameter Types");
+					}
+				}
+			}
+			return params;
+	} 
+	
 	private void constructor_test(){
 		try{
 			logger.testLog("Constructor Test (Test Method doesn't exist)");
@@ -357,10 +381,14 @@ public class TestInvoker {
 	}
 
 
-	private void assertion(Object testResult, Object expectedResult, Class resultType) throws IllegalArgumentException, IllegalAccessException, AssertionError{
-		if(PrimitiveChecker.isPrimitiveOrWrapper(testResult.getClass())){ //원시값 테스트
+	private void assertion(Object testResult, Object expectedResult, Class resultType) throws AssertionError, Exception{
+		if(testResult ==null || expectedResult ==null){
+			logger.testLog("Test Result/ Expect Result : "+ testResult + " / " + expectedResult);
+			assertThat(testResult, is(expectedResult));
+		}
 
-			switch(PrimitiveChecker.getFloatingType(testResult.getClass())){
+		else if(PrimitiveChecker.isPrimitiveOrWrapper(resultType)){ //원시값 테스트
+			switch(PrimitiveChecker.getFloatingType(resultType)){
 			case 1:
 				Double result= new Double(Float.toString((float)testResult));
 				Double expect= new Double(Float.toString((float)expectedResult));
@@ -378,8 +406,36 @@ public class TestInvoker {
 			}
 
 
-		}
-		else{//결과가 원시객체가 아닌 임의 객체인경우
+		}else if(PrimitiveChecker.isClassCollection(resultType)){//Collection인경우
+			logger.testLog(resultType+ " Result Asserting... ");
+			if(List.class.isAssignableFrom(resultType)){
+				List listResult= (List) testResult, listExpect= (List) expectedResult;
+				if(listResult.size() ==0 && listExpect.size() ==0){
+					logger.testLog("Test Result/ Expect Result : Empty List");
+					assertThat(listResult.isEmpty(),is(listExpect.isEmpty()));
+				}else{
+					Iterator resultIt=listResult.iterator(), expectIt= listExpect.iterator();
+					while(resultIt.hasNext() && expectIt.hasNext()){
+						Object r=resultIt.next() , e=expectIt.next();
+						if(r.getClass().equals(e.getClass())){
+							logger.testLog("Test Result/ Expect Result : "+ r + " / " + e);
+							assertion(r, e, e.getClass());	
+						}else{
+							e= getMock(r.getClass(),e);
+							assertion(r, e, e.getClass());	
+						}
+							
+					}
+				}
+			}
+			else if(Set.class.isAssignableFrom(resultType)){
+
+			}
+			else if(Map.class.isAssignableFrom(resultType)){
+
+			}
+
+		}else{//결과가 원시객체가 아닌 임의 객체인경우
 			logger.testLog(resultType+ " Result Asserting... ");
 			Field[] flz =resultType.getDeclaredFields();
 			if(flz!=null)
@@ -388,7 +444,7 @@ public class TestInvoker {
 						f.setAccessible(true);
 						Class memberclz=f.getType();
 						try {
-							auto_Assert(testResult, f, memberclz);
+							auto_Assert(testResult,expectedResult, f, memberclz);
 						} catch (IllegalArgumentException | IllegalAccessException e) {handleException(e);}
 					}
 				}
@@ -405,30 +461,23 @@ public class TestInvoker {
 	 * @throws IllegalAccessException 
 	 * @throws IllegalArgumentException 
 	 ********************************************************************** */
-	private void auto_Assert(Object testresult, Field f,Class memberclz ) throws IllegalArgumentException, IllegalAccessException, AssertionError{
-
-		if(PrimitiveChecker.isPrimitiveOrWrapper(memberclz) ){ //일반 원소비교
-			logger.testLog("Test Result/ Expect Result : "+ testresult + " / " + expectedResult);
-
-			switch(PrimitiveChecker.getFloatingType(f.get(testresult).getClass())){
-			case 1: //Float
-				assertThat(new Double(Float.toString((float)f.get(testresult))),
-						is(closeTo(new Double(Float.toString((float)f.get(expectedResult))), 0.00001)));
-				break;
-			case 0://Double
-				assertThat((double)f.get(testresult),is(closeTo((double)f.get(expectedResult), 0.00001)));
-				break;
-			default:
-				assertThat(f.get(testresult),is(equalTo(f.get(expectedResult))));
-			}
+	private void auto_Assert(Object testresult,Object expectedResult, Field f,Class memberclz ) throws IllegalArgumentException, IllegalAccessException, AssertionError, Exception{
+		Object resultField= f.get(testresult), expectField= f.get(expectedResult);
+		
+		if(resultField==null && expectField==null){
+			logger.testLog("Field Test Result/ Expect Result : "+ resultField + " / " + expectField);
+			assertThat(resultField,is(expectField));
+		}
+		else if(PrimitiveChecker.isPrimitiveOrWrapper(memberclz) ){ //일반 원소비교
+			assertion(resultField,expectField,memberclz);
 		}
 		else if(memberclz.isArray()){//배열원소 비교
-			if(Array.getLength(f.get(testresult)) == Array.getLength(f.get(expectedResult))){
-				for(int i= 0; i<Array.getLength(f.get(testresult)); i++){
-					if(Array.get(f.get(testresult), i)!=null &&Array.get(f.get(expectedResult), i)!=null){
-						Object re =Array.get(f.get(testresult), i);
-						Object ex = Array.get(f.get(expectedResult), i);
-						logger.testLog("Array Test Result/ Expect Result : "+ re + " / " + ex);
+			if(Array.getLength(resultField) == Array.getLength(expectField)){
+				for(int i= 0; i<Array.getLength(resultField); i++){
+					if(Array.get(resultField, i)!=null &&Array.get(expectField, i)!=null){
+						Object re =Array.get(resultField, i);
+						Object ex = Array.get(expectField, i);
+						logger.testLog("Array Field Test Result/ Expect Result : "+ re + " / " + ex);
 						assertion(re,ex,f.getType());
 					}
 				}
@@ -436,18 +485,19 @@ public class TestInvoker {
 			else 
 				fail("Array Size doesn't match");
 
-		}else if(Collection.class.isInstance(f.get(expectedResult))){//컬렉션 원소 비교
-			Collection expect=(Collection) f.get(expectedResult);
-			Collection result=(Collection) f.get(testresult);
+		}else if(PrimitiveChecker.isCollection(expectField)){//컬렉션 원소 비교
+			Collection expect=(Collection) expectField;
+			Collection result=(Collection) resultField;
 			Iterator ex_it = expect.iterator();
 			Iterator re_it = result.iterator();
 			while(ex_it.hasNext() && re_it.hasNext()){
 				Object ex=ex_it.next();
 				Object re=re_it.next();
-				logger.testLog("Collection Test Result/ Expect Result : "+ re + " / " + ex);
+				logger.testLog("Collection Item Test Result/ Expect Result : "+ re + " / " + ex);
 				assertThat(re, is(ex));
 			}
-		}else fail("There's Custom Object Field.");
+		}else 
+			fail("There's Custom Object Field.");
 		//재귀 필요.
 	}	
 
