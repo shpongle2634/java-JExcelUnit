@@ -5,11 +5,11 @@
    <extension
          point="org.eclipse.ui.commands">
       <category
-            name="JexcelUnit Category"
+            name="%category.name"
             id="JexcelUnit.commands.category">
       </category>
       <command
-            name="Testing Command"
+            name="%command.name"
             categoryId="JexcelUnit.commands.category"
             id="JexcelUnit.commands.testingCommand">
       </command>
@@ -48,7 +48,7 @@
             <command
                   commandId="JexcelUnit.commands.testingCommand"
                   icon="icons/jexcelunit.png"
-                  tooltip="Create Testable Excel and Suite Class."
+                  tooltip="%command.tooltip"
                   id="JexcelUnit.toolbars.testingCommand">
             </command>
          </toolbar>
@@ -60,14 +60,14 @@
          point="org.eclipse.ui.newWizards">
       <category
             id="JexcelUnit"
-            name="Excelling Wizards">
+            name="%category.name.0">
       </category>
       <wizard
             category="JexcelUnit"
             class="jexcelunit.wizards.ExcellingWizard"
             icon="icons/jexcelunit.png"
             id="jexcelunit.wizards.ExcellingWizard"
-            name="Testable Excel .xlsx">
+            name="%wizard.name">
       </wizard>
    </extension>
    <extension
@@ -76,11 +76,11 @@
   <extension
          point="org.eclipse.ui.views">
       <category
-            name="JExcelUnit Views"
+            name="%category.name.1"
             id="jexcelunit.category.treeview">
       </category>
       <view
-            name="JExcelUnit TestMaker"
+            name="%view.name"
             icon="icons/sample.gif"
             category="jexcelunit.category.treeview"
             class="jexcelunit.treeview.ClassTreeView"
