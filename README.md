@@ -1,17 +1,25 @@
 # JexcelUnit
-JexcelUnit is Eclipse Plug for Auto JUnit Test using Excel like ".xlsx" file.
+Use JUnit Test using Excel.
+The JExcelUnit will make the '.xlsx' file which related to the project you made.  
 
-JexcelUnit has some features for helping JUnit Test.
+This Excel File includes some informations about your java project such as class name, constructor, fields, and methods. and those are preapplied to the cell value. So the user can write test case just selecting some cell value. The Test case might have Test Name, Test Target(Class and Constructor), Test Method, Method Inputs, Expected Value, Result and Success/Failure.
 
-1. Analyze Project All Classes and Create .xlsx file. and this xlsx file has some Data validations
-about Classes name, Methods, Params.
+Now, if you want to write your test case, you can write down in your excel, just completing Single line. JExcelUnit can give you some profits. 
 
-2. This .xlsx file can contain your own Testcases.
-Just Write Target Class and Constructor Parameters and Target Method and Parameters.
-Then, Assert your Expected Result. 
-It will help your senario testing and management testcases.
+You can write your Test Case in this Excel file easy without JUnit Code.
+You can manage your Test Suite as a data. and can see test cases more intutive.
+Testing Cost will be reduced rapidly.
+Select JExcelUnit Button on Eclipse top bar Or Project-New-Testable Excel .xlsx .  JExcelUnit will analyze your Project and then make Excel File automatically.
 
-3. Using JexcelUnit will make you test method easy. It will read testcases from .xlsx file. then
-execute all tests using JUnit Assert.
 
-Now You can analyze your testcase from .xlsx or logfile and viewer.
+Manual Installation
+
+1.  Move plugin file(jexcelunit_x.x.jar) to '/dropins' in Eclipse Location. and restart Eclipse.
+
+2.  Add buildpath configration and add 'jexcelunit_lib_x.x.jar'.
+
+JExcelUnit Plug-In Download link : https://s3.ap-northeast-2.amazonaws.com/jexcelunit/plugin/jexcelunit_1.0.jar
+
+JExcelUnit Library Download link : https://s3.ap-northeast-2.amazonaws.com/jexcelunit/lib/jexcelunit_lib_1.0.jar
+
+
